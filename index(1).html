@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telconet · Asistente IA Operaciones ADC</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --tnblue:#003087;--tnblue2:#0047be;--tnblue3:#1a5cd4;
+  --tnblue-light:#e8eef8;--tnblue-glow:rgba(0,48,135,0.12);
+  --tncyan:#00b4d8;
+  --bg:#f0f2f7;--surface:#fff;--surface2:#f5f6fa;--surface3:#eaecf4;
+  --border:#dde1ee;--border2:#c8cde0;
+  --text:#0d1526;--text2:#4a5578;--text3:#8d96b2;
+  --green:#0a7c52;--green-light:#e4f5ef;
+  --amber:#8a5800;--amber-light:#fdf3dc;
+  --red:#a01e1e;--red-light:#fde8e8;
+  --shadow:0 1px 4px rgba(0,48,135,0.07),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 16px rgba(0,48,135,0.12),0 2px 6px rgba(0,0,0,0.06);
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.5;overflow-x:hidden}
+.hdr{background:var(--tnblue);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,0.18);position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:14px}
+.tlogo svg{height:26px;width:auto}
+.brand-divider{width:1px;height:28px;background:rgba(255,255,255,0.2);margin:0 4px}
+.brand-name{font-size:13px;font-weight:600;color:#fff;letter-spacing:0.1px;line-height:1.2}
+.brand-sub{font-size:10px;color:rgba(255,255,255,0.5);margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:rgba(255,255,255,0.75);background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);padding:4px 10px;border-radius:20px;white-space:nowrap}
+.sdot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3);flex-shrink:0}
+.sdot.ok{background:#34d399;animation:blink 2.5s infinite}
+.sdot.spin{background:#fbbf24;animation:blink .7s infinite}
+.sdot.err{background:#f87171}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.ai-badge{display:flex;align-items:center;gap:5px;background:rgba(0,180,216,0.2);border:1px solid rgba(0,180,216,0.35);color:#7dd3fc;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.ai-dot{width:5px;height:5px;border-radius:50%;background:#7dd3fc;animation:blink 1.5s infinite}
+.btn-ref{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:4px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;transition:.15s}
+.btn-ref:hover{background:rgba(255,255,255,0.2);color:#fff}
+.sico{display:inline-block}
+.spinning .sico{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:40px;text-align:center;min-height:60vh}
+.loading-title{font-size:18px;font-weight:600;color:var(--text);margin-bottom:6px;margin-top:20px}
+.loading-desc{font-size:13px;color:var(--text2);margin-bottom:20px}
+.loading-bar{width:220px;height:3px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.loading-fill{height:100%;background:var(--tnblue3);border-radius:3px;animation:ld 1.8s ease-in-out infinite}
+@keyframes ld{0%{width:0%;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0%;margin-left:100%}}
+.loading-sub{font-size:11px;color:var(--text3);margin-top:8px}
+.dashboard{flex:1;padding:24px;overflow-y:auto;display:none;position:relative;z-index:1}
+.dash-header{margin-bottom:20px}
+.dash-title{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+.dash-sub{font-size:13px;color:var(--text2);margin-top:3px}
+.dash-sync{font-size:11px;color:var(--text3);margin-top:2px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);transition:.15s}
+.kpi-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.kpi-card.accent{background:var(--tnblue);border-color:var(--tnblue)}
+.kpi-card.green{background:var(--green-light);border-color:rgba(10,124,82,.15)}
+.kpi-card.amber{background:var(--amber-light);border-color:rgba(138,88,0,.15)}
+.kpi-card.red{background:var(--red-light);border-color:rgba(160,30,30,.15)}
+.kpi-icon{font-size:20px;margin-bottom:8px;display:block}
+.kpi-val{font-size:28px;font-weight:700;color:var(--tnblue);letter-spacing:-.5px;line-height:1}
+.kpi-card.accent .kpi-val{color:#fff}
+.kpi-card.green .kpi-val{color:var(--green)}
+.kpi-card.amber .kpi-val{color:var(--amber)}
+.kpi-card.red .kpi-val{color:var(--red)}
+.kpi-label{font-size:11px;font-weight:500;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.kpi-card.accent .kpi-label{color:rgba(255,255,255,0.65)}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.kpi-card.green .kpi-sub{color:var(--green)}
+.kpi-card.amber .kpi-sub{color:var(--amber)}
+.kpi-card.red .kpi-sub{color:var(--red)}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+@media(max-width:900px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.chart-sub{font-size:11px;color:var(--text3);margin-bottom:14px}
+.chart-wrap{position:relative;height:220px}
+.chart-wrap.tall{height:260px}
+.tables-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:100px}
+@media(max-width:900px){.tables-grid{grid-template-columns:1fr}}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
+.table-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.table-sub{font-size:11px;color:var(--text3);margin-bottom:14px}
+.dash-table{width:100%;border-collapse:collapse;font-size:12px}
+.dash-table th{background:var(--tnblue);color:#fff;padding:7px 10px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.3px}
+.dash-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+.dash-table tr:last-child td{border-bottom:none}
+.dash-table tr:nth-child(even) td{background:var(--tnblue-light)}
+.dash-table tr:hover td{background:rgba(0,48,135,0.05)}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.tag.g{background:var(--green-light);color:var(--green)}
+.tag.a{background:var(--amber-light);color:var(--amber)}
+.tag.r{background:var(--red-light);color:var(--red)}
+.tag.b{background:var(--tnblue-light);color:var(--tnblue2)}
+.progress-bar{background:var(--surface3);border-radius:4px;height:6px;overflow:hidden;margin-top:3px}
+.progress-fill{height:100%;border-radius:4px;background:var(--tnblue3)}
+.chat-fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;background:var(--tnblue);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(0,48,135,0.4);z-index:999;transition:all .25s;border:none}
+.chat-fab:hover{background:var(--tnblue2);transform:scale(1.08)}
+.chat-fab svg{width:24px;height:24px}
+.chat-window{position:fixed;bottom:90px;right:24px;width:380px;height:520px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,48,135,0.15),0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;z-index:998;overflow:hidden;transform:scale(0.92) translateY(16px);opacity:0;pointer-events:none;transition:all .25s cubic-bezier(.34,1.56,.64,1)}
+.chat-window.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all}
+@media(max-width:480px){.chat-window{width:calc(100vw - 16px);right:8px;bottom:80px}}
+.chat-win-hdr{background:var(--tnblue);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.chat-win-brand{display:flex;align-items:center;gap:9px}
+.chat-win-av{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;border:1.5px solid rgba(255,255,255,0.3)}
+.chat-win-name{font-size:13px;font-weight:600;color:#fff}
+.chat-win-status{font-size:10px;color:rgba(255,255,255,0.6);display:flex;align-items:center;gap:4px;margin-top:1px}
+.chat-win-sdot{width:5px;height:5px;border-radius:50%;background:#34d399;animation:blink 2s infinite}
+.chat-win-close{background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;line-height:1;padding:2px;transition:.15s}
+.chat-win-close:hover{color:#fff}
+.quick-suggs{padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.qs-btn{background:var(--tnblue-light);border:1px solid rgba(0,48,135,.15);color:var(--tnblue2);font-size:10.5px;padding:4px 9px;border-radius:20px;cursor:pointer;transition:.13s;white-space:nowrap;font-family:'Inter',sans-serif}
+.qs-btn:hover{background:var(--tnblue);color:#fff}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--surface2)}
+.chat-msgs::-webkit-scrollbar{width:3px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.chat-msg{display:flex;gap:8px;animation:msgIn .2s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.chat-msg.user{flex-direction:row-reverse}
+.chat-av{width:26px;height:26px;min-width:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.chat-msg.assistant .chat-av{background:var(--tnblue-light);color:var(--tnblue);border:1px solid rgba(0,48,135,.2)}
+.chat-msg.user .chat-av{background:var(--surface3);color:var(--text2)}
+.chat-bub{max-width:82%;padding:9px 13px;border-radius:12px;font-size:12.5px;line-height:1.6;box-shadow:var(--shadow)}
+.chat-msg.assistant .chat-bub{background:var(--surface);border:1px solid var(--border);color:var(--text);border-top-left-radius:3px}
+.chat-msg.user .chat-bub{background:var(--tnblue);color:#fff;border-top-right-radius:3px}
+.chat-msg.assistant .chat-bub strong{color:var(--tnblue);font-weight:600}
+.chat-msg.user .chat-bub strong{color:rgba(255,255,255,.9)}
+.chat-bub table{width:100%;border-collapse:collapse;margin:8px 0;font-size:11px}
+.chat-bub th{background:var(--tnblue);color:#fff;padding:5px 8px;text-align:left;font-weight:600;font-size:10px}
+.chat-bub td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text)}
+.chat-bub tr:last-child td{border-bottom:none}
+.chat-bub tr:nth-child(even) td{background:var(--tnblue-light)}
+.chat-bub .hl{background:var(--tnblue-light);border-left:3px solid var(--tnblue);border-radius:0 5px 5px 0;padding:6px 10px;margin:6px 0;color:var(--text);font-size:12px}
+.chat-bub .kpi-row{display:flex;gap:6px;margin:7px 0;flex-wrap:wrap}
+.chat-bub .kp{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;text-align:center;min-width:60px}
+.chat-bub .kp .v{font-size:16px;font-weight:700;color:var(--tnblue);line-height:1}
+.chat-bub .kp .l{font-size:9px;color:var(--text3);margin-top:2px}
+.dots{display:flex;gap:3px;padding:2px 0}
+.dots span{width:5px;height:5px;border-radius:50%;background:var(--tnblue);opacity:.3;animation:bounce 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.3}30%{transform:translateY(-4px);opacity:1}}
+.chat-inp-area{padding:10px 12px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.chat-inp-box{display:flex;gap:7px;align-items:flex-end;background:var(--surface2);border:1.5px solid var(--border2);border-radius:12px;padding:6px 6px 6px 12px;transition:border .15s}
+.chat-inp-box:focus-within{border-color:var(--tnblue3);background:#fff}
+#chat-inp{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Inter',sans-serif;font-size:12.5px;resize:none;min-height:20px;max-height:80px;line-height:1.5;padding:2px 0}
+#chat-inp::placeholder{color:var(--text3)}
+#chat-inp:disabled{opacity:.45;cursor:not-allowed}
+.btn-send{width:30px;height:30px;min-width:30px;background:var(--tnblue);border:none;border-radius:8px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
+.btn-send:hover:not(:disabled){background:var(--tnblue2);transform:scale(1.06)}
+.btn-send:disabled{opacity:.25;cursor:not-allowed;transform:none}
+.chat-hint{font-size:10px;color:var(--text3);margin-top:5px;text-align:center}
+#ai-canvas{position:fixed;top:56px;left:0;width:100%;height:calc(100% - 56px);pointer-events:none;z-index:0;opacity:0.5}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="brand">
+    <div class="tlogo">
+      <svg viewBox="0 0 140 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="4" fill="#00b4d8"/>
+        <path d="M8 16 Q8 8 16 8 Q24 8 24 16" stroke="#00b4d8" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.7"/>
+        <path d="M4 16 Q4 4 16 4 Q28 4 28 16" stroke="#00b4d8" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.4"/>
+        <text x="36" y="21.5" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#ffffff" letter-spacing="0.5">TELCONET</text>
+      </svg>
+    </div>
+    <div class="brand-divider"></div>
+    <div>
+      <div class="brand-name">Asistente IA Operaciones ADC</div>
+      <div class="brand-sub">Trabajos en red pasiva</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="ai-badge"><div class="ai-dot"></div>IA activa</div>
+    <div class="badge"><div class="sdot" id="sdot"></div><span id="slabel">Conectando...</span></div>
+    <button class="btn-ref" id="btn-ref" onclick="refresh()" style="display:none"><span class="sico">&#8635;</span> Actualizar</button>
+  </div>
+</div>
+
+<canvas id="ai-canvas"></canvas>
+
+<div class="loading-screen" id="loading-screen">
+  <svg viewBox="0 0 160 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:40px">
+    <circle cx="18" cy="18" r="5" fill="#003087"/>
+    <path d="M9 18 Q9 9 18 9 Q27 9 27 18" stroke="#003087" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <path d="M4 18 Q4 4 18 4 Q32 4 32 18" stroke="#003087" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.3"/>
+    <text x="40" y="24" font-family="Inter,sans-serif" font-weight="700" font-size="18" fill="#003087" letter-spacing="0.5">TELCONET</text>
+  </svg>
+  <div class="loading-title">Cargando Dashboard de Operaciones</div>
+  <div class="loading-desc">Conectando con Google Sheets</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <div class="loading-sub" id="load-sub">Leyendo datos de trabajo diario...</div>
+</div>
+
+<div class="dashboard" id="dashboard">
+  <div class="dash-header">
+    <div class="dash-title" id="dash-title">Dashboard de Operaciones ADC</div>
+    <div class="dash-sub" id="dash-sub"></div>
+    <div class="dash-sync" id="dash-sync"></div>
+  </div>
+  <div class="kpi-row" id="kpi-row"></div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">&#128202; Produccion por cuadrilla</div>
+      <div class="chart-sub">Trabajos realizados por equipo en el mes actual</div>
+      <div class="chart-wrap"><canvas id="chart-cuad"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">&#128295; Tipos de trabajo mas frecuentes</div>
+      <div class="chart-sub">Distribucion por tipo de tarea (total historico)</div>
+      <div class="chart-wrap"><canvas id="chart-tipo"></canvas></div>
+    </div>
+    <div class="chart-card full">
+      <div class="chart-title">&#128200; Tendencia de trabajos por mes</div>
+      <div class="chart-sub">Evolucion mensual de trabajos registrados</div>
+      <div class="chart-wrap tall"><canvas id="chart-mes"></canvas></div>
+    </div>
+  </div>
+  <div class="tables-grid">
+    <div class="table-card">
+      <div class="table-title">&#9888;&#65039; Trabajos pendientes</div>
+      <div class="table-sub">Registros con estado diferente a REALIZADO</div>
+      <div id="tabla-pendientes"></div>
+    </div>
+    <div class="table-card">
+      <div class="table-title">&#128956; Top nodos activos</div>
+      <div class="table-sub">Sectores de red con mas trabajos en el mes</div>
+      <div id="tabla-nodos"></div>
+    </div>
+  </div>
+</div>
+
+<button class="chat-fab" id="chat-fab" onclick="toggleChat()" title="Asistente IA">
+  <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+
+<div class="chat-window" id="chat-window">
+  <div class="chat-win-hdr">
+    <div class="chat-win-brand">
+      <div class="chat-win-av">IA</div>
+      <div>
+        <div class="chat-win-name">Asistente IA Operaciones</div>
+        <div class="chat-win-status"><div class="chat-win-sdot"></div>En linea &middot; Telconet ADC</div>
+      </div>
+    </div>
+    <button class="chat-win-close" onclick="toggleChat()">&#x2715;</button>
+  </div>
+  <div class="quick-suggs">
+    <button class="qs-btn" onclick="qs('Resumen ejecutivo del mes')">&#128202; Resumen mes</button>
+    <button class="qs-btn" onclick="qs('Ranking de cuadrillas')">&#127942; Cuadrillas</button>
+    <button class="qs-btn" onclick="qs('Trabajos pendientes detalle')">&#9888; Pendientes</button>
+    <button class="qs-btn" onclick="qs('Informe completo para la jefatura')">&#128203; Informe</button>
+  </div>
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="chat-inp-area">
+    <div class="chat-inp-box">
+      <textarea id="chat-inp" rows="1" placeholder="Escribe tu consulta..." onkeydown="onKey(event)" oninput="rsz(this)" disabled></textarea>
+      <button class="btn-send" id="btn-send" onclick="send()" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="chat-hint">Enter para enviar &middot; Shift+Enter nueva linea</div>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxDpwdyi0G9JlBmlOlzYda9YthTkCA754e5IVi5KYfpRIy7BqmduawwngYk2qakmckV8g/exec'
+};
+const LS_KEY = 'telconet_adc_url_v2';
+let rows=[], headers=[], conv=[], chatOpen=false;
+
+window.addEventListener('load', ()=>{ initCanvas(); connect(CONFIG.SCRIPT_URL); });
+
+async function connect(url){
+  setSS('spin','Conectando...');
+  try {
+    const data = await fetchJSONP(url);
+    if(data&&data.ok){ onLoaded(data); return; }
+    throw new Error(data.error||'Error desconocido');
+  } catch(e1) {
+    try {
+      const r=await fetch(url,{redirect:'follow'});
+      const data=JSON.parse(await r.text());
+      if(data.ok){ onLoaded(data); return; }
+      throw new Error(data.error||'Error');
+    } catch(e2) {
+      setSS('err','Error de conexion');
+      document.getElementById('load-sub').textContent = 'Error: ' + e2.message;
+    }
+  }
+}
+
+function fetchJSONP(url){
+  return new Promise((res,rej)=>{
+    const cb='cb_'+Date.now();
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{cleanup();rej(new Error('Timeout'));},20000);
+    window[cb]=d=>{cleanup();res(d);};
+    s.onerror=()=>{cleanup();rej(new Error('Error cargando script'));};
+    s.src=url.split('?')[0]+'?callback='+cb;
+    document.head.appendChild(s);
+    function cleanup(){clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
+  });
+}
+
+async function refresh(){
+  document.getElementById('btn-ref').classList.add('spinning');
+  setSS('spin','Actualizando...');
+  await connect(CONFIG.SCRIPT_URL);
+  document.getElementById('btn-ref').classList.remove('spinning');
+}
+
+function onLoaded(json){
+  headers=json.headers; rows=json.rows;
+  const mes=mesActual();
+  const rMes=rows.filter(r=>(r['MES']||''). toUpperCase()===mes.toUpperCase());
+  const realiz=rows.filter(r=>(r['ESTADO']||''). toUpperCase()==='REALIZADO').length;
+  const realizMes=rMes.filter(r=>(r['ESTADO']||''). toUpperCase()==='REALIZADO').length;
+  const pend=rows.filter(r=>(r['ESTADO']||''). toUpperCase()!=='REALIZADO').length;
+  const sinCuad=rows.filter(r=>!r['CUADRILLA']||r['CUADRILLA'].trim()==='').length;
+  const pct=Math.round(realiz/rows.length*100);
+  const pctMes=rMes.length>0?Math.round(realizMes/rMes.length*100):0;
+
+  setSS('ok',rows.length.toLocaleString()+' trabajos · '+tnow());
+  document.getElementById('btn-ref').style.display='flex';
+  document.getElementById('dash-title').textContent='Dashboard Operaciones ADC · '+cap(mes);
+  document.getElementById('dash-sub').textContent=rows.length.toLocaleString()+' registros totales · '+rMes.length.toLocaleString()+' en el mes actual';
+  document.getElementById('dash-sync').textContent='Ultima actualizacion: '+tnow()+(json.updatedAt?' · Hoja: '+json.updatedAt:'');
+
+  document.getElementById('kpi-row').innerHTML=`
+    <div class="kpi-card accent"><span class="kpi-icon">&#128203;</span><div class="kpi-val">${rMes.length.toLocaleString()}</div><div class="kpi-label">Trabajos este mes</div><div class="kpi-sub">${rows.length.toLocaleString()} total historico</div></div>
+    <div class="kpi-card green"><span class="kpi-icon">&#9989;</span><div class="kpi-val">${realizMes.toLocaleString()}</div><div class="kpi-label">Realizados este mes</div><div class="kpi-sub">${pctMes}% de cumplimiento</div></div>
+    <div class="kpi-card amber"><span class="kpi-icon">&#9203;</span><div class="kpi-val">${pend.toLocaleString()}</div><div class="kpi-label">Pendientes total</div><div class="kpi-sub">${Math.round(pend/rows.length*100)}% del total</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#128101;</span><div class="kpi-val">${new Set(rMes.map(r=>r['CUADRILLA']).filter(Boolean)).size}</div><div class="kpi-label">Cuadrillas activas</div><div class="kpi-sub">en el mes actual</div></div>
+    <div class="kpi-card ${sinCuad>0?'red':'green'}"><span class="kpi-icon">${sinCuad>0?'&#9888;&#65039;':'&#127919;'}</span><div class="kpi-val">${sinCuad}</div><div class="kpi-label">Sin cuadrilla</div><div class="kpi-sub">${sinCuad>0?'requieren atencion':'todo asignado'}</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#128956;</span><div class="kpi-val">${new Set(rMes.map(r=>r['NODO']).filter(Boolean)).size}</div><div class="kpi-label">Nodos activos</div><div class="kpi-sub">en el mes actual</div></div>`;
+
+  renderChartCuad(rMes);
+  renderChartTipo(rows);
+  renderChartMes(rows);
+  renderPendientes();
+  renderNodos(rMes);
+
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  document.getElementById('chat-inp').disabled=false;
+  document.getElementById('btn-send').disabled=false;
+  addCM('assistant','Hola, soy el <strong>Asistente IA de Telconet</strong>. El dashboard muestra los datos de <strong>'+cap(mes)+'</strong>.<br><br>Puedo responder consultas adicionales sobre los datos. Dime tu consulta.');
+}
+
+function agrupar(arr,campo,n){
+  const m={};arr.forEach(r=>{const k=r[campo]||'Sin dato';m[k]=(m[k]||0)+1;});
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n||10);
+}
+
+function renderChartCuad(rMes){
+  const d=agrupar(rMes.filter(r=>(r['ESTADO']||''). toUpperCase()==='REALIZADO'),'CUADRILLA',8);
+  new Chart(document.getElementById('chart-cuad'),{type:'bar',data:{labels:d.map(([k])=>k.length>22?k.slice(0,20)+'\u2026':k),datasets:[{data:d.map(([,v])=>v),backgroundColor:'rgba(0,48,135,0.75)',borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:9},maxRotation:35}}}}});
+}
+
+function renderChartTipo(rows){
+  const d=agrupar(rows,'TIPO TAREA',6);
+  const colors=['rgba(0,48,135,0.8)','rgba(0,71,190,0.8)','rgba(0,180,216,0.8)','rgba(26,92,212,0.75)','rgba(10,124,82,0.75)','rgba(138,88,0,0.75)'];
+  new Chart(document.getElementById('chart-tipo'),{type:'doughnut',data:{labels:d.map(([k])=>k.length>24?k.slice(0,22)+'\u2026':k),datasets:[{data:d.map(([,v])=>v),backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12,padding:8}}}}});
+}
+
+function renderChartMes(rows){
+  const orden=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const d=agrupar(rows,'MES',12).sort((a,b)=>{const ia=orden.indexOf(a[0].toUpperCase()),ib=orden.indexOf(b[0].toUpperCase());return(ia===-1?99:ia)-(ib===-1?99:ib);});
+  new Chart(document.getElementById('chart-mes'),{type:'line',data:{labels:d.map(([k])=>cap(k)),datasets:[{label:'Trabajos',data:d.map(([,v])=>v),borderColor:'rgba(0,48,135,1)',backgroundColor:'rgba(0,48,135,0.08)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'rgba(0,48,135,1)',fill:true,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{color:'rgba(0,0,0,0.03)'},ticks:{font:{size:10}}}}}});
+}
+
+function renderPendientes(){
+  const p=rows.filter(r=>(r['ESTADO']||''). toUpperCase()!=='REALIZADO').slice(0,8);
+  if(!p.length){document.getElementById('tabla-pendientes').innerHTML='<p style="font-size:12px;color:var(--green);padding:10px 0">&#9989; No hay trabajos pendientes</p>';return;}
+  document.getElementById('tabla-pendientes').innerHTML='<table class="dash-table"><tr><th>Tarea</th><th>Nodo</th><th>Estado</th></tr>'+p.map(r=>`<tr><td style="font-size:10px;font-family:monospace">${r['TAREA']||'&#8212;'}</td><td style="font-size:11px">${(r['NODO']||'&#8212;').slice(0,18)}</td><td><span class="tag a">${r['ESTADO']||'SIN ESTADO'}</span></td></tr>`).join('')+'</table>';
+}
+
+function renderNodos(rMes){
+  const d=agrupar(rMes,'NODO',8);
+  const max=d[0]?.[1]||1;
+  document.getElementById('tabla-nodos').innerHTML='<table class="dash-table"><tr><th>Nodo</th><th>Trabajos</th><th>Proporcion</th></tr>'+d.map(([k,v])=>`<tr><td style="font-size:11px">${k.slice(0,22)}</td><td style="font-weight:600;color:var(--tnblue)">${v}</td><td><div class="progress-bar"><div class="progress-fill" style="width:${Math.round(v/max*100)}%"></div></div></td></tr>`).join('')+'</table>';
+}
+
+function toggleChat(){
+  chatOpen=!chatOpen;
+  document.getElementById('chat-window').classList.toggle('open',chatOpen);
+  document.getElementById('chat-fab').innerHTML=chatOpen
+    ?'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+    :'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  if(chatOpen) document.getElementById('chat-inp').focus();
+}
+
+function qs(t){document.getElementById('chat-inp').value=t;if(!chatOpen)toggleChat();send();}
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function rsz(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,80)+'px';}
+
+async function send(){
+  const inp=document.getElementById('chat-inp');
+  const txt=inp.value.trim();
+  if(!txt||!rows.length)return;
+  inp.value='';inp.style.height='auto';
+  if(!chatOpen)toggleChat();
+  document.getElementById('btn-send').disabled=true;
+  addCM('user',txt);
+  const tid=addTyping();
+  try{
+    const reply=await askIA(txt);
+    removeTyping(tid);addCM('assistant',reply);
+  }catch(e){removeTyping(tid);addCM('assistant','&#9888;&#65039; '+e.message);}
+  document.getElementById('btn-send').disabled=false;
+  inp.focus();
+}
+
+async function askIA(q){
+  const url=CONFIG.SCRIPT_URL.split('?')[0];
+  const hist=conv.slice(-8);
+  return new Promise((resolve,reject)=>{
+    const cb='chat_'+Date.now();
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{cleanup();reject(new Error('La IA tardo demasiado.'));},60000);
+    window[cb]=(data)=>{cleanup();if(!data.ok){reject(new Error(data.error||'Error'));return;}conv.push({role:'user',content:q});conv.push({role:'assistant',content:data.reply});resolve(data.reply);};
+    s.onerror=()=>{cleanup();reject(new Error('Error contactando el script.'));};
+    s.src=url+'?action=chat&q='+encodeURIComponent(q)+'&history='+encodeURIComponent(JSON.stringify(hist))+'&callback='+cb;
+    document.head.appendChild(s);
+    function cleanup(){clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
+  });
+}
+
+function addCM(role,html){
+  const w=document.getElementById('chat-msgs');
+  const d=document.createElement('div');d.className='chat-msg '+role;
+  d.innerHTML='<div class="chat-av">'+( role==='assistant'?'IA':'Tu')+'</div><div class="chat-bub">'+fmt(html)+'</div>';
+  w.appendChild(d);w.scrollTop=w.scrollHeight;
+}
+function fmt(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n\n/g,'</p><p style="margin-top:6px">').replace(/\n/g,'<br>');}
+function addTyping(){
+  const w=document.getElementById('chat-msgs');const id='tp'+Date.now();
+  const d=document.createElement('div');d.className='chat-msg assistant';d.id=id;
+  d.innerHTML='<div class="chat-av">IA</div><div class="chat-bub"><div class="dots"><span></span><span></span><span></span></div></div>';
+  w.appendChild(d);w.scrollTop=w.scrollHeight;return id;
+}
+function removeTyping(id){const el=document.getElementById(id);if(el)el.remove();}
+function setSS(s,l){document.getElementById('sdot').className='sdot '+(s==='ok'?'ok':s==='spin'?'spin':'err');document.getElementById('slabel').textContent=l;}
+function tnow(){return new Date().toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'});}
+function mesActual(){return ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][new Date().getMonth()];}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():s;}
+
+function initCanvas(){
+  const canvas=document.getElementById('ai-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  let W,H,nodes,t=0;
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight-56;init();}
+  function init(){nodes=Array.from({length:35},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,r:1.8+Math.random()*2,phase:Math.random()*Math.PI*2,pulse:.6+Math.random()*2,c:Math.random()<.35?'rgba(0,180,216,':'rgba(0,48,135,'}));}
+  function draw(){
+    ctx.clearRect(0,0,W,H);t+=.008;
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<155){ctx.beginPath();ctx.moveTo(nodes[i].x,nodes[i].y);ctx.lineTo(nodes[j].x,nodes[j].y);ctx.strokeStyle=nodes[i].c+((1-d/155)*.08)+')';ctx.lineWidth=.5;ctx.stroke();}}
+    nodes.forEach(n=>{const g=Math.sin(t*n.pulse+n.phase),a=.12+g*.06,r=n.r+g*.4;const gr=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,r*5);gr.addColorStop(0,n.c+(a*.8)+')');gr.addColorStop(1,n.c+'0)');ctx.beginPath();ctx.arc(n.x,n.y,r*5,0,Math.PI*2);ctx.fillStyle=gr;ctx.fill();ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.fillStyle=n.c+(a+.1)+')';ctx.fill();n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>W)n.vx*=-1;if(n.y<0||n.y>H)n.vy*=-1;});
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',resize);resize();draw();
+}
+</script>
+</body>
+</html>
