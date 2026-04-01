@@ -418,11 +418,20 @@ async function refresh(){
 }
 
 function getAnioCol(){
-  return headers.find(h=>/^a.?[nñ]o$/i.test(h.trim()))||headers.find(h=>h.toUpperCase().includes('Ñ')||h.toUpperCase().includes('ANO'))||'AÑO';
+  // Busca la columna de año por nombre exacto o aproximado
+  if(headers.includes('AÑO')) return 'AÑO';
+  if(headers.includes('ANO')) return 'ANO';
+  if(headers.includes('año')) return 'año';
+  const found = headers.find(h=>h.replace(/[^a-zA-Z]/g,'').toUpperCase()==='ANO'||h.replace(/[^a-zA-Z]/g,'').toUpperCase()==='AO');
+  return found || headers[1] || 'AÑO';
 }
 
 function onLoaded(json){
   headers=json.headers; rows=json.rows;
+  console.log('Headers recibidos:', headers);
+  console.log('Total filas:', rows.length);
+  console.log('Columna año detectada:', getAnioCol());
+  if(rows.length>0) console.log('Primera fila:', JSON.stringify(rows[0]));
   // Detectar año actual en datos
   const anioCol=getAnioCol();
   const anios=[...new Set(rows.map(r=>String(r[anioCol]||'').trim()).filter(Boolean))].sort().reverse();
