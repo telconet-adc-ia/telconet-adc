@@ -238,8 +238,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="chart-wrap"><canvas id="ch-cuad"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-title">&#128295; Tipos de trabajo frecuentes</div>
-      <div class="chart-sub">Indice Optico, Migraciones y otros &mdash; total historico</div>
+      <div class="chart-title">&#128295; Tipos de trabajo por procedencia</div>
+      <div class="chart-sub">Distribucion por procedencia &mdash; total historico</div>
       <div class="chart-wrap"><canvas id="ch-tipo"></canvas></div>
     </div>
     <div class="chart-card full">
@@ -256,8 +256,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div id="tb-pend"></div>
     </div>
     <div class="table-card">
-      <div class="table-title">&#128956; Top nodos activos</div>
-      <div class="table-sub">Sectores con mas trabajos en el mes actual</div>
+      <div class="table-title">&#128956; Top nodos con trabajos ADC</div>
+      <div class="table-sub">Sectores de red con trabajos ADC en el mes actual</div>
       <div id="tb-nodos"></div>
     </div>
   </div>
@@ -302,7 +302,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 /* ====================================================
    CONFIGURACION — pega aqui la URL de tu Apps Script
    ==================================================== */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTAlCPjFOTQqp7oarBu9aGTiSYjyS4FJWOzIUe-O6jgs0vkx9hXk6aPKAGle16_nTMdA/exec';  // <- reemplaza esto
+const SCRIPT_URL = 'TU_URL_APPS_SCRIPT_AQUI';  // <- reemplaza esto
 /* ==================================================== */
 
 let rows=[], headers=[], conv=[], chatOpen=false;
@@ -352,7 +352,7 @@ async function refresh(){
 function onLoaded(json){
   headers=json.headers; rows=json.rows;
   const mes=mesActual();
-  const rMes=rows.filter(r=>(r['MES']||'').toUpperCase()===mes.toUpperCase());
+  const rMes=rows.filter(r=>(r['MES']||'').toUpperCase()===mes.toUpperCase()&&String(r['AÑO']||r['ANO']||r['AÑO']||'').trim()==='2026');
   const real=rows.filter(r=>(r['ESTADO']||'').toUpperCase()==='REALIZADO').length;
   const realMes=rMes.filter(r=>(r['ESTADO']||'').toUpperCase()==='REALIZADO').length;
   const pend=rows.filter(r=>(r['ESTADO']||'').toUpperCase()!=='REALIZADO').length;
@@ -399,15 +399,33 @@ function buildChartCuad(rMes){
 }
 
 function buildChartTipo(rows){
-  const d=grp(rows,'TIPO TAREA',6);
-  const colors=['rgba(0,48,135,.85)','rgba(0,71,190,.8)','rgba(0,180,216,.8)','rgba(26,92,212,.75)','rgba(10,124,82,.75)','rgba(138,88,0,.75)'];
-  new Chart(document.getElementById('ch-tipo'),{type:'doughnut',data:{labels:d.map(([k])=>k.length>22?k.slice(0,20)+'\u2026':k),datasets:[{data:d.map(([,v])=>v),backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12,padding:8}}}}});
+  const d=grp(rows,'PROCEDENCIA',8);
+  const total=d.reduce((s,[,v])=>s+v,0);
+  const colors=['rgba(0,48,135,.85)','rgba(0,71,190,.8)','rgba(0,180,216,.8)','rgba(26,92,212,.75)','rgba(10,124,82,.75)','rgba(138,88,0,.75)','rgba(160,30,30,.75)','rgba(60,60,80,.7)'];
+  new Chart(document.getElementById('ch-tipo'),{type:'doughnut',data:{
+    labels:d.map(([k,v])=>{const pct=Math.round(v/total*100);return(k.length>18?k.slice(0,16)+'\u2026':k)+' ('+pct+'%)';}),
+    datasets:[{data:d.map(([,v])=>v),backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{
+    legend:{position:'right',labels:{font:{size:10},boxWidth:12,padding:8}},
+    tooltip:{callbacks:{label:function(ctx){const pct=Math.round(ctx.parsed/total*100);return ' '+ctx.parsed.toLocaleString()+' trabajos ('+pct+'%)';}}}
+  }}});
 }
 
 function buildChartMes(rows){
   const orden=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
-  const d=grp(rows,'MES',12).sort((a,b)=>{const ia=orden.indexOf(a[0].toUpperCase()),ib=orden.indexOf(b[0].toUpperCase());return(ia<0?99:ia)-(ib<0?99:ib);});
-  new Chart(document.getElementById('ch-mes'),{type:'line',data:{labels:d.map(([k])=>cap(k)),datasets:[{label:'Trabajos',data:d.map(([,v])=>v),borderColor:'rgba(0,48,135,1)',backgroundColor:'rgba(0,48,135,0.08)',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'rgba(0,48,135,1)',fill:true,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{color:'rgba(0,0,0,0.03)'},ticks:{font:{size:10}}}}}});
+  // Solo registros de 2026
+  const rows2026=rows.filter(r=>String(r['AÑO']||r['ANO']||r['AÑO']||'').trim()==='2026');
+  // Agrupar por mes
+  const mmap={};
+  rows2026.forEach(r=>{const k=(r['MES']||'').toUpperCase();if(k)mmap[k]=(mmap[k]||0)+1;});
+  // Ordenar y tomar últimos 3 meses con datos
+  const sorted=Object.entries(mmap).sort((a,b)=>{const ia=orden.indexOf(a[0]),ib=orden.indexOf(b[0]);return(ia<0?99:ia)-(ib<0?99:ib);});
+  const d=sorted.slice(-3);
+  new Chart(document.getElementById('ch-mes'),{type:'line',data:{
+    labels:d.map(([k])=>cap(k)+' 2026'),
+    datasets:[{label:'Trabajos 2026',data:d.map(([,v])=>v),borderColor:'rgba(0,48,135,1)',backgroundColor:'rgba(0,48,135,0.08)',borderWidth:2.5,pointRadius:6,pointBackgroundColor:'rgba(0,48,135,1)',fill:true,tension:.35,
+      datalabels:{display:false}}]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString()+' trabajos'}}},scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{color:'rgba(0,0,0,0.03)'},ticks:{font:{size:11},padding:6}}}}});
 }
 
 function buildTbPend(){
