@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Telconet · Dashboard Operaciones ADC</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -279,6 +281,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div id="tb-nodos"></div>
     </div>
   </div>
+
+  <!-- MAPA DE TRABAJOS -->
+  <div class="chart-card full" style="margin-top:16px;margin-bottom:24px">
+    <div class="chart-title">&#127758; Mapa de trabajos ejecutados</div>
+    <div class="chart-sub" id="sub-mapa">Ubicacion geografica de los trabajos del periodo</div>
+    <div id="mapa-wrap" style="height:420px;border-radius:8px;overflow:hidden;background:#e8eef8"></div>
+    <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:12px;height:12px;border-radius:50%;background:#1a73e8"></div>REALIZADO</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:12px;height:12px;border-radius:50%;background:#f59e0b"></div>PENDIENTE</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:12px;height:12px;border-radius:50%;background:#e63946"></div>OTROS</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- FAB -->
@@ -762,6 +777,68 @@ function initMap(puntos, container){
     puntos.forEach(p=>bounds.extend({lat:p.lat,lng:p.lng}));
     map.fitBounds(bounds);
   }
+}
+/* ── MAPA LEAFLET ── */
+let mapaLeaflet=null;
+function buildMapa(rFilt){
+  const wrap=document.getElementById('mapa-wrap');
+  if(!wrap) return;
+
+  // Parsear coordenadas columna UBICACION: "-2.905194,-79.009583"
+  const puntos=[];
+  rFilt.forEach(r=>{
+    const ub=(r['UBICACION']||'').trim();
+    if(!ub) return;
+    // Buscar dos números decimales separados por coma
+    const m=ub.match(/([-]?\d+\.\d+)[,\s]+([-]?\d+\.\d+)/);
+    if(!m) return;
+    const lat=parseFloat(m[1]), lng=parseFloat(m[2]);
+    if(isNaN(lat)||isNaN(lng)||lat<-90||lat>90) return;
+    puntos.push({lat,lng,nodo:r['NODO']||'',tipo:(r['TIPO TAREA']||''),estado:(r['ESTADO']||'').trim().toUpperCase(),cuad:r['CUADRILLA']||''});
+  });
+
+  if(!puntos.length){
+    wrap.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:12px;color:var(--text3)">Sin coordenadas disponibles para el periodo</div>';
+    return;
+  }
+
+  // Destruir mapa anterior si existe
+  if(mapaLeaflet){mapaLeaflet.remove();mapaLeaflet=null;}
+  wrap.innerHTML='';
+
+  // Crear mapa Leaflet
+  const map=L.map(wrap,{zoomControl:true,attributionControl:false});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+  mapaLeaflet=map;
+
+  const colorPunto=e=>{
+    if(e==='REALIZADO') return '#1a73e8';
+    if(e.includes('PENDIENTE')) return '#f59e0b';
+    return '#e63946';
+  };
+
+  const marcadores=[];
+  puntos.forEach(p=>{
+    const color=colorPunto(p.estado);
+    const marker=L.circleMarker([p.lat,p.lng],{
+      radius:7, fillColor:color, color:'#fff',
+      weight:1.5, opacity:1, fillOpacity:0.85
+    }).addTo(map);
+    marker.bindPopup(`<div style="font-size:12px;line-height:1.7;min-width:180px">
+      <strong style="color:#003087">${p.nodo||'Sin nodo'}</strong><br>
+      <span style="color:#666">${p.tipo}</span><br>
+      <span style="background:${color};color:white;padding:1px 7px;border-radius:3px;font-size:11px">${p.estado}</span>
+      ${p.cuad?'<br><span style="font-size:10px;color:#888">'+p.cuad+'</span>':''}
+    </div>`);
+    marcadores.push(marker);
+  });
+
+  // Ajustar vista a todos los puntos
+  const group=L.featureGroup(marcadores);
+  map.fitBounds(group.getBounds().pad(0.1));
+
+  // Forzar redibujado
+  setTimeout(()=>map.invalidateSize(),100);
 }
 </script>
 </body>
