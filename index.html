@@ -416,7 +416,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 /* ====================================================
    CONFIGURACION — pega aqui la URL de tu Apps Script
    ==================================================== */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfUWHbbUp1dVot98BthwKf3qBX9W-Hc1DTUznVBeQTOw4-TU0njIXDyUl4LizncIE29A/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz67t417K8sVPM58xikiGylphRXYqtM_YkkoQIgL5yse1ME-s0gP7NI4Gzht6QJtSeLdw/exec';
 /* ==================================================== */
 
 let rows=[], headers=[], conv=[], chatOpen=false;
@@ -447,7 +447,21 @@ function buildDropdowns(){
   ddA.innerHTML=anios.map(a=>`<div class="dd-item${a===selAnio?' active':''}" onclick="setAnio('${a}')">${a}</div>`).join('');
 
   // meses disponibles en el año seleccionado
-  const rowsAnio=rows.filter(r=>String(r[anioCol]||'').trim()===selAnio);
+  // Filtrar por año — intentar varias formas de comparación
+  let rowsAnio=rows.filter(r=>String(r[anioCol]||'').trim()===selAnio);
+  // Si no hay datos con el año exacto, intentar número
+  if(rowsAnio.length===0){
+    rowsAnio=rows.filter(r=>parseInt(r[anioCol]||0)===parseInt(selAnio));
+    console.warn('[Año] filtro exacto vacío, intento numérico:', rowsAnio.length);
+  }
+  // Si sigue vacío, usar todos los rows y loguear
+  if(rowsAnio.length===0){
+    console.warn('[Año] sin datos para año', selAnio, '— mostrando todos');
+    // Mostrar valores únicos de año para diagnóstico
+    const aniosUnicos=[...new Set(rows.map(r=>String(r[anioCol]||'').trim()))].filter(Boolean);
+    console.log('[Año] Años disponibles:', aniosUnicos);
+    rowsAnio=rows;
+  }
   const mesesDisp=['TODOS',...new Set(rowsAnio.map(r=>(r['MES']||'').toUpperCase()).filter(Boolean))].sort((a,b)=>{
     if(a==='TODOS') return -1; if(b==='TODOS') return 1;
     return MESES.indexOf(a)-MESES.indexOf(b);
@@ -586,6 +600,7 @@ function onLoaded(json){
   console.log('Total filas:', rows.length);
   console.log('Columna año detectada:', getAnioCol());
   if(rows.length>0) console.log('Primera fila:', JSON.stringify(rows[0]));
+  console.log('selAnio:', selAnio, '| selMes:', selMes);
   // Detectar año actual en datos
   const anioCol=getAnioCol();
   const anios=[...new Set(rows.map(r=>String(r[anioCol]||'').trim()).filter(Boolean))].sort().reverse();
@@ -612,7 +627,21 @@ function onLoaded(json){
 /* ── RENDER PRINCIPAL ── */
 function renderDashboard(){
   const anioCol=getAnioCol();
-  const rowsAnio=rows.filter(r=>String(r[anioCol]||'').trim()===selAnio);
+  // Filtrar por año — intentar varias formas de comparación
+  let rowsAnio=rows.filter(r=>String(r[anioCol]||'').trim()===selAnio);
+  // Si no hay datos con el año exacto, intentar número
+  if(rowsAnio.length===0){
+    rowsAnio=rows.filter(r=>parseInt(r[anioCol]||0)===parseInt(selAnio));
+    console.warn('[Año] filtro exacto vacío, intento numérico:', rowsAnio.length);
+  }
+  // Si sigue vacío, usar todos los rows y loguear
+  if(rowsAnio.length===0){
+    console.warn('[Año] sin datos para año', selAnio, '— mostrando todos');
+    // Mostrar valores únicos de año para diagnóstico
+    const aniosUnicos=[...new Set(rows.map(r=>String(r[anioCol]||'').trim()))].filter(Boolean);
+    console.log('[Año] Años disponibles:', aniosUnicos);
+    rowsAnio=rows;
+  }
   const rFilt=selMes==='TODOS'?rowsAnio:rowsAnio.filter(r=>(r['MES']||'').toUpperCase()===selMes);
 
   const total=rFilt.length;
@@ -908,534 +937,6 @@ function initCanvas(){
 
 /* ── MAPA ── */
 let mapaInstance=null;
-function buildMapa(rFilt){
-  const wrap=document.getElementById('mapa-wrap');
-  document.getElementById('sub-mapa').textContent='Ubicacion geografica de trabajos — '+(selMes==='TODOS'?selAnio:cap(selMes)+' '+selAnio);
-
-  // Parsear coordenadas de la columna UBICACION formato "-2.905194,-79.009583"
-  const puntos=[];
-  rFilt.forEach(r=>{
-    const ub=(r['UBICACION']||'').trim();
-    if(!ub) return;
-    const parts=ub.split(',');
-    if(parts.length>=2){
-      const lat=parseFloat(parts[0]); const lng=parseFloat(parts[1]);
-      if(!isNaN(lat)&&!isNaN(lng)&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180){
-        puntos.push({lat,lng,nodo:r['NODO']||'',tipo:r['TIPO TAREA']||'',estado:r['ESTADO']||''});
-      }
-    }
-  });
-
-  if(!puntos.length){
-    wrap.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:40px">Sin coordenadas para el periodo seleccionado</div>';
-    return;
-  }
-
-  // Si Google Maps ya está cargado, inicializar directamente
-  if(window.google&&window.google.maps){
-    initMap(puntos, wrap);
-  } else {
-    // Cargar Google Maps dinámicamente
-    wrap.innerHTML='<div id="gmap" style="width:100%;height:100%"></div>';
-    window._mapPuntos=puntos;
-    window._mapWrap=wrap;
-    window.initGoogleMap=function(){ initMap(window._mapPuntos, document.getElementById('gmap')); };
-    const s=document.createElement('script');
-    s.src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBPvkTQB5lwLF00UBAom7luprIV3glmPec&callback=initGoogleMap';
-    s.async=true; s.defer=true;
-    document.head.appendChild(s);
-  }
-}
-
-function initMap(puntos, container){
-  if(typeof container==='string') container=document.getElementById(container);
-  if(!container) return;
-  container.innerHTML='<div id="gmap" style="width:100%;height:100%"></div>';
-  const centro={lat:puntos[0].lat, lng:puntos[0].lng};
-  const map=new google.maps.Map(document.getElementById('gmap'),{
-    center:centro, zoom:12,
-    styles:[{featureType:'poi',stylers:[{visibility:'off'}]},
-            {featureType:'transit',stylers:[{visibility:'off'}]}],
-    mapTypeControl:false, streetViewControl:false
-  });
-  mapaInstance=map;
-
-  // Colores por estado
-  const colorMap={'REALIZADO':'#1a73e8','PENDIENTE ASIGNAR':'#f59e0b','PENDIENTE':'#f59e0b'};
-
-  puntos.forEach(p=>{
-    const color=colorMap[(p.estado||'').trim().toUpperCase()]||'#e63946';
-    const marker=new google.maps.Marker({
-      position:{lat:p.lat,lng:p.lng}, map,
-      icon:{path:google.maps.SymbolPath.CIRCLE,fillColor:color,fillOpacity:.85,strokeColor:'#fff',strokeWeight:1.5,scale:7},
-      title:p.nodo
-    });
-    const info=new google.maps.InfoWindow({content:`<div style="font-size:12px;line-height:1.6"><strong>${p.nodo}</strong><br>${p.tipo}<br><span style="color:${color}">${p.estado}</span></div>`});
-    marker.addListener('click',()=>info.open(map,marker));
-  });
-
-  // Ajustar bounds
-  if(puntos.length>1){
-    const bounds=new google.maps.LatLngBounds();
-    puntos.forEach(p=>bounds.extend({lat:p.lat,lng:p.lng}));
-    map.fitBounds(bounds);
-  }
-}
-/* ── MIGRACIONES ── */
-let chartMigEstado=null, chartMigCanton=null;
-let estadoDataGlobal=[], cantonDataGlobal=[], coloresEstadoGlobal=[], coloresCantonGlobal=[];
-
-function renderMigraciones(){
-  if(!rowsMig.length){
-    document.getElementById('mig-kpis').innerHTML='<p style="font-size:12px;color:var(--text3);padding:10px 0">Datos de migraciones no disponibles</p>';
-    return;
-  }
-
-  const total      = rowsMig.length;
-  const migradas   = rowsMig.filter(r=>(r['ESTADO']||'').toUpperCase().includes('MIGRADA')&&!(r['ESTADO']||'').toUpperCase().includes('PENDIENTE')).length;
-  const pendMig    = rowsMig.filter(r=>(r['ESTADO']||'').toUpperCase().includes('PENDIENTE')).length;
-  const totalCajas = rowsMig.reduce((s,r)=>s+parseInt(r['# CAJAS']||r['#CAJAS']||0),0);
-  const cajasPend  = rowsMig.reduce((s,r)=>s+parseInt(r['CAJAS PENDIENTES DE MIGRAR']||0),0);
-  const pct = total>0?Math.round(migradas/total*100):0;
-
-  // ── KPIs — cajas pendientes destacadas ──
-  document.getElementById('mig-kpis').innerHTML=`
-    <div class="kpi-card blue"><span class="kpi-icon">&#128257;</span><div class="kpi-val">${total}</div><div class="kpi-lbl">Total rutas</div><div class="kpi-sub">MPLS a preconect.</div></div>
-    <div class="kpi-card green"><span class="kpi-icon">&#9989;</span><div class="kpi-val">${migradas}</div><div class="kpi-lbl">Rutas migradas</div><div class="kpi-sub">${pct}% completado</div></div>
-    <div class="kpi-card amber"><span class="kpi-icon">&#9203;</span><div class="kpi-val">${pendMig}</div><div class="kpi-lbl">Rutas pendientes</div><div class="kpi-sub">de migrar</div></div>
-    <div class="kpi-card red" style="border:2px solid var(--red);position:relative;overflow:visible">
-      <div style="position:absolute;top:-8px;right:-8px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.5px;text-transform:uppercase">CRITICO</div>
-      <span class="kpi-icon">&#128230;</span>
-      <div class="kpi-val" style="font-size:34px">${cajasPend.toLocaleString()}</div>
-      <div class="kpi-lbl">Cajas pendientes</div>
-      <div class="kpi-sub">de ${totalCajas.toLocaleString()} cajas totales</div>
-    </div>`;
-
-  // ── Dona estado — click filtra tabla ──
-  if(chartMigEstado){chartMigEstado.destroy();chartMigEstado=null;}
-  document.getElementById('wrap-mig-estado').innerHTML='<canvas id="ch-mig-estado"></canvas>';
-  const estadoMap={};
-  rowsMig.forEach(r=>{const e=(r['ESTADO']||'Sin estado').trim();estadoMap[e]=(estadoMap[e]||0)+1;});
-  estadoDataGlobal=Object.entries(estadoMap).sort((a,b)=>b[1]-a[1]);
-  coloresEstadoGlobal=['#4caf50','#f59e0b','#e63946','#1a73e8','#9c27b0','#00bcd4'];
-
-  chartMigEstado=new Chart(document.getElementById('ch-mig-estado'),{
-    type:'doughnut',
-    data:{
-      labels:estadoDataGlobal.map(([k,v])=>{const p=Math.round(v/total*100);return(k.length>20?k.slice(0,18)+'…':k)+' ('+p+'%)';}),
-      datasets:[{data:estadoDataGlobal.map(([,v])=>v),backgroundColor:coloresEstadoGlobal,borderWidth:3,borderColor:'#fff',hoverOffset:8}]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{position:'right',labels:{font:{size:10},boxWidth:12,padding:8}},
-        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.toLocaleString()+' rutas'}}
-      },
-      onClick:(evt,els)=>{
-        if(!els.length) return;
-        const idx=els[0].index;
-        const estadoSel=estadoDataGlobal[idx][0];
-        const color=coloresEstadoGlobal[idx%coloresEstadoGlobal.length];
-        filtrarTablaMig('estado', estadoSel, color);
-      }
-    }
-  });
-
-  // ── Barras canton — click filtra tabla ──
-  if(chartMigCanton){chartMigCanton.destroy();chartMigCanton=null;}
-  document.getElementById('wrap-mig-canton').innerHTML='<canvas id="ch-mig-canton"></canvas>';
-  const cantonMap={};
-  rowsMig.forEach(r=>{const c=(r['CANTON']||'Sin canton').trim();cantonMap[c]=(cantonMap[c]||0)+1;});
-  cantonDataGlobal=Object.entries(cantonMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  coloresCantonGlobal=cantonDataGlobal.map((_,i)=>'hsl('+(200+i*25)+',65%,'+(40+i*3)+'%)');
-
-  chartMigCanton=new Chart(document.getElementById('ch-mig-canton'),{
-    type:'bar',
-    data:{
-      labels:cantonDataGlobal.map(([k])=>k),
-      datasets:[{data:cantonDataGlobal.map(([,v])=>v),backgroundColor:coloresCantonGlobal,borderRadius:5,borderSkipped:false}]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString()+' rutas'}}
-      },
-      scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}},
-      onClick:(evt,els)=>{
-        if(!els.length) return;
-        const idx=els[0].index;
-        const cantonSel=cantonDataGlobal[idx][0];
-        const color=coloresCantonGlobal[idx%coloresCantonGlobal.length];
-        filtrarTablaMig('canton', cantonSel, color);
-      }
-    }
-  });
-
-  // Tabla inicial — todas las rutas pendientes
-  filtrarTablaMig('todos','','' );
-}
-
-// ── Función que filtra la tabla según click en gráfica ──
-function filtrarTablaMig(tipo, valor, color){
-  const titulo=document.querySelector('.table-card .table-title');
-  const subtitulo=document.getElementById('sub-tb-mig');
-
-  let rutas=[];
-  let labelFiltro='';
-
-  if(tipo==='todos'){
-    rutas=rowsMig.filter(r=>(r['ESTADO']||'').toUpperCase().includes('PENDIENTE'));
-    labelFiltro='Mostrando todas las rutas pendientes';
-  } else if(tipo==='estado'){
-    rutas=rowsMig.filter(r=>(r['ESTADO']||'').trim()===valor);
-    labelFiltro='Estado: <strong style="color:'+color+'">'+valor+'</strong> &mdash; '+rutas.length+' rutas';
-  } else if(tipo==='canton'){
-    rutas=rowsMig.filter(r=>(r['CANTON']||'').trim()===valor);
-    labelFiltro='Canton: <strong style="color:'+color+'">'+valor+'</strong> &mdash; '+rutas.length+' rutas';
-  }
-
-  if(subtitulo) subtitulo.innerHTML=labelFiltro+(tipo!=='todos'?' <button id="btn-limpiar-mig" style="margin-left:8px;background:var(--surface3);border:none;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:Inter,sans-serif">&#10005; Limpiar</button>':'');
-  if(tipo!=='todos'){ const bl=document.getElementById('btn-limpiar-mig'); if(bl) bl.onclick=()=>filtrarTablaMig('todos','',''); }
-
-  if(!rutas.length){
-    document.getElementById('tb-mig-pend').innerHTML='<p style="font-size:12px;color:var(--green);padding:10px 0">&#9989; No hay rutas para este filtro</p>';
-    return;
-  }
-
-  const totalCajasFilt=rutas.reduce((s,r)=>s+parseInt(r['CAJAS PENDIENTES DE MIGRAR']||0),0);
-  document.getElementById('tb-mig-pend').innerHTML=
-    '<div style="overflow-x:auto">'+
-    (totalCajasFilt>0?'<div style="background:var(--red-light);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:8px 14px;margin-bottom:10px;font-size:12px;color:var(--red)"><strong>'+totalCajasFilt.toLocaleString()+' cajas pendientes</strong> en las rutas filtradas</div>':'')+
-    '<table class="dtable"><tr><th>Canton</th><th>Ruta</th><th># Cajas</th><th>Estado</th><th style="color:#ffd54f">&#9888; Cajas pendientes</th></tr>'+
-    rutas.map(r=>{
-      const cp=parseInt(r['CAJAS PENDIENTES DE MIGRAR']||0);
-      return `<tr>
-        <td style="font-weight:600;color:var(--tnblue)">${r['CANTON']||'&mdash;'}</td>
-        <td style="font-size:11px">${(r['RUTA']||'&mdash;').slice(0,32)}</td>
-        <td style="text-align:center;font-weight:600">${r['# CAJAS']||r['#CAJAS']||'&mdash;'}</td>
-        <td><span class="tag ${(r['ESTADO']||'').toUpperCase().includes('MIGRADA')&&!(r['ESTADO']||'').toUpperCase().includes('PENDIENTE')?'g':'a'}">${(r['ESTADO']||'').slice(0,28)}</span></td>
-        <td style="text-align:center;font-size:14px;font-weight:700;color:${cp>0?'var(--red)':'var(--green)'}">${cp>0?cp:'&#9989;'}</td>
-      </tr>`;
-    }).join('')+
-    '</table></div>';
-}
-
-/* ── CAJAS REINCIDENTES ── */
-let chartReinc=null;
-function buildReincidencias(rowsAnio){
-  // Obtener los 2 meses más recientes con datos en el año
-  const mesCount={};
-  rowsAnio.forEach(r=>{const m=(r['MES']||'').toUpperCase();if(m)mesCount[m]=(mesCount[m]||0)+1;});
-  const mesesOrdenados=Object.keys(mesCount).sort((a,b)=>{
-    const ia=MESES.indexOf(a),ib=MESES.indexOf(b);return(ia<0?99:ia)-(ib<0?99:ib);
-  });
-  const ultimos2=mesesOrdenados.slice(-2);
-
-  document.getElementById('sub-reinc').textContent=
-    ultimos2.length>=2
-      ? 'Cajas que aparecen en '+cap(ultimos2[0])+' Y '+cap(ultimos2[1])+' — '+selAnio
-      : 'No hay suficientes meses para comparar en '+selAnio;
-
-  if(ultimos2.length<2){
-    document.getElementById('wrap-reinc').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px 0;text-align:center">Se necesitan al menos 2 meses de datos</p>';
-    document.getElementById('tb-reinc').innerHTML='';
-    return;
-  }
-
-  const [mes1,mes2]=ultimos2;
-  const rowsM1=rowsAnio.filter(r=>(r['MES']||'').toUpperCase()===mes1);
-  const rowsM2=rowsAnio.filter(r=>(r['MES']||'').toUpperCase()===mes2);
-
-  // Extraer caja corta (hasta F0X)
-  const extractCaja=r=>{
-    const caja=(r['CAJA']||'').trim();
-    if(!caja) return null;
-    const m=caja.match(/^(CUE-[^-]+-[^-]+-F\d+)/i);
-    if(m) return m[1].replace(/\s*\([A-Z]\)/g,'').trim();
-    return caja.slice(0,45);
-  };
-
-  // Cajas en cada mes
-  const cajasM1={}, cajasM2={};
-  rowsM1.forEach(r=>{const c=extractCaja(r);if(c)cajasM1[c]=(cajasM1[c]||0)+1;});
-  rowsM2.forEach(r=>{const c=extractCaja(r);if(c)cajasM2[c]=(cajasM2[c]||0)+1;});
-
-  // Cajas que aparecen en AMBOS meses
-  const comunes=Object.keys(cajasM1).filter(c=>cajasM2[c]);
-  const reincData=comunes.map(c=>({
-    caja:c,
-    total:(cajasM1[c]||0)+(cajasM2[c]||0),
-    m1:cajasM1[c]||0,
-    m2:cajasM2[c]||0
-  })).sort((a,b)=>b.total-a.total).slice(0,12);
-
-  if(!reincData.length){
-    document.getElementById('wrap-reinc').innerHTML='<p style="font-size:12px;color:var(--green);padding:40px 0;text-align:center">&#9989; No hay cajas reincidentes en los 2 ultimos meses</p>';
-    document.getElementById('tb-reinc').innerHTML='';
-    return;
-  }
-
-  // Chart barras agrupadas
-  if(chartReinc){chartReinc.destroy();chartReinc=null;}
-  document.getElementById('wrap-reinc').innerHTML='<canvas id="ch-reinc"></canvas>';
-  chartReinc=new Chart(document.getElementById('ch-reinc'),{
-    type:'bar',
-    data:{
-      labels:reincData.map(d=>d.caja.length>28?d.caja.slice(0,26)+'\u2026':d.caja),
-      datasets:[
-        {label:cap(mes1),data:reincData.map(d=>d.m1),backgroundColor:'rgba(0,71,190,0.75)',borderRadius:3,borderSkipped:false},
-        {label:cap(mes2),data:reincData.map(d=>d.m2),backgroundColor:'rgba(230,57,70,0.75)',borderRadius:3,borderSkipped:false}
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}},
-        tooltip:{callbacks:{title:ctx=>ctx[0].label,label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' trabajos'}}},
-      scales:{
-        y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}},title:{display:true,text:'Trabajos',font:{size:10}}},
-        x:{grid:{display:false},ticks:{font:{size:8},maxRotation:40}}
-      }
-    }
-  });
-
-  // Tabla detalle
-  document.getElementById('tb-reinc').innerHTML=
-    '<table class="dtable" style="font-size:11px"><tr><th>Caja / Ruta</th><th style="text-align:center">'+cap(mes1)+'</th><th style="text-align:center">'+cap(mes2)+'</th><th style="text-align:center">Total</th></tr>'+
-    reincData.map(d=>`<tr>
-      <td style="font-size:10px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${d.caja}">${d.caja}</td>
-      <td style="text-align:center;color:var(--tnblue);font-weight:600">${d.m1}</td>
-      <td style="text-align:center;color:var(--red);font-weight:600">${d.m2}</td>
-      <td style="text-align:center;font-weight:700;background:var(--amber-light);color:var(--amber)">${d.total}</td>
-    </tr>`).join('')+
-    '</table>';
-}
-
-/* ── OLT 620 ── */
-let chartOltEstado=null, chartOltCanton=null, chartOltNodos=null;
-
-function renderOlt620(){
-  const el=document.getElementById('olt-kpis');
-  if(!rowsOlt.length){
-    if(el) el.innerHTML='<p style="font-size:12px;color:var(--text3);padding:10px 0">Datos OLT 620 no disponibles</p>';
-    return;
-  }
-
-  // Detectar columnas flexiblemente
-  const colEstado  = headersOlt.find(h=>h.toUpperCase().includes('ESTADO'))||'ESTADO';
-  const colCanton  = headersOlt.find(h=>h.toUpperCase().includes('CANTON')||h.toUpperCase().includes('CANTÓN'))||'CANTON';
-  const colNodo    = headersOlt.find(h=>h.toUpperCase().includes('NODO'))||'NODO';
-  const colOlts    = headersOlt.find(h=>h.includes('#OLT')||h.toUpperCase().includes('OLT')&&h.includes('#'))||'#OLTs';
-  const colRacks   = headersOlt.find(h=>h.includes('#RACK')||h.toUpperCase().includes('RACK'))||'#RACKS';
-  const colReflej  = headersOlt.find(h=>h.toUpperCase().includes('REFLEJO')&&h.toUpperCase().includes('48'))||headersOlt.find(h=>h.toUpperCase().includes('REFLEJO')&&h.toUpperCase().includes('REALIZAR'))||'REFLEJO DE 48 A REALIZAR';
-  const colPend    = headersOlt.find(h=>h.toUpperCase().includes('REFLEJOS')&&h.toUpperCase().includes('PENDIENTE'))||'REFLEJOS PENDIENTES';
-
-  const total       = rowsOlt.length;
-  const inventariados = rowsOlt.filter(r=>(r[colEstado]||'').toUpperCase().includes('INVENTARI')).length;
-  const enProceso   = rowsOlt.filter(r=>(r[colEstado]||'').toUpperCase().includes('OCESO')||(r[colEstado]||'').toUpperCase().includes('PROCESO')).length;
-  const pendientes  = rowsOlt.filter(r=>(r[colEstado]||'').toUpperCase().includes('PENDIENTE')).length;
-  const totalOlts   = rowsOlt.reduce((s,r)=>s+parseInt(r[colOlts]||0),0);
-  const totalReflejos = rowsOlt.reduce((s,r)=>s+parseInt(r[colReflej]||0),0);
-  const totalPend   = rowsOlt.reduce((s,r)=>s+parseInt(r[colPend]||0),0);
-  const pctAvance   = totalReflejos>0?Math.round((totalReflejos-totalPend)/totalReflejos*100):0;
-
-  // KPIs
-  el.innerHTML=`
-    <div class="kpi-card blue"><span class="kpi-icon">&#128225;</span><div class="kpi-val">${total}</div><div class="kpi-lbl">Total nodos</div><div class="kpi-sub">OLT 620 a migrar</div></div>
-    <div class="kpi-card green"><span class="kpi-icon">&#9989;</span><div class="kpi-val">${inventariados}</div><div class="kpi-lbl">Inventariados</div><div class="kpi-sub">${Math.round(inventariados/total*100)}% completado</div></div>
-    <div class="kpi-card amber"><span class="kpi-icon">&#9881;</span><div class="kpi-val">${enProceso}</div><div class="kpi-lbl">En proceso</div><div class="kpi-sub">inventario activo</div></div>
-    <div class="kpi-card amber"><span class="kpi-icon">&#9203;</span><div class="kpi-val">${pendientes}</div><div class="kpi-lbl">Pendientes</div><div class="kpi-sub">sin iniciar</div></div>
-    <div class="kpi-card"><span class="kpi-icon">&#128268;</span><div class="kpi-val">${totalOlts}</div><div class="kpi-lbl">Total OLTs</div><div class="kpi-sub">${rowsOlt.reduce((s,r)=>s+parseInt(r[colRacks]||0),0)} racks</div></div>
-    <div class="kpi-card red" style="border:2px solid var(--red);position:relative">
-      <div style="position:absolute;top:-8px;right:-8px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;text-transform:uppercase">PENDIENTE</div>
-      <span class="kpi-icon">&#128204;</span>
-      <div class="kpi-val" style="font-size:30px">${totalPend.toLocaleString()}</div>
-      <div class="kpi-lbl">Reflejos pendientes</div>
-      <div class="kpi-sub">${pctAvance}% migrado de ${totalReflejos.toLocaleString()} total</div>
-    </div>`;
-
-  // ── Dona estado ──
-  if(chartOltEstado){chartOltEstado.destroy();chartOltEstado=null;}
-  document.getElementById('wrap-olt-estado').innerHTML='<canvas id="ch-olt-estado"></canvas>';
-  const estMap={};
-  rowsOlt.forEach(r=>{
-    let e=(r[colEstado]||'Sin estado').trim().toUpperCase();
-    if(e.includes('INVENTARI')&&!e.includes('OCESO')) e='INVENTARIADO';
-    else if(e.includes('OCESO')||e.includes('PROCESO')) e='EN PROCESO';
-    else if(e.includes('PENDIENTE')) e='PENDIENTE';
-    estMap[e]=(estMap[e]||0)+1;
-  });
-  const estData=Object.entries(estMap).sort((a,b)=>b[1]-a[1]);
-  const estColors={'INVENTARIADO':'#4caf50','EN PROCESO':'#ff9800','PENDIENTE':'#e63946','SIN ESTADO':'#90a4ae'};
-  const estColArr=estData.map(([k])=>estColors[k]||'#90a4ae');
-  chartOltEstado=new Chart(document.getElementById('ch-olt-estado'),{
-    type:'doughnut',
-    data:{
-      labels:estData.map(([k,v])=>k+' ('+Math.round(v/total*100)+'%)'),
-      datasets:[{data:estData.map(([,v])=>v),backgroundColor:estColArr,borderWidth:3,borderColor:'#fff',hoverOffset:8}]
-    },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{
-      legend:{position:'right',labels:{font:{size:11},boxWidth:14,padding:10}},
-      tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.toLocaleString()+' nodos'}}
-    }}
-  });
-
-  // ── Barras reflejos pendientes por cantón ──
-  if(chartOltCanton){chartOltCanton.destroy();chartOltCanton=null;}
-  document.getElementById('wrap-olt-canton').innerHTML='<canvas id="ch-olt-canton"></canvas>';
-  const cantMap={};
-  rowsOlt.forEach(r=>{
-    const c=(r[colCanton]||'Sin canton').trim();
-    cantMap[c]=(cantMap[c]||0)+parseInt(r[colPend]||0);
-  });
-  const cantData=Object.entries(cantMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  const cantColors=cantData.map((_,i)=>`hsl(${350-i*20},70%,${45+i*3}%)`);
-  chartOltCanton=new Chart(document.getElementById('ch-olt-canton'),{
-    type:'bar',
-    data:{
-      labels:cantData.map(([k])=>k),
-      datasets:[{data:cantData.map(([,v])=>v),backgroundColor:cantColors,borderRadius:5,borderSkipped:false}]
-    },
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString()+' reflejos pendientes'}}},
-      scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
-  });
-
-  // ── Barras horizontales reflejos pendientes por nodo ──
-  if(chartOltNodos){chartOltNodos.destroy();chartOltNodos=null;}
-  document.getElementById('wrap-olt-nodos').innerHTML='<canvas id="ch-olt-nodos"></canvas>';
-  const nodosData=rowsOlt
-    .map(r=>({nodo:(r[colNodo]||'Sin nodo').trim(),pend:parseInt(r[colPend]||0),total:parseInt(r[colReflej]||0)}))
-    .filter(d=>d.pend>0)
-    .sort((a,b)=>b.pend-a.pend)
-    .slice(0,15);
-  chartOltNodos=new Chart(document.getElementById('ch-olt-nodos'),{
-    type:'bar',
-    data:{
-      labels:nodosData.map(d=>d.nodo),
-      datasets:[
-        {label:'Reflejos pendientes',data:nodosData.map(d=>d.pend),backgroundColor:'rgba(230,57,70,0.8)',borderRadius:4,borderSkipped:false},
-        {label:'Ya migrados',data:nodosData.map(d=>Math.max(0,d.total-d.pend)),backgroundColor:'rgba(76,175,80,0.6)',borderRadius:4,borderSkipped:false}
-      ]
-    },
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}},
-        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y.toLocaleString()}}},
-      scales:{
-        x:{stacked:true,grid:{display:false},ticks:{font:{size:10},maxRotation:35}},
-        y:{stacked:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}}
-      }}
-  });
-
-  // ── Tabla detalle ──
-  const nodosSorted=[...rowsOlt].sort((a,b)=>parseInt(b[colPend]||0)-parseInt(a[colPend]||0));
-  document.getElementById('tb-olt').innerHTML=
-    '<table class="dtable"><tr><th>Canton</th><th>Nodo</th><th>#OLTs</th><th>#Racks</th><th>Reflejos a realizar</th><th>Estado</th><th style="color:#ffd54f">&#9888; Reflejos pendientes</th></tr>'+
-    nodosSorted.map(r=>{
-      let e=(r[colEstado]||'').trim().toUpperCase();
-      let tagClass='a', tagLabel=r[colEstado]||'';
-      if(e.includes('INVENTARI')&&!e.includes('OCESO')){ tagClass='g'; tagLabel='INVENTARIADO'; }
-      else if(e.includes('OCESO')||e.includes('PROCESO')){ tagClass='b'; tagLabel='EN PROCESO'; }
-      else if(e.includes('PENDIENTE')){ tagClass='a'; tagLabel='PENDIENTE'; }
-      const pend=parseInt(r[colPend]||0);
-      return `<tr>
-        <td style="font-weight:600;color:var(--tnblue);font-size:11px">${r[colCanton]||'&mdash;'}</td>
-        <td style="font-size:11px;font-weight:500">${r[colNodo]||'&mdash;'}</td>
-        <td style="text-align:center">${r[colOlts]||'0'}</td>
-        <td style="text-align:center">${r[colRacks]||'0'}</td>
-        <td style="text-align:center;font-weight:600">${r[colReflej]||'0'}</td>
-        <td><span class="tag ${tagClass}">${tagLabel}</span></td>
-        <td style="text-align:center;font-size:14px;font-weight:700;color:${pend>0?'var(--red)':'var(--green)'}">
-          ${pend>0?pend.toLocaleString():'&#9989;'}
-        </td>
-      </tr>`;
-    }).join('')+'</table>';
-}
-
-/* ── HEATMAP DE INCIDENCIAS ── */
-function buildHeatmap(rowsAnio){
-  const wrap=document.getElementById('wrap-heatmap');
-  if(!wrap) return;
-
-  // Top 10 nodos con más trabajos en el año
-  const nodoMap={};
-  rowsAnio.forEach(r=>{const n=(r['NODO']||'').trim();if(n)nodoMap[n]=(nodoMap[n]||0)+1;});
-  const topNodos=Object.entries(nodoMap).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n])=>n);
-
-  // Meses con datos
-  const mesMap={};
-  rowsAnio.forEach(r=>{const m=(r['MES']||'').toUpperCase();if(m)mesMap[m]=true;});
-  const mesesDisp=MESES.filter(m=>mesMap[m]);
-
-  if(!topNodos.length||!mesesDisp.length){
-    wrap.innerHTML='<p style="font-size:12px;color:var(--text3);padding:20px">Sin datos para el heatmap</p>';
-    return;
-  }
-
-  // Matriz nodo x mes
-  const matriz={};
-  topNodos.forEach(n=>{
-    matriz[n]={};
-    mesesDisp.forEach(m=>matriz[n][m]=0);
-  });
-  rowsAnio.forEach(r=>{
-    const n=(r['NODO']||'').trim();
-    const m=(r['MES']||'').toUpperCase();
-    if(matriz[n]&&m&&matriz[n][m]!==undefined) matriz[n][m]++;
-  });
-
-  // Máximo para escala de color
-  let maxVal=0;
-  topNodos.forEach(n=>mesesDisp.forEach(m=>{if(matriz[n][m]>maxVal)maxVal=matriz[n][m];}));
-
-  // Color heatmap: blanco→amarillo→rojo
-  const heatColor=v=>{
-    if(v===0) return '#f8f9fb';
-    const pct=v/maxVal;
-    if(pct<0.33) return `rgba(255,183,77,${0.3+pct*1.5})`;
-    if(pct<0.66) return `rgba(230,57,70,${0.4+pct*0.6})`;
-    return `rgba(160,30,30,${0.6+pct*0.4})`;
-  };
-  const textColor=v=>{
-    if(v===0) return '#ccc';
-    return v/maxVal>0.4?'#fff':'#333';
-  };
-
-  // Construir tabla HTML
-  const cellW=70, cellH=40, labelW=140;
-  let html=`<div style="display:inline-block;min-width:100%">
-    <table style="border-collapse:separate;border-spacing:3px;font-family:Inter,sans-serif">
-      <tr>
-        <td style="width:${labelW}px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:4px 8px">Nodo</td>
-        ${mesesDisp.map(m=>`<td style="width:${cellW}px;text-align:center;font-size:10px;font-weight:600;color:var(--tnblue);padding:4px 2px">${cap(m).slice(0,3)}</td>`).join('')}
-        <td style="width:50px;text-align:center;font-size:10px;font-weight:600;color:var(--text3);padding:4px 2px">Total</td>
-      </tr>`;
-
-  topNodos.forEach(n=>{
-    const totalNodo=mesesDisp.reduce((s,m)=>s+(matriz[n][m]||0),0);
-    html+=`<tr>
-      <td style="font-size:11px;font-weight:500;color:var(--text);padding:4px 8px;max-width:${labelW}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${n}">${n.slice(0,20)}</td>
-      ${mesesDisp.map(m=>{
-        const v=matriz[n][m]||0;
-        return `<td style="width:${cellW}px;height:${cellH}px;text-align:center;background:${heatColor(v)};border-radius:5px;font-size:11px;font-weight:700;color:${textColor(v)};cursor:default" title="${n} - ${cap(m)}: ${v} trabajos">${v||''}</td>`;
-      }).join('')}
-      <td style="text-align:center;font-size:12px;font-weight:700;color:var(--tnblue);background:var(--tnblue-light);border-radius:5px;padding:4px">${totalNodo}</td>
-    </tr>`;
-  });
-
-  html+=`</table>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:10px;color:var(--text3)">
-      <span>Menos</span>
-      <div style="display:flex;gap:2px">
-        ${['#f8f9fb','rgba(255,183,77,0.4)','rgba(255,183,77,0.8)','rgba(230,57,70,0.6)','rgba(160,30,30,0.9)'].map(c=>`<div style="width:20px;height:12px;border-radius:3px;background:${c}"></div>`).join('')}
-      </div>
-      <span>Mas incidencias</span>
-    </div>
-  </div>`;
-
-  wrap.innerHTML=html;
-}
-
 /* ── MAPA LEAFLET — colores por PROCEDENCIA ── */
 let mapaLeaflet=null;
 const PROC_COLORS=['#e63946','#1a73e8','#ff9800','#4caf50','#9c27b0','#00bcd4','#ff5722','#8bc34a','#f06292','#00796b'];
@@ -1507,6 +1008,145 @@ function buildMapa(rFilt){
   map.fitBounds(group.getBounds().pad(0.08));
   setTimeout(()=>map.invalidateSize(),150);
 }
+/* ── CAJAS REINCIDENTES ── */
+let chartReinc=null;
+function buildReincidencias(rowsAnio){
+  if(!rowsAnio||rowsAnio.length===0){ rowsAnio=rows; }
+  console.log('[Reinc] filas:', rowsAnio.length);
+
+  const mesCount={};
+  rowsAnio.forEach(r=>{const m=(r['MES']||'').toUpperCase();if(m)mesCount[m]=(mesCount[m]||0)+1;});
+  const mesesOrdenados=Object.keys(mesCount).sort((a,b)=>{
+    const ia=MESES.indexOf(a),ib=MESES.indexOf(b);return(ia<0?99:ia)-(ib<0?99:ib);
+  });
+  const ultimos2=mesesOrdenados.slice(-2);
+
+  document.getElementById('sub-reinc').textContent=
+    ultimos2.length>=2
+      ? 'Cajas que aparecen en '+cap(ultimos2[0])+' Y '+cap(ultimos2[1])+' — '+selAnio
+      : 'No hay suficientes meses para comparar en '+selAnio;
+
+  if(ultimos2.length<2){
+    document.getElementById('wrap-reinc').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px 0;text-align:center">Se necesitan al menos 2 meses de datos</p>';
+    document.getElementById('tb-reinc').innerHTML='';
+    return;
+  }
+
+  const [mes1,mes2]=ultimos2;
+  const rowsM1=rowsAnio.filter(r=>(r['MES']||'').toUpperCase()===mes1);
+  const rowsM2=rowsAnio.filter(r=>(r['MES']||'').toUpperCase()===mes2);
+
+  const extractCaja=r=>{
+    const caja=(r['CAJA']||'').trim();
+    if(!caja) return null;
+    const m=caja.match(/^(CUE-[^-]+-[^-]+-F\d+)/i);
+    if(m) return m[1].replace(/\s*\([A-Z]\)/g,'').trim();
+    return caja.slice(0,45);
+  };
+
+  const cajasM1={},cajasM2={};
+  rowsM1.forEach(r=>{const c=extractCaja(r);if(c)cajasM1[c]=(cajasM1[c]||0)+1;});
+  rowsM2.forEach(r=>{const c=extractCaja(r);if(c)cajasM2[c]=(cajasM2[c]||0)+1;});
+
+  const comunes=Object.keys(cajasM1).filter(c=>cajasM2[c]);
+  const reincData=comunes.map(c=>({caja:c,total:(cajasM1[c]||0)+(cajasM2[c]||0),m1:cajasM1[c]||0,m2:cajasM2[c]||0}))
+    .sort((a,b)=>b.total-a.total).slice(0,12);
+
+  if(!reincData.length){
+    document.getElementById('wrap-reinc').innerHTML='<p style="font-size:12px;color:var(--green);padding:40px 0;text-align:center">&#9989; No hay cajas reincidentes en los 2 ultimos meses</p>';
+    document.getElementById('tb-reinc').innerHTML='';
+    return;
+  }
+
+  if(chartReinc){chartReinc.destroy();chartReinc=null;}
+  document.getElementById('wrap-reinc').innerHTML='<canvas id="ch-reinc"></canvas>';
+  chartReinc=new Chart(document.getElementById('ch-reinc'),{
+    type:'bar',
+    data:{
+      labels:reincData.map(d=>d.caja.length>28?d.caja.slice(0,26)+'\u2026':d.caja),
+      datasets:[
+        {label:cap(mes1),data:reincData.map(d=>d.m1),backgroundColor:'rgba(0,71,190,0.75)',borderRadius:3,borderSkipped:false},
+        {label:cap(mes2),data:reincData.map(d=>d.m2),backgroundColor:'rgba(230,57,70,0.75)',borderRadius:3,borderSkipped:false}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}},
+        tooltip:{callbacks:{title:ctx=>ctx[0].label,label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' trabajos'}}},
+      scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:8},maxRotation:40}}}}
+  });
+
+  document.getElementById('tb-reinc').innerHTML=
+    '<table class="dtable" style="font-size:11px"><tr><th>Caja / Ruta</th><th style="text-align:center">'+cap(mes1)+'</th><th style="text-align:center">'+cap(mes2)+'</th><th style="text-align:center">Total</th></tr>'+
+    reincData.map(d=>`<tr>
+      <td style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.caja}">${d.caja}</td>
+      <td style="text-align:center;color:var(--tnblue);font-weight:600">${d.m1}</td>
+      <td style="text-align:center;color:var(--red);font-weight:600">${d.m2}</td>
+      <td style="text-align:center;font-weight:700;background:var(--amber-light);color:var(--amber)">${d.total}</td>
+    </tr>`).join('')+'</table>';
+}
+
+/* ── HEATMAP DE INCIDENCIAS ── */
+function buildHeatmap(rowsAnio){
+  const wrap=document.getElementById('wrap-heatmap');
+  if(!wrap) return;
+  if(!rowsAnio||rowsAnio.length===0){ rowsAnio=rows; }
+  console.log('[Heatmap] filas:', rowsAnio.length);
+
+  const nodoMap={};
+  rowsAnio.forEach(r=>{const n=(r['NODO']||'').trim();if(n)nodoMap[n]=(nodoMap[n]||0)+1;});
+  const topNodos=Object.entries(nodoMap).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n])=>n);
+
+  const mesMap={};
+  rowsAnio.forEach(r=>{const m=(r['MES']||'').toUpperCase();if(m)mesMap[m]=true;});
+  const mesesDisp=MESES.filter(m=>mesMap[m]);
+
+  if(!topNodos.length||!mesesDisp.length){
+    wrap.innerHTML='<p style="font-size:12px;color:var(--text3);padding:20px">Sin datos para el heatmap</p>';
+    return;
+  }
+
+  const matriz={};
+  topNodos.forEach(n=>{ matriz[n]={}; mesesDisp.forEach(m=>matriz[n][m]=0); });
+  rowsAnio.forEach(r=>{
+    const n=(r['NODO']||'').trim(), m=(r['MES']||'').toUpperCase();
+    if(matriz[n]&&m&&matriz[n][m]!==undefined) matriz[n][m]++;
+  });
+
+  let maxVal=0;
+  topNodos.forEach(n=>mesesDisp.forEach(m=>{if(matriz[n][m]>maxVal)maxVal=matriz[n][m];}));
+
+  const heatColor=v=>{
+    if(v===0) return '#f8f9fb';
+    const pct=v/maxVal;
+    if(pct<0.33) return 'rgba(255,183,77,'+(0.3+pct*1.5)+')';
+    if(pct<0.66) return 'rgba(230,57,70,'+(0.4+pct*0.6)+')';
+    return 'rgba(160,30,30,'+(0.6+pct*0.4)+')';
+  };
+  const textColor=v=>{ if(v===0)return '#ccc'; return v/maxVal>0.4?'#fff':'#333'; };
+
+  let html='<div style="display:inline-block;min-width:100%"><table style="border-collapse:separate;border-spacing:3px;font-family:Inter,sans-serif"><tr>'+
+    '<td style="width:140px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:4px 8px">Nodo</td>'+
+    mesesDisp.map(m=>'<td style="width:70px;text-align:center;font-size:10px;font-weight:600;color:var(--tnblue);padding:4px 2px">'+cap(m).slice(0,3)+'</td>').join('')+
+    '<td style="width:50px;text-align:center;font-size:10px;font-weight:600;color:var(--text3);padding:4px 2px">Total</td></tr>';
+
+  topNodos.forEach(n=>{
+    const totalNodo=mesesDisp.reduce((s,m)=>s+(matriz[n][m]||0),0);
+    html+='<tr><td style="font-size:11px;font-weight:500;color:var(--text);padding:4px 8px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+n+'">'+n.slice(0,20)+'</td>'+
+      mesesDisp.map(m=>{
+        const v=matriz[n][m]||0;
+        return '<td style="width:70px;height:40px;text-align:center;background:'+heatColor(v)+';border-radius:5px;font-size:11px;font-weight:700;color:'+textColor(v)+'" title="'+n+' - '+cap(m)+': '+v+' trabajos">'+(v||'')+'</td>';
+      }).join('')+
+      '<td style="text-align:center;font-size:12px;font-weight:700;color:var(--tnblue);background:var(--tnblue-light);border-radius:5px;padding:4px">'+totalNodo+'</td></tr>';
+  });
+
+  html+='</table><div style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:10px;color:var(--text3)">'+
+    '<span>Menos</span><div style="display:flex;gap:2px">'+
+    ['#f8f9fb','rgba(255,183,77,0.4)','rgba(255,183,77,0.8)','rgba(230,57,70,0.6)','rgba(160,30,30,0.9)'].map(c=>'<div style="width:20px;height:12px;border-radius:3px;background:'+c+'"></div>').join('')+
+    '</div><span>Mas incidencias</span></div></div>';
+
+  wrap.innerHTML=html;
+}
+
 </script>
 </body>
 </html>
