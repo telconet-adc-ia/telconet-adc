@@ -993,25 +993,85 @@ function renderMigraciones(){
 
 function filtrarTablaMig(tipo,valor,color){
   const sub=document.getElementById('sub-tb-mig');
-  let rutas=[];
   const colE=headersMig.find(h=>h.toUpperCase().includes('ESTADO'))||'ESTADO';
   const colC=headersMig.find(h=>h.toUpperCase().includes('CANTON')||h.toUpperCase().includes('CANTÓN'))||'CANTON';
   const colR=headersMig.find(h=>h.toUpperCase().includes('RUTA'))||'RUTA';
   const colCj=headersMig.find(h=>h.includes('# CAJAS')||h.includes('#CAJAS'))||'# CAJAS';
   const colPd=headersMig.find(h=>h.toUpperCase().includes('PENDIENTES')&&h.toUpperCase().includes('MIGRAR'))||'CAJAS PENDIENTES DE MIGRAR';
-  if(tipo==='todos'){rutas=rowsMig.filter(r=>(r[colE]||'').toUpperCase().includes('PENDIENTE'));if(sub)sub.innerHTML='Mostrando todas las rutas pendientes';}
-  else if(tipo==='estado'){rutas=rowsMig.filter(r=>(r[colE]||'').trim()===valor);if(sub){sub.innerHTML='Estado: <strong style="color:'+color+'">'+valor+'</strong> &mdash; '+rutas.length+' rutas <button id="btn-lim" style="margin-left:8px;background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">&#10005; Limpiar</button>';}}
-  else{rutas=rowsMig.filter(r=>(r[colC]||'').trim()===valor);if(sub){sub.innerHTML='Canton: <strong style="color:'+color+'">'+valor+'</strong> &mdash; '+rutas.length+' rutas <button id="btn-lim" style="margin-left:8px;background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">&#10005; Limpiar</button>';}}
-  const el=document.getElementById('tb-mig-pend');
-  if(!rutas.length){el.innerHTML='<p style="font-size:12px;color:var(--green);padding:8px 0">&#9989; Sin rutas para este filtro</p>';return;}
-  const totPd=rutas.reduce((s,r)=>s+parseInt(r[colPd]||0),0);
-  el.innerHTML=(totPd>0?'<div style="background:var(--red-light);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:8px 14px;margin-bottom:10px;font-size:12px;color:var(--red)"><strong>'+totPd.toLocaleString()+' cajas pendientes</strong> en las rutas filtradas</div>':'')+
-  '<div style="overflow-x:auto"><table class="dtable"><tr><th>Canton</th><th>Ruta</th><th># Cajas</th><th>Estado</th><th style="color:#ffd54f">&#9888; Cajas pendientes</th></tr>'+
-  rutas.map(r=>{const cp=parseInt(r[colPd]||0);return`<tr><td style="font-weight:600;color:var(--tnblue);font-size:11px">${r[colC]||'&mdash;'}</td><td style="font-size:11px">${(r[colR]||'&mdash;').slice(0,30)}</td><td style="text-align:center;font-weight:600">${r[colCj]||'0'}</td><td><span class="tag ${(r[colE]||'').toUpperCase().includes('MIGRADA')&&!(r[colE]||'').toUpperCase().includes('PENDIENTE')?'g':'a'}">${(r[colE]||'').slice(0,25)}</span></td><td style="text-align:center;font-size:14px;font-weight:700;color:${cp>0?'var(--red)':'var(--green)'}">${cp>0?cp:'&#9989;'}</td></tr>`;}).join('')+'</table></div>';
-  const bl=document.getElementById('btn-lim');if(bl)bl.onclick=()=>filtrarTablaMig('todos','','');
-}
 
-/* ── OLT 620 ── */
+  let datos=[];
+  if(tipo==='todos'){
+    datos=rowsMig;
+    if(sub) sub.textContent='Estado de migracion por canton';
+  } else if(tipo==='estado'){
+    datos=rowsMig.filter(r=>(r[colE]||'').trim()===valor);
+    if(sub) sub.innerHTML='Estado: <strong style="color:'+color+'">'+valor+'</strong> &mdash; '+datos.length+' rutas <button id="btn-lim" style="margin-left:8px;background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">&#10005; Ver todos</button>';
+  } else {
+    datos=rowsMig.filter(r=>(r[colC]||'').trim()===valor);
+    if(sub) sub.innerHTML='Canton: <strong style="color:'+color+'">'+valor+'</strong> &mdash; '+datos.length+' rutas <button id="btn-lim" style="margin-left:8px;background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">&#10005; Ver todos</button>';
+  }
+
+  const el=document.getElementById('tb-mig-pend');
+  if(!datos.length){el.innerHTML='<p style="font-size:12px;color:var(--text3);padding:10px">Sin rutas para este filtro</p>';return;}
+
+  // Agrupar por canton — cards ejecutivas
+  const cantones={};
+  datos.forEach(r=>{
+    const c=(r[colC]||'Sin canton').trim();
+    if(!cantones[c]) cantones[c]={rutas:[],totalCajas:0,totalPend:0};
+    const pd=parseInt(r[colPd]||0);
+    const cj=parseInt(r[colCj]||0);
+    const esMigrada=(r[colE]||'').toUpperCase().includes('MIGRADA')&&!(r[colE]||'').toUpperCase().includes('PENDIENTE');
+    cantones[c].rutas.push({ruta:(r[colR]||'').trim(),estado:r[colE]||'',esMigrada,pd,cj});
+    cantones[c].totalCajas+=cj;
+    cantones[c].totalPend+=pd;
+  });
+
+  const cantonList=Object.entries(cantones).sort((a,b)=>b[1].totalPend-a[1].totalPend);
+  let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">';
+
+  cantonList.forEach(([canton,info])=>{
+    const pct=info.totalCajas>0?Math.round((info.totalCajas-info.totalPend)/info.totalCajas*100):100;
+    const barC=pct===100?'#0a7c52':pct>50?'#8a5800':'#a01e1e';
+    const rutasMig=info.rutas.filter(r=>r.esMigrada).length;
+    const rutasPend=info.rutas.filter(r=>!r.esMigrada).length;
+    const rutasHtml=info.rutas.sort((a,b)=>b.pd-a.pd).slice(0,5).map(r=>`<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);gap:6px">
+      <div style="font-size:10px;color:var(--text2);flex:1;line-height:1.4">${r.ruta.slice(0,35)}${r.ruta.length>35?'…':''}</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+        <span style="font-size:9px;background:${r.esMigrada?'var(--green-light)':'var(--amber-light)'};color:${r.esMigrada?'var(--green)':'var(--amber)'};padding:1px 5px;border-radius:3px;font-weight:600">${r.esMigrada?'OK':'PEND'}</span>
+        <span style="font-size:12px;font-weight:700;color:${r.pd>0?'var(--red)':'var(--green)'};min-width:18px;text-align:right">${r.pd>0?r.pd:'✅'}</span>
+      </div>
+    </div>`).join('');
+    const extra=info.rutas.length>5?`<div style="font-size:10px;color:var(--text3);padding:5px 0;text-align:center">+${info.rutas.length-5} rutas mas</div>`:'';
+
+    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+        <div><div style="font-size:13px;font-weight:700;color:var(--tnblue)">${canton}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${info.rutas.length} ruta${info.rutas.length!==1?'s':''}</div></div>
+        <div style="text-align:right">
+          <div style="font-size:22px;font-weight:700;color:${info.totalPend>0?'var(--red)':'var(--green)'};line-height:1">${info.totalPend>0?info.totalPend:'✅'}</div>
+          <div style="font-size:10px;color:var(--text3)">cajas pend.</div>
+        </div>
+      </div>
+      <div style="background:var(--surface3);border-radius:4px;height:6px;margin-bottom:8px;overflow:hidden">
+        <div style="height:100%;border-radius:4px;background:${barC};width:${Math.max(2,pct)}%"></div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;display:flex;justify-content:space-between">
+        <span>${pct}% migrado</span><span>${info.totalCajas} cajas totales</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        ${rutasMig>0?`<span style="font-size:10px;background:var(--green-light);color:var(--green);padding:2px 7px;border-radius:4px;font-weight:600">✅ ${rutasMig} migradas</span>`:''}
+        ${rutasPend>0?`<span style="font-size:10px;background:var(--amber-light);color:var(--amber);padding:2px 7px;border-radius:4px;font-weight:600">⚠ ${rutasPend} pendientes</span>`:''}
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:8px">${rutasHtml}${extra}</div>
+    </div>`;
+  });
+
+  html+='</div>';
+  el.innerHTML=html;
+  const bl=document.getElementById('btn-lim');
+  if(bl) bl.onclick=()=>filtrarTablaMig('todos','','');
+}
 function renderOlt620(){
   if(!rowsOlt.length){document.getElementById('olt-kpis').innerHTML='<p style="color:var(--text3);font-size:12px;padding:10px">Cargando datos OLT 620...</p>';return;}
   console.log('[OLT620] Headers:', headersOlt);
