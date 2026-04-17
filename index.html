@@ -1424,10 +1424,18 @@ function renderRutasNuevas(){
   });
   const estData=Object.entries(estMap).sort((a,b)=>b[1]-a[1]);
   const estCols={'RUTA MIGRADA':'#4caf50','EN PROCESO':'#1a73e8','EN CONSTRUCCIÓN':'#ff9800','PENDIENTE MIGRAR':'#e63946'};
+  const estDataGlobalRN=estData;
   chartRnEstado=new Chart(document.getElementById('ch-rn-estado'),{type:'doughnut',data:{
     labels:estData.map(([k,v])=>k+' ('+v+')'),
     datasets:[{data:estData.map(([,v])=>v),backgroundColor:estData.map(([k])=>estCols[k]||'#90a4ae'),borderWidth:3,borderColor:'#fff',hoverOffset:8}]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:14,padding:10}},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed+' rutas'}}}}});
+  },options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:14,padding:10}},
+      tooltip:{callbacks:{label:ctx=>' '+ctx.parsed+' rutas'}}},
+    onClick:(evt,els)=>{
+      if(!els.length){filtrarRutasNuevas('todos','');return;}
+      filtrarRutasNuevas('estado', estDataGlobalRN[els[0].index][0]);
+    }
+  }});
 
   // Chart barras — clientes por estado
   if(chartRnClientes){chartRnClientes.destroy();chartRnClientes=null;}
@@ -1442,10 +1450,18 @@ function renderRutasNuevas(){
     cliMap[e]=(cliMap[e]||0)+parseInt(r[colClientes]||0);
   });
   const cliData=Object.entries(cliMap).sort((a,b)=>b[1]-a[1]);
+  const cliDataGlobalRN=cliData;
   chartRnClientes=new Chart(document.getElementById('ch-rn-clientes'),{type:'bar',data:{
     labels:cliData.map(([k])=>k),
     datasets:[{data:cliData.map(([,v])=>v),backgroundColor:cliData.map(([k])=>estCols[k]||'#90a4ae'),borderRadius:5,borderSkipped:false}]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString()+' clientes'}}},scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10},maxRotation:30}}}}});
+  },options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString()+' clientes'}}},
+    scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10},maxRotation:30}}},
+    onClick:(evt,els)=>{
+      if(!els.length){filtrarRutasNuevas('todos','');return;}
+      filtrarRutasNuevas('estado', cliDataGlobalRN[els[0].index][0]);
+    }
+  }});
 
   // Agrupar por ruta nueva (una ruta puede reemplazar varias rutas antiguas)
   const rutaMap={};
@@ -1532,7 +1548,104 @@ function renderRutasNuevas(){
     </div>`;
   });
   html+='</div>';
+  filtrarRutasNuevas('todos','');
+}
+/* ── FILTRO RUTAS NUEVAS ── */
+function filtrarRutasNuevas(tipo, valor){
+  if(!rowsRN.length) return;
+  const colClientes=headersRN.find(h=>h.toUpperCase().includes('CLIENTES'))||headersRN[0];
+  const colRutaNueva=headersRN.find(h=>h.toUpperCase().includes('RUTA')&&h.toUpperCase().includes('NUEVA'))||headersRN[1];
+  const colCajas=headersRN.find(h=>h.includes('#CAJAS')||h.includes('# CAJAS')||h.toUpperCase().includes('CAJA'))||headersRN[2];
+  const colRutaVieja=headersRN.find(h=>h.toUpperCase().includes('REEMPLAZAR'))||headersRN[3];
+  const colEstado=headersRN.find(h=>h.toUpperCase().includes('ESTADO'))||headersRN[4];
+  const colUM=headersRN.find(h=>h.toUpperCase().includes('UM')||h.toUpperCase().includes('PENDIENTE'))||headersRN[5];
+  const sub=document.getElementById('sub-rn-tabla');
+
+  // Normalizar estado para comparar
+  const normEstado=e=>{
+    e=e.toUpperCase();
+    if(e.includes('MIGRADA')&&!e.includes('PENDIENTE')) return 'RUTA MIGRADA';
+    if(e.includes('PROCESO')) return 'EN PROCESO';
+    if(e.includes('CONSTRUC')) return 'EN CONSTRUCCIÓN';
+    return 'PENDIENTE MIGRAR';
+  };
+
+  let filasFilt=rowsRN;
+  if(tipo==='estado'){
+    filasFilt=rowsRN.filter(r=>normEstado(r[colEstado]||'')===valor);
+    if(sub) sub.innerHTML='Estado: <strong>'+valor+'</strong> &mdash; '+
+      new Set(filasFilt.map(r=>(r[colRutaNueva]||'').trim())).size+' rutas '+
+      '<button id="btn-lim-rn" style="margin-left:8px;background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">&#10005; Ver todas</button>';
+  } else {
+    if(sub) sub.textContent='Todas las rutas ordenadas por UMs pendientes';
+  }
+
+  // Reagrupar por ruta nueva
+  const rutaMap={};
+  filasFilt.forEach(r=>{
+    const nombre=(r[colRutaNueva]||'Sin nombre').trim();
+    if(!rutaMap[nombre]) rutaMap[nombre]={nombre,cajas:parseInt(r[colCajas]||0),reemplaza:[],totalClientes:0,totalUM:0,estados:[]};
+    rutaMap[nombre].reemplaza.push({ruta:(r[colRutaVieja]||'').trim(),clientes:parseInt(r[colClientes]||0),um:parseInt(r[colUM]||0),estado:(r[colEstado]||'').trim()});
+    rutaMap[nombre].totalClientes+=parseInt(r[colClientes]||0);
+    rutaMap[nombre].totalUM+=parseInt(r[colUM]||0);
+    rutaMap[nombre].estados.push((r[colEstado]||'').trim().toUpperCase());
+  });
+
+  const estCols={'RUTA MIGRADA':'#4caf50','EN PROCESO':'#1a73e8','EN CONSTRUCCIÓN':'#ff9800','PENDIENTE MIGRAR':'#e63946'};
+  const getEstadoTag=e=>{
+    const norm=normEstado(e);
+    if(norm==='RUTA MIGRADA') return {tag:'MIGRADA',barC:'#4caf50',bg:'var(--green-light)',col:'var(--green)'};
+    if(norm==='EN PROCESO') return {tag:'EN PROCESO',barC:'#1a73e8',bg:'var(--tnblue-light)',col:'var(--tnblue2)'};
+    if(norm==='EN CONSTRUCCIÓN') return {tag:'EN CONSTRUCC.',barC:'#ff9800',bg:'var(--amber-light)',col:'var(--amber)'};
+    return {tag:'PENDIENTE',barC:'#e63946',bg:'var(--red-light)',col:'var(--red)'};
+  };
+
+  const rutaList=Object.values(rutaMap).sort((a,b)=>b.totalUM-a.totalUM);
+  if(!rutaList.length){
+    document.getElementById('tb-rn').innerHTML='<p style="font-size:12px;color:var(--text3);padding:10px">Sin rutas para este filtro</p>';
+    const bl=document.getElementById('btn-lim-rn');if(bl)bl.onclick=()=>filtrarRutasNuevas('todos','');
+    return;
+  }
+
+  let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">';
+  rutaList.forEach(rn=>{
+    const pctR=rn.totalClientes>0?Math.round((rn.totalClientes-rn.totalUM)/rn.totalClientes*100):100;
+    let estadoPrincipal='RUTA MIGRADA';
+    if(rn.estados.some(e=>e.includes('PENDIENTE'))) estadoPrincipal='PENDIENTE MIGRAR';
+    else if(rn.estados.some(e=>e.includes('CONSTRUC'))) estadoPrincipal='EN CONSTRUCCIÓN';
+    else if(rn.estados.some(e=>e.includes('PROCESO'))) estadoPrincipal='EN PROCESO';
+    const et=getEstadoTag(estadoPrincipal);
+    const subRutasHtml=rn.reemplaza.map(sr=>{
+      const set=getEstadoTag(sr.estado);
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);gap:6px">'+
+        '<div style="font-size:10px;color:var(--text2);flex:1;line-height:1.3">'+sr.ruta+'</div>'+
+        '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0">'+
+        '<span style="font-size:9px;background:'+set.bg+';color:'+set.col+';padding:1px 5px;border-radius:3px;font-weight:600;white-space:nowrap">'+set.tag+'</span>'+
+        '<span style="font-size:11px;font-weight:700;color:'+(sr.um>0?'var(--red)':'var(--green)')+';min-width:22px;text-align:right">'+(sr.um>0?sr.um:'✅')+'</span>'+
+        '</div></div>';
+    }).join('');
+    html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'+
+      '<div style="flex:1;padding-right:8px"><div style="font-size:13px;font-weight:700;color:var(--tnblue);line-height:1.3">'+rn.nombre+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);margin-top:2px">Reemplaza '+rn.reemplaza.length+' ruta'+(rn.reemplaza.length>1?'s':'')+' · '+rn.cajas+' cajas</div></div>'+
+      '<span style="background:'+et.bg+';color:'+et.col+';padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;white-space:nowrap;flex-shrink:0">'+et.tag+'</span></div>'+
+      '<div style="background:var(--surface3);border-radius:4px;height:5px;margin-bottom:8px;overflow:hidden">'+
+      '<div style="height:100%;border-radius:4px;background:'+et.barC+';width:'+Math.max(2,pctR)+'%"></div></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:center;margin-bottom:10px">'+
+      '<div style="background:var(--surface2);border-radius:6px;padding:6px 4px">'+
+      '<div style="font-size:16px;font-weight:700;color:var(--tnblue)">'+rn.totalClientes.toLocaleString()+'</div>'+
+      '<div style="font-size:9px;color:var(--text3)">clientes totales</div></div>'+
+      '<div style="background:'+(rn.totalUM>0?'var(--red-light)':'var(--green-light)')+';border-radius:6px;padding:6px 4px">'+
+      '<div style="font-size:16px;font-weight:700;color:'+(rn.totalUM>0?'var(--red)':'var(--green)')+'">'+( rn.totalUM>0?rn.totalUM.toLocaleString():'✅')+'</div>'+
+      '<div style="font-size:9px;color:'+(rn.totalUM>0?'var(--red)':'var(--green)')+'">UM pendientes</div></div></div>'+
+      '<div style="border-top:1px solid var(--border);padding-top:8px">'+
+      '<div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Rutas que reemplaza</div>'+
+      subRutasHtml+'</div></div>';
+  });
+  html+='</div>';
   document.getElementById('tb-rn').innerHTML=html;
+  const bl=document.getElementById('btn-lim-rn');
+  if(bl) bl.onclick=()=>filtrarRutasNuevas('todos','');
 }
 </script>
 </body>
