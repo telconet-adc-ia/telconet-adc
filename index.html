@@ -323,17 +323,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <!-- ══ SECCION: CAJAS REINCIDENTES ══ -->
     <div id="sec-reincidencias" style="display:none">
       <div class="sec-header">
-        <div class="sec-title">&#128270; Cajas con reincidencias</div>
+        <div class="sec-title">&#128270; Cajas por frecuencia de trabajo</div>
         <div class="sec-sub" id="sub-reinc">Cajas que registraron trabajos en los 2 meses mas recientes</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:16px;margin-bottom:16px">
         <div class="chart-card">
-          <div class="chart-title">&#128202; Frecuencia (#1 al #10)</div>
-          <div class="chart-sub">Azul=mes anterior &mdash; Rojo=mes actual</div>
+          <div class="chart-title">&#128202; Frecuencia de cajas — top 15</div>
+          <div class="chart-sub">Azul=mes anterior &mdash; Rojo=mes actual &mdash; Tooltip muestra procedencia</div>
           <div class="chart-wrap tall" id="wrap-reinc"><canvas id="ch-reinc"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">&#128203; Nombre completo de cajas reincidentes</div>
+          <div class="chart-title">&#128203; Detalle completo — nombre + procedencia</div>
           <div class="chart-sub">Ordenadas por total &mdash; nombre completo para identificacion</div>
           <div id="tb-reinc" style="overflow-y:auto;max-height:320px"></div>
         </div>
@@ -793,50 +793,117 @@ function buildReincidencias(){
   const anioCol=getAnioCol();
   let rowsAnio=rows.filter(r=>String(r[anioCol]||'').trim()===selAnio);
   if(!rowsAnio.length) rowsAnio=rows;
+
+  // Obtener los 2 meses más recientes con datos
   const mesCount={};
   rowsAnio.forEach(r=>{const m=(r['MES']||'').toUpperCase();if(m)mesCount[m]=(mesCount[m]||0)+1;});
-  const ultimos2=Object.keys(mesCount).sort((a,b)=>(MESES.indexOf(a)<0?99:MESES.indexOf(a))-(MESES.indexOf(b)<0?99:MESES.indexOf(b))).slice(-2);
-  document.getElementById('sub-reinc').textContent=ultimos2.length>=2?'Cajas en '+cap(ultimos2[0])+' Y '+cap(ultimos2[1])+' — '+selAnio:'Insuficientes meses de datos';
-  if(ultimos2.length<2){document.getElementById('wrap-reinc').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px;text-align:center">Necesitas al menos 2 meses de datos</p>';return;}
+  const ultimos2=Object.keys(mesCount)
+    .sort((a,b)=>(MESES.indexOf(a)<0?99:MESES.indexOf(a))-(MESES.indexOf(b)<0?99:MESES.indexOf(b)))
+    .slice(-2);
+
+  document.getElementById('sub-reinc').textContent=ultimos2.length>=2
+    ?'Todas las cajas en '+cap(ultimos2[0])+' y '+cap(ultimos2[1])+' — '+selAnio
+    :'Insuficientes meses de datos';
+
+  if(ultimos2.length<2){
+    document.getElementById('wrap-reinc').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px;text-align:center">Necesitas al menos 2 meses de datos</p>';
+    return;
+  }
+
   const [m1,m2]=ultimos2;
   const rm1=rowsAnio.filter(r=>(r['MES']||'').toUpperCase()===m1);
   const rm2=rowsAnio.filter(r=>(r['MES']||'').toUpperCase()===m2);
-  // Nombre COMPLETO de la caja sin procesar
-  const exCaja=r=>{
+
+  // Construir mapa de cajas con nombre completo + procedencia
+  // Incluir TODAS las cajas de ambos meses (no solo las que aparecen en ambos)
+  const cajaMap={}; // caja -> {m1, m2, total, proc}
+
+  rm1.forEach(r=>{
     const c=(r['CAJA']||'').trim();
-    if(!c) return null;
-    return c; // nombre completo
-  };
-  const cm1={},cm2={};
-  rm1.forEach(r=>{const c=exCaja(r);if(c)cm1[c]=(cm1[c]||0)+1;});
-  rm2.forEach(r=>{const c=exCaja(r);if(c)cm2[c]=(cm2[c]||0)+1;});
-  const data=Object.keys(cm1).filter(c=>cm2[c]).map(c=>({caja:c,m1:cm1[c],m2:cm2[c],total:cm1[c]+cm2[c]})).sort((a,b)=>b.total-a.total).slice(0,12);
-  if(!data.length){document.getElementById('wrap-reinc').innerHTML='<p style="font-size:12px;color:var(--green);padding:40px;text-align:center">&#9989; Sin cajas reincidentes</p>';document.getElementById('tb-reinc').innerHTML='';return;}
+    if(!c) return;
+    if(!cajaMap[c]) cajaMap[c]={m1:0,m2:0,proc:(r['PROCEDENCIA']||'').trim()};
+    cajaMap[c].m1++;
+    cajaMap[c].total=(cajaMap[c].m1||0)+(cajaMap[c].m2||0);
+  });
+  rm2.forEach(r=>{
+    const c=(r['CAJA']||'').trim();
+    if(!c) return;
+    if(!cajaMap[c]) cajaMap[c]={m1:0,m2:0,proc:(r['PROCEDENCIA']||'').trim()};
+    cajaMap[c].m2++;
+    cajaMap[c].total=(cajaMap[c].m1||0)+(cajaMap[c].m2||0);
+    // Actualizar procedencia si no estaba
+    if(!cajaMap[c].proc) cajaMap[c].proc=(r['PROCEDENCIA']||'').trim();
+  });
+
+  // Ordenar por total descendente, mostrar top 15
+  const data=Object.entries(cajaMap)
+    .map(([caja,v])=>({caja,m1:v.m1,m2:v.m2,total:v.total,proc:v.proc,reincidente:v.m1>0&&v.m2>0}))
+    .sort((a,b)=>b.total-a.total)
+    .slice(0,15);
+
+  if(!data.length){
+    document.getElementById('wrap-reinc').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px;text-align:center">Sin datos para el periodo</p>';
+    document.getElementById('tb-reinc').innerHTML='';
+    return;
+  }
+
+  // Resumen en el subtítulo
+  const reincCount=data.filter(d=>d.reincidente).length;
+  document.getElementById('sub-reinc').textContent=
+    'Top '+data.length+' cajas en '+cap(m1)+'/'+cap(m2)+' — '+selAnio+
+    ' · '+reincCount+' aparecen en ambos meses';
+
+  // Gráfica de barras agrupadas
   if(chartReinc){chartReinc.destroy();chartReinc=null;}
   document.getElementById('wrap-reinc').innerHTML='<canvas id="ch-reinc"></canvas>';
   chartReinc=new Chart(document.getElementById('ch-reinc'),{type:'bar',data:{
     labels:data.map((_,i)=>'#'+(i+1)),
-    datasets:[{label:cap(m1),data:data.map(d=>d.m1),backgroundColor:'rgba(0,71,190,.75)',borderRadius:4,borderSkipped:false},{label:cap(m2),data:data.map(d=>d.m2),backgroundColor:'rgba(230,57,70,.75)',borderRadius:4,borderSkipped:false}]
+    datasets:[
+      {label:cap(m1),data:data.map(d=>d.m1),backgroundColor:'rgba(0,71,190,.75)',borderRadius:4,borderSkipped:false},
+      {label:cap(m2),data:data.map(d=>d.m2),backgroundColor:'rgba(230,57,70,.75)',borderRadius:4,borderSkipped:false}
+    ]
   },options:{
     responsive:true,maintainAspectRatio:false,
     plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}},
       tooltip:{callbacks:{
-        title:ctx=>'#'+(parseInt(ctx[0].label.replace('#','')))+' '+data[parseInt(ctx[0].label.replace('#',''))-1].caja.slice(0,60),
-        label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' trabajos'
+        title:ctx=>{const i=parseInt(ctx[0].label.replace('#',''))-1;return '#'+(i+1)+' ['+data[i].proc+']';},
+        label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' trabajos'+(data[parseInt(ctx[0].label.replace('#',''))-1].reincidente?' \u21BB':' (solo este mes)')
       }}
     },
     scales:{
-      y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}},title:{display:true,text:'Trabajos',font:{size:10}}},
+      y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},
       x:{grid:{display:false},ticks:{font:{size:11}}}
     }
   }});
-  document.getElementById('tb-reinc').innerHTML='<table class="dtable" style="font-size:11px"><tr><th style="width:32px">#</th><th>Caja completa</th><th style="text-align:center;width:55px">'+cap(m1)+'</th><th style="text-align:center;width:55px">'+cap(m2)+'</th><th style="text-align:center;width:50px">Total</th></tr>'+
-    data.map((d,i)=>`<tr>
+
+  // Tabla con nombre completo, procedencia y flag de reincidencia
+  const PROC_COLORS_MAP={
+    'INDICE OPTICO':'#1a73e8','MIGRACIONES':'#e63946','FISCALIZACION':'#ff9800',
+    'INCIDENCIA':'#9c27b0','HABILITAR':'#4caf50'
+  };
+  const getProcColor=p=>{
+    const k=Object.keys(PROC_COLORS_MAP).find(k=>p.toUpperCase().includes(k));
+    return k?PROC_COLORS_MAP[k]:'#8d96b2';
+  };
+
+  document.getElementById('tb-reinc').innerHTML=
+    '<table class="dtable" style="font-size:11px">'+
+    '<tr><th style="width:28px">#</th><th>Caja completa</th><th style="width:100px">Procedencia</th>'+
+    '<th style="text-align:center;width:52px">'+cap(m1)+'</th>'+
+    '<th style="text-align:center;width:52px">'+cap(m2)+'</th>'+
+    '<th style="text-align:center;width:48px">Total</th>'+
+    '<th style="width:70px;text-align:center">Tipo</th></tr>'+
+    data.map((d,i)=>`<tr style="background:${d.reincidente?'rgba(230,57,70,0.04)':''}">
       <td style="font-weight:700;color:var(--text3);text-align:center">${i+1}</td>
-      <td style="font-size:11px;line-height:1.5;word-break:break-word">${d.caja}</td>
-      <td style="text-align:center;color:var(--tnblue);font-weight:600">${d.m1}</td>
-      <td style="text-align:center;color:var(--red);font-weight:600">${d.m2}</td>
+      <td style="font-size:10px;line-height:1.5;word-break:break-word">${d.caja}</td>
+      <td><span style="display:inline-block;background:${getProcColor(d.proc)};color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600;white-space:nowrap">${d.proc||'Sin proc'}</span></td>
+      <td style="text-align:center;color:var(--tnblue);font-weight:600">${d.m1||''}</td>
+      <td style="text-align:center;color:var(--red);font-weight:600">${d.m2||''}</td>
       <td style="text-align:center;font-weight:700;background:var(--amber-light);color:var(--amber)">${d.total}</td>
+      <td style="text-align:center">${d.reincidente
+        ?'<span style="background:var(--red-light);color:var(--red);padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700">REINCIDENTE</span>'
+        :'<span style="background:var(--surface3);color:var(--text3);padding:2px 6px;border-radius:4px;font-size:9px">Solo 1 mes</span>'
+      }</td>
     </tr>`).join('')+'</table>';
 }
 
