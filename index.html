@@ -465,6 +465,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJiPL_yIWpLIQ0V5_jCjQhiZef-kPJ8QsBfJN9-urdU-bwevFcrSeoaZE5MO-ZmwVx9Q/exec';
 
 let rows=[], headers=[], rowsMig=[], headersMig=[], rowsOlt=[], headersOlt=[];
+let migRendered=false, oltRendered=false;
 let conv=[], chatOpen=false;
 let selAnio='2026', selMes='TODOS';
 let curSection='adc';
@@ -502,12 +503,12 @@ function navTo(sec){
     else if(sec==='mapa') buildMapa();
     }
   if(sec==='mpls'){
-    if(rowsMig.length) renderMigraciones();
-    else { loadMigraciones().then(()=>{ if(rowsMig.length) renderMigraciones(); else document.getElementById('mig-kpis').innerHTML='<p style="color:var(--red);font-size:12px;padding:10px">&#9888; No se pudo cargar. Verifica que el Apps Script tenga la accion migraciones publicada.</p>'; }); }
+    if(rowsMig.length && !migRendered){ renderMigraciones(); migRendered=true; }
+    else if(!rowsMig.length){ loadMigraciones(); }
   }
   if(sec==='olt620'){
-    if(rowsOlt.length) renderOlt620();
-    else { loadOlt620().then(()=>{ if(rowsOlt.length) renderOlt620(); else document.getElementById('olt-kpis').innerHTML='<p style="color:var(--red);font-size:12px;padding:10px">&#9888; No se pudo cargar. Verifica que el Apps Script tenga la accion olt620 publicada.</p>'; }); }
+    if(rowsOlt.length && !oltRendered){ renderOlt620(); oltRendered=true; }
+    else if(!rowsOlt.length){ loadOlt620(); }
   }
 }
 
@@ -564,16 +565,27 @@ async function loadData(){
   }
 }
 async function loadMigraciones(){
-  try{ const d=await jsonpAction(SCRIPT_URL.split('?')[0],'migraciones'); if(d&&d.ok){rowsMig=d.rows;headersMig=d.headers;} }
-  catch(e){ console.warn('Migraciones:',e.message); }
+  try{
+    const d=await jsonpAction(SCRIPT_URL.split('?')[0],'migraciones');
+    if(d&&d.ok){
+      rowsMig=d.rows; headersMig=d.headers;
+      if(curSection==='mpls'){ renderMigraciones(); migRendered=true; }
+    }
+  } catch(e){ console.warn('Migraciones:',e.message); }
 }
 async function loadOlt620(){
-  try{ const d=await jsonpAction(SCRIPT_URL.split('?')[0],'olt620'); if(d&&d.ok){rowsOlt=d.rows;headersOlt=d.headers;} }
-  catch(e){ console.warn('OLT620:',e.message); }
+  try{
+    const d=await jsonpAction(SCRIPT_URL.split('?')[0],'olt620');
+    if(d&&d.ok){
+      rowsOlt=d.rows; headersOlt=d.headers;
+      if(curSection==='olt620'){ renderOlt620(); oltRendered=true; }
+    }
+  } catch(e){ console.warn('OLT620:',e.message); }
 }
 async function refresh(){
   document.getElementById('btn-ref').classList.add('spinning');
   setSS('spin','Actualizando...');
+  migRendered=false; oltRendered=false;
   await Promise.all([loadData(), loadMigraciones(), loadOlt620()]);
   document.getElementById('btn-ref').classList.remove('spinning');
 }
@@ -957,14 +969,24 @@ chartOltEstado=new Chart(document.getElementById('ch-olt-estado'),{type:'doughnu
   document.getElementById('wrap-olt-canton').innerHTML='<canvas id="ch-olt-canton"></canvas>';
   const cMap={};rowsOlt.forEach(r=>{const c=(r[colC]||'Sin canton').trim();cMap[c]=(cMap[c]||0)+parseInt(r[colPd]||0);});
   const cData=Object.entries(cMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  chartOltCanton=new Chart(document.getElementById('ch-olt-canton'),{type:'bar',data:{labels:cData.map(([k])=>k),datasets:[{data:cData.map(([,v])=>v),backgroundColor:cData.map((_,i)=>`hsl(${350-i*20},70%,${45+i*3}%)`),borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y+' reflejos pendientes'}}},scales:{y:{ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  const cColores=cData.map((_,i)=>'hsl('+(350-i*20)+',70%,'+(45+i*3)+'%)');
+  chartOltCanton=new Chart(document.getElementById('ch-olt-canton'),{type:'bar',data:{
+    labels:cData.map(([k])=>k),
+    datasets:[{data:cData.map(([,v])=>v),backgroundColor:cColores,borderRadius:5,borderSkipped:false}]
+  },options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString()+' reflejos pendientes'}}},
+    scales:{y:{ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}},
+    onClick:(evt,els)=>{
+      if(!els.length){ filtrarTablaOlt('todos','',''); return; }
+      const idx=els[0].index;
+      filtrarTablaOlt('canton', cData[idx][0], cColores[idx]);
+    }
+  }});
   if(chartOltNodos){chartOltNodos.destroy();chartOltNodos=null;}
   document.getElementById('wrap-olt-nodos').innerHTML='<canvas id="ch-olt-nodos"></canvas>';
   const nData=[...rowsOlt].map(r=>({n:(r[colN]||'').trim(),pd:parseInt(r[colPd]||0),rf:parseInt(r[colRf]||0)})).filter(d=>d.pd>0).sort((a,b)=>b.pd-a.pd).slice(0,15);
   chartOltNodos=new Chart(document.getElementById('ch-olt-nodos'),{type:'bar',data:{labels:nData.map(d=>d.n),datasets:[{label:'Pendientes',data:nData.map(d=>d.pd),backgroundColor:'rgba(230,57,70,.8)',borderRadius:4,borderSkipped:false},{label:'Migrados',data:nData.map(d=>Math.max(0,d.rf-d.pd)),backgroundColor:'rgba(76,175,80,.6)',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},maxRotation:35}},y:{stacked:true,ticks:{font:{size:10}}}}}});
   filtrarTablaOlt('todos','','');
-  const sorted_unused=null;//'<table class="dtable"><tr><th>Canton</th><th>Nodo</th><th>#OLTs</th><th>#Racks</th><th>Reflejos totales</th><th>Estado</th><th style="color:#ffd54f">&#9888; Reflejos pendientes</th></tr>'+
-    sorted.map(r=>{let e=(r[colE]||'').trim().toUpperCase();let tc='a',tl=r[colE]||'';if(e.includes('INVENTARI')&&!e.includes('OCESO')){tc='g';tl='INVENTARIADO';}else if(e.includes('OCESO')||e.includes('PROCESO')){tc='b';tl='EN PROCESO';}const pd=parseInt(r[colPd]||0);return`<tr><td style="font-weight:600;color:var(--tnblue);font-size:11px">${r[colC]||'&mdash;'}</td><td style="font-size:11px;font-weight:500">${r[colN]||'&mdash;'}</td><td style="text-align:center">${r[colO]||'0'}</td><td style="text-align:center">${r[colRk]||'0'}</td><td style="text-align:center;font-weight:600">${r[colRf]||'0'}</td><td><span class="tag ${tc}">${tl}</span></td><td style="text-align:center;font-size:14px;font-weight:700;color:${pd>0?'var(--red)':'var(--green)'}">${pd>0?pd:'&#9989;'}</td></tr>`;}).join('')+'</table>';
 }
 
 /* ── CHAT ── */
@@ -1044,6 +1066,9 @@ function filtrarTablaOlt(tipo, valor, color){
   if(tipo==='todos'){
     datos=[...rowsOlt].sort((a,b)=>parseInt(b[colPd]||0)-parseInt(a[colPd]||0));
     if(sub) sub.textContent='Ordenado por reflejos pendientes';
+  } else if(tipo==='canton'){
+    datos=rowsOlt.filter(r=>(r[colC]||'').trim()===valor).sort((a,b)=>parseInt(b[colPd]||0)-parseInt(a[colPd]||0));
+    if(sub) sub.innerHTML='Canton: <strong style="color:'+color+'">'+valor+'</strong> — '+datos.length+' nodos <button id="btn-lim-olt" style="margin-left:8px;background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">&#10005; Limpiar</button>';
   } else if(tipo==='estado'){
     let estadoNorm=valor.toUpperCase();
     datos=rowsOlt.filter(r=>{
