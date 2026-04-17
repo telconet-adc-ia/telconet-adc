@@ -818,32 +818,31 @@ function buildReincidencias(){
   const PROCS_VALIDAS=['INCIDENCIA','INDICE OPTICO','REGULATORIO','FISCALIZACION','FISCALIZACIÓN'];
   const esProcValida=p=>PROCS_VALIDAS.some(v=>p.toUpperCase().includes(v.toUpperCase()));
 
-  // Construir mapa solo con las procedencias requeridas
-  const cajaMap={}; // caja -> {m1, m2, total, proc}
+  // Clave única = CAJA + PROCEDENCIA para no mezclar procedencias distintas
+  const cajaMap={}; // "caja||proc" -> {caja, proc, m1, m2, total}
 
   rm1.forEach(r=>{
     const proc=(r['PROCEDENCIA']||'').trim();
     if(!esProcValida(proc)) return;
     const c=(r['CAJA']||'').trim();
     if(!c) return;
-    if(!cajaMap[c]) cajaMap[c]={m1:0,m2:0,proc:proc};
-    cajaMap[c].m1++;
-    cajaMap[c].total=(cajaMap[c].m1||0)+(cajaMap[c].m2||0);
+    const key=c+'||'+proc;
+    if(!cajaMap[key]) cajaMap[key]={caja:c,proc:proc,m1:0,m2:0};
+    cajaMap[key].m1++;
   });
   rm2.forEach(r=>{
     const proc=(r['PROCEDENCIA']||'').trim();
     if(!esProcValida(proc)) return;
     const c=(r['CAJA']||'').trim();
     if(!c) return;
-    if(!cajaMap[c]) cajaMap[c]={m1:0,m2:0,proc:proc};
-    cajaMap[c].m2++;
-    cajaMap[c].total=(cajaMap[c].m1||0)+(cajaMap[c].m2||0);
-    if(!cajaMap[c].proc) cajaMap[c].proc=proc;
+    const key=c+'||'+proc;
+    if(!cajaMap[key]) cajaMap[key]={caja:c,proc:proc,m1:0,m2:0};
+    cajaMap[key].m2++;
   });
 
-  // Ordenar por total descendente, top 10
-  const data=Object.entries(cajaMap)
-    .map(([caja,v])=>({caja,m1:v.m1,m2:v.m2,total:v.total,proc:v.proc,reincidente:v.m1>0&&v.m2>0}))
+  // Calcular total y ordenar, top 10
+  const data=Object.values(cajaMap)
+    .map(v=>({...v,total:v.m1+v.m2,reincidente:v.m1>0&&v.m2>0}))
     .sort((a,b)=>b.total-a.total)
     .slice(0,10);
 
