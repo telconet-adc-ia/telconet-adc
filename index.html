@@ -57,7 +57,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .main-layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 56px)}
 
 /* SIDEBAR */
-.sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;position:sticky;top:56px;height:calc(100vh - 56px)}
+.sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;position:fixed;top:56px;left:0;height:calc(100vh - 56px);z-index:100}
 .sidebar-logo{padding:16px 16px 8px;border-bottom:1px solid var(--border);margin-bottom:8px}
 .sidebar-logo-txt{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:.15s;border-radius:0;color:var(--text2);font-size:13px;font-weight:500;margin:2px 8px;border-radius:8px;position:relative}
@@ -71,7 +71,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .sidebar-section{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:12px 16px 4px;margin-top:4px}
 
 /* CONTENT AREA */
-.content-area{flex:1;overflow-y:auto;padding:24px;padding-bottom:100px}
+.content-area{flex:1;overflow-y:auto;padding:24px;padding-bottom:100px;margin-left:var(--sidebar)}
 
 /* LOADING */
 .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:40px;text-align:center;min-height:60vh}
@@ -398,11 +398,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
           <div class="chart-sub">Cantones con mayor carga pendiente</div>
           <div class="chart-wrap" id="wrap-olt-canton"><canvas id="ch-olt-canton"></canvas></div>
         </div>
-        <div class="chart-card full">
-          <div class="chart-title">&#128204; Reflejos pendientes por nodo</div>
-          <div class="chart-sub">Nodos ordenados por reflejos sin migrar</div>
-          <div class="chart-wrap tall" id="wrap-olt-nodos"><canvas id="ch-olt-nodos"></canvas></div>
-        </div>
+
       </div>
       <div class="table-card">
         <div class="table-title">&#128203; Detalle de nodos OLT 620</div>
@@ -471,7 +467,7 @@ let selAnio='2026', selMes='TODOS';
 let curSection='adc';
 let chartCuad=null, chartTipo=null, chartMes=null;
 let chartMigEstado=null, chartMigCanton=null;
-let chartOltEstado=null, chartOltCanton=null, chartOltNodos=null;
+let chartOltEstado=null, chartOltCanton=null;
 let chartReinc=null, mapaLeaflet=null;
 const MESES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
 const PROC_COLORS=['#e63946','#1a73e8','#ff9800','#4caf50','#9c27b0','#00bcd4','#ff5722','#8bc34a'];
@@ -946,7 +942,6 @@ function filtrarTablaMig(tipo,valor,color){
 }
 
 /* ── OLT 620 ── */
-chartOltNodos=null;
 function renderOlt620(){
   if(!rowsOlt.length){document.getElementById('olt-kpis').innerHTML='<p style="color:var(--text3);font-size:12px;padding:10px">Cargando datos OLT 620...</p>';return;}
   console.log('[OLT620] Headers:', headersOlt);
@@ -1012,10 +1007,6 @@ chartOltEstado=new Chart(document.getElementById('ch-olt-estado'),{type:'doughnu
       filtrarTablaOlt('canton', cData[idx][0], cColores[idx]);
     }
   }});
-  if(chartOltNodos){chartOltNodos.destroy();chartOltNodos=null;}
-  document.getElementById('wrap-olt-nodos').innerHTML='<canvas id="ch-olt-nodos"></canvas>';
-  const nData=[...rowsOlt].map(r=>({n:(r[colN]||'').trim(),pd:parseInt(r[colPd]||0),rf:parseInt(r[colRf]||0)})).filter(d=>d.pd>0).sort((a,b)=>b.pd-a.pd).slice(0,15);
-  chartOltNodos=new Chart(document.getElementById('ch-olt-nodos'),{type:'bar',data:{labels:nData.map(d=>d.n),datasets:[{label:'Pendientes',data:nData.map(d=>d.pd),backgroundColor:'rgba(230,57,70,.8)',borderRadius:4,borderSkipped:false},{label:'Migrados',data:nData.map(d=>Math.max(0,d.rf-d.pd)),backgroundColor:'rgba(76,175,80,.6)',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},maxRotation:35}},y:{stacked:true,ticks:{font:{size:10}}}}}});
   filtrarTablaOlt('todos','','');
 }
 
