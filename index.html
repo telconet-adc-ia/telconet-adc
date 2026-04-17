@@ -480,8 +480,12 @@ const PROC_COLORS=['#e63946','#1a73e8','#ff9800','#4caf50','#9c27b0','#00bcd4','
 window.addEventListener('load',()=>{
   initCanvas();
   loadData();
-  loadMigraciones();
-  loadOlt620();
+  // Cargar en secuencia para no sobrecargar el Apps Script
+  loadOlt620().then(()=>{
+    setTimeout(()=>loadMigraciones(), 1000);
+  }).catch(()=>{
+    setTimeout(()=>loadMigraciones(), 1000);
+  });
 });
 document.addEventListener('click',e=>{
   if(!e.target.closest('.filter-btn')&&!e.target.closest('.dropdown'))
@@ -594,7 +598,9 @@ async function refresh(){
   document.getElementById('btn-ref').classList.add('spinning');
   setSS('spin','Actualizando...');
   migRendered=false; oltRendered=false;
-  await Promise.all([loadData(), loadMigraciones(), loadOlt620()]);
+  await loadData();
+  await loadOlt620();
+  await loadMigraciones();
   document.getElementById('btn-ref').classList.remove('spinning');
 }
 
@@ -609,11 +615,27 @@ function jsonp(url){
 }
 function jsonpAction(base,action){
   return new Promise((res,rej)=>{
-    const cb='cba_'+Date.now(); const s=document.createElement('script');
-    const t=setTimeout(()=>{clean();rej(new Error('Timeout '+action));},20000);
-    window[cb]=d=>{clean();res(d);}; s.onerror=()=>{clean();rej(new Error('Error '+action));};
-    s.src=base+'?action='+action+'&callback='+cb; document.head.appendChild(s);
-    function clean(){clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
+    const cb='cba_'+Date.now()+'_'+action;
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{
+      // NO eliminar window[cb] en timeout — dejarlo para que si llega tarde no rompa
+      if(s.parentNode)s.parentNode.removeChild(s);
+      rej(new Error('Timeout '+action+' (30s)'));
+    },30000);
+    window[cb]=d=>{
+      clearTimeout(t);
+      // Limpiar después de recibir respuesta
+      delete window[cb];
+      if(s.parentNode)s.parentNode.removeChild(s);
+      res(d);
+    };
+    s.onerror=()=>{
+      clearTimeout(t);delete window[cb];
+      if(s.parentNode)s.parentNode.removeChild(s);
+      rej(new Error('Error cargando '+action));
+    };
+    s.src=base+'?action='+action+'&callback='+cb;
+    document.head.appendChild(s);
   });
 }
 
