@@ -568,7 +568,11 @@ async function loadMigraciones(){
   try{
     const d=await jsonpAction(SCRIPT_URL.split('?')[0],'migraciones');
     if(d&&d.ok){
+      // Solo asignar si los datos corresponden a MPLS (tienen columna RUTA o CANTON+ESTADO sin OLT)
+      const esOltData=d.headers.some(h=>h.toUpperCase().includes('OLT')||h.toUpperCase().includes('REFLEJO'));
+      if(esOltData){ console.warn('[MIG] Datos recibidos parecen ser OLT, no MPLS:', d.headers); return; }
       rowsMig=d.rows; headersMig=d.headers;
+      console.log('[MIG] Cargado OK:', d.rows.length, 'filas, headers:', d.headers);
       if(curSection==='mpls'){ renderMigraciones(); migRendered=true; }
     }
   } catch(e){ console.warn('Migraciones:',e.message); }
@@ -577,7 +581,11 @@ async function loadOlt620(){
   try{
     const d=await jsonpAction(SCRIPT_URL.split('?')[0],'olt620');
     if(d&&d.ok){
+      // Solo asignar si los datos corresponden a OLT 620 (tienen columna OLT o REFLEJO)
+      const esOltData=d.headers.some(h=>h.toUpperCase().includes('OLT')||h.toUpperCase().includes('REFLEJO'));
+      if(!esOltData){ console.warn('[OLT] Datos recibidos no parecen ser OLT 620:', d.headers); return; }
       rowsOlt=d.rows; headersOlt=d.headers;
+      console.log('[OLT] Cargado OK:', d.rows.length, 'filas, headers:', d.headers);
       if(curSection==='olt620'){ renderOlt620(); oltRendered=true; }
     }
   } catch(e){ console.warn('OLT620:',e.message); }
@@ -1053,6 +1061,9 @@ function initCanvas(){
 /* ── FILTRO TABLA OLT 620 ── */
 function filtrarTablaOlt(tipo, valor, color){
   if(!rowsOlt.length) return;
+  // Verificar que los datos son de OLT 620 (deben tener columna #OLTs o REFLEJO)
+  const esOlt=headersOlt.some(h=>h.toUpperCase().includes('OLT')||h.toUpperCase().includes('REFLEJO'));
+  if(!esOlt){ console.error('[OLT] headersOlt no corresponde a OLT 620:', headersOlt); return; }
   const colE=headersOlt.find(h=>h.toUpperCase().includes('ESTADO'))||headersOlt[3]||'ESTADO';
   const colC=headersOlt.find(h=>h.toUpperCase().includes('CANTON')||h.toUpperCase().includes('CANTÓN'))||headersOlt[0]||'CANTON';
   const colN=headersOlt.find(h=>h.toUpperCase().includes('NODO'))||headersOlt[1]||'NODO';
