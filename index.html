@@ -23,7 +23,7 @@
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;overflow-x:hidden;display:flex;flex-direction:column}
 
 /* HEADER */
-.hdr{background:var(--tnblue);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.18);position:sticky;top:0;z-index:200}
+.hdr{background:var(--tnblue);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.18);position:sticky;top:0;z-index:2000}
 .brand{display:flex;align-items:center;gap:12px}
 .brand-divider{width:1px;height:28px;background:rgba(255,255,255,.2);margin:0 2px}
 .brand-name{font-size:13px;font-weight:600;color:#fff;line-height:1.2}
@@ -47,7 +47,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .filter-btn{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 12px;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;position:relative}
 .filter-btn:hover{background:rgba(255,255,255,.25)}
 .filter-btn .val{color:#7dd3fc;margin-left:3px}
-.dropdown{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);z-index:300;min-width:130px;overflow:hidden;display:none}
+.dropdown{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);z-index:3000;min-width:130px;overflow:hidden;display:none}
 .dropdown.open{display:block}
 .dd-item{padding:9px 16px;font-size:12px;color:var(--text);cursor:pointer;transition:.12s;font-family:'Inter',sans-serif}
 .dd-item:hover{background:var(--tnblue-light);color:var(--tnblue)}
@@ -907,13 +907,16 @@ function filtrarTablaMig(tipo,valor,color){
 chartOltNodos=null;
 function renderOlt620(){
   if(!rowsOlt.length){document.getElementById('olt-kpis').innerHTML='<p style="color:var(--text3);font-size:12px;padding:10px">Cargando datos OLT 620...</p>';return;}
-  const colE=headersOlt.find(h=>h.toUpperCase().includes('ESTADO'))||'ESTADO';
-  const colC=headersOlt.find(h=>h.toUpperCase().includes('CANTON')||h.toUpperCase().includes('CANTÓN'))||'CANTON';
-  const colN=headersOlt.find(h=>h.toUpperCase().includes('NODO'))||'NODO';
-  const colO=headersOlt.find(h=>h.includes('#OLT')||h.toUpperCase().includes('OLTS'))||'#OLTs';
-  const colRk=headersOlt.find(h=>h.includes('#RACK')||h.toUpperCase().includes('RACKS'))||'#RACKS';
-  const colRf=headersOlt.find(h=>h.toUpperCase().includes('REFLEJO')&&(h.toUpperCase().includes('48')||h.toUpperCase().includes('REALIZAR')))||'REFLEJO DE 48 A REALIZAR';
-  const colPd=headersOlt.find(h=>h.toUpperCase().includes('REFLEJOS')&&h.toUpperCase().includes('PENDIENTE'))||'REFLEJOS PENDIENTES';
+  console.log('[OLT620] Headers:', headersOlt);
+  console.log('[OLT620] Primera fila:', JSON.stringify(rowsOlt[0]));
+  const colE=headersOlt.find(h=>h.toUpperCase().includes('ESTADO'))||headersOlt[3]||'ESTADO';
+  const colC=headersOlt.find(h=>h.toUpperCase().includes('CANTON')||h.toUpperCase().includes('CANTÓN'))||headersOlt[0]||'CANTON';
+  const colN=headersOlt.find(h=>h.toUpperCase().includes('NODO'))||headersOlt[1]||'NODO';
+  const colO=headersOlt.find(h=>h.toUpperCase().includes('OLT')&&h.includes('#'))||headersOlt[2]||'#OLTs';
+  const colRk=headersOlt.find(h=>h.toUpperCase().includes('RACK')&&h.includes('#'))||headersOlt[3]||'#RACKS';
+  const colRf=headersOlt.find(h=>h.toUpperCase().includes('REFLEJO')&&(h.toUpperCase().includes('48')||h.toUpperCase().includes('REALIZAR')))||headersOlt[4]||'REFLEJO DE 48 A REALIZAR';
+  const colPd=headersOlt.find(h=>h.toUpperCase().includes('PENDIENTE')&&(h.toUpperCase().includes('REFLEJO')||h.toUpperCase().includes('CAJA')))||headersOlt[headersOlt.length-1]||'REFLEJOS PENDIENTES';
+  console.log('[OLT620] Cols detectadas - E:'+colE+' C:'+colC+' N:'+colN+' Rf:'+colRf+' Pd:'+colPd);
   const total=rowsOlt.length;
   const inv=rowsOlt.filter(r=>(r[colE]||'').toUpperCase().includes('INVENTARI')&&!(r[colE]||'').toUpperCase().includes('OCESO')).length;
   const enP=rowsOlt.filter(r=>(r[colE]||'').toUpperCase().includes('OCESO')||(r[colE]||'').toUpperCase().includes('PROCESO')).length;
@@ -1028,13 +1031,13 @@ function initCanvas(){
 /* ── FILTRO TABLA OLT 620 ── */
 function filtrarTablaOlt(tipo, valor, color){
   if(!rowsOlt.length) return;
-  const colE=headersOlt.find(h=>h.toUpperCase().includes('ESTADO'))||'ESTADO';
-  const colC=headersOlt.find(h=>h.toUpperCase().includes('CANTON')||h.toUpperCase().includes('CANTÓN'))||'CANTON';
-  const colN=headersOlt.find(h=>h.toUpperCase().includes('NODO'))||'NODO';
-  const colO=headersOlt.find(h=>h.includes('#OLT')||h.toUpperCase().includes('OLTS'))||'#OLTs';
-  const colRk=headersOlt.find(h=>h.includes('#RACK')||h.toUpperCase().includes('RACKS'))||'#RACKS';
-  const colRf=headersOlt.find(h=>h.toUpperCase().includes('REFLEJO')&&(h.toUpperCase().includes('48')||h.toUpperCase().includes('REALIZAR')))||'REFLEJO DE 48 A REALIZAR';
-  const colPd=headersOlt.find(h=>h.toUpperCase().includes('REFLEJOS')&&h.toUpperCase().includes('PENDIENTE'))||'REFLEJOS PENDIENTES';
+  const colE=headersOlt.find(h=>h.toUpperCase().includes('ESTADO'))||headersOlt[3]||'ESTADO';
+  const colC=headersOlt.find(h=>h.toUpperCase().includes('CANTON')||h.toUpperCase().includes('CANTÓN'))||headersOlt[0]||'CANTON';
+  const colN=headersOlt.find(h=>h.toUpperCase().includes('NODO'))||headersOlt[1]||'NODO';
+  const colO=headersOlt.find(h=>h.toUpperCase().includes('OLT')&&h.includes('#'))||headersOlt[2]||'#OLTs';
+  const colRk=headersOlt.find(h=>h.toUpperCase().includes('RACK')&&h.includes('#'))||headersOlt[3]||'#RACKS';
+  const colRf=headersOlt.find(h=>h.toUpperCase().includes('REFLEJO')&&(h.toUpperCase().includes('48')||h.toUpperCase().includes('REALIZAR')))||headersOlt[4]||'REFLEJO DE 48 A REALIZAR';
+  const colPd=headersOlt.find(h=>h.toUpperCase().includes('PENDIENTE')&&(h.toUpperCase().includes('REFLEJO')||h.toUpperCase().includes('CAJA')))||headersOlt[headersOlt.length-1]||'REFLEJOS PENDIENTES';
   const sub=document.getElementById('sub-olt-tabla');
 
   let datos=[];
