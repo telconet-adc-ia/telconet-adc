@@ -267,6 +267,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <span class="nav-icon">&#128225;</span>
       <span class="nav-label">OLT 620</span>
     </div>
+    <div class="nav-item" onclick="navTo('rutasnuevas')" id="nav-rutasnuevas">
+      <span class="nav-icon">&#127959;</span>
+      <span class="nav-label">Rutas nuevas</span>
+    </div>
 
     <div class="sidebar-section">Asistente</div>
     <div class="nav-item" onclick="toggleChat()" id="nav-chat">
@@ -407,6 +411,33 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
     </div>
 
+
+    <!-- ══ SECCION: RUTAS NUEVAS ══ -->
+    <div id="sec-rutasnuevas" style="display:none">
+      <div class="sec-header">
+        <div class="sec-title">&#127959; Rutas nuevas construidas</div>
+        <div class="sec-sub">Rutas nuevas en proceso de migracion de clientes desde rutas antiguas</div>
+      </div>
+      <div class="kpi-grid" id="rn-kpis"></div>
+      <div class="charts-grid" style="margin-bottom:20px">
+        <div class="chart-card">
+          <div class="chart-title">&#128200; Estado de migracion</div>
+          <div class="chart-sub">Distribucion de rutas por estado actual</div>
+          <div class="chart-wrap" id="wrap-rn-estado"><canvas id="ch-rn-estado"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">&#128101; Clientes por estado</div>
+          <div class="chart-sub">Clientes impactados segun avance de migracion</div>
+          <div class="chart-wrap" id="wrap-rn-clientes"><canvas id="ch-rn-clientes"></canvas></div>
+        </div>
+      </div>
+      <div style="margin-top:4px">
+        <div style="font-size:13px;font-weight:600;color:var(--tnblue);margin-bottom:4px">&#128203; Detalle de rutas nuevas</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="sub-rn-tabla">Todas las rutas ordenadas por UMs pendientes</div>
+        <div id="tb-rn"></div>
+      </div>
+    </div>
+
   </div><!-- end content-area -->
 </div><!-- end main-layout -->
 
@@ -458,9 +489,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJiPL_yIWpLIQ0V5_jCjQhiZef-kPJ8QsBfJN9-urdU-bwevFcrSeoaZE5MO-ZmwVx9Q/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzj2PCR8D2L3kRboQZ_9Mb9JHPimC_ORQRWLTYQ892KHc6PQlcDgta1pu62CdQfphQPRg/exec';
 
-let rows=[], headers=[], rowsMig=[], headersMig=[], rowsOlt=[], headersOlt=[];
+let rows=[], headers=[], rowsMig=[], headersMig=[], rowsOlt=[], headersOlt=[], rowsRN=[], headersRN=[];
 let conv=[], chatOpen=false;
 let selAnio='2026', selMes='TODOS';
 let curSection='adc';
@@ -478,8 +509,10 @@ window.addEventListener('load',()=>{
   // Cargar en secuencia para no sobrecargar el Apps Script
   loadOlt620().then(()=>{
     setTimeout(()=>loadMigraciones(), 1000);
+    setTimeout(()=>loadRutasNuevas(), 2000);
   }).catch(()=>{
     setTimeout(()=>loadMigraciones(), 1000);
+    setTimeout(()=>loadRutasNuevas(), 2000);
   });
 });
 document.addEventListener('click',e=>{
@@ -488,7 +521,7 @@ document.addEventListener('click',e=>{
 });
 
 /* ── NAVEGACION ── */
-const SECTIONS=['adc','reincidencias','mapa','mpls','olt620'];
+const SECTIONS=['adc','reincidencias','mapa','mpls','olt620','rutasnuevas'];
 function navTo(sec){
   curSection=sec;
   SECTIONS.forEach(s=>{
@@ -508,6 +541,10 @@ function navTo(sec){
   if(sec==='olt620'){
     if(rowsOlt.length){ renderOlt620(); }
     else{ loadOlt620(); }
+  }
+  if(sec==='rutasnuevas'){
+    if(rowsRN.length){ renderRutasNuevas(); }
+    else{ loadRutasNuevas(); }
   }
 }
 
@@ -589,12 +626,21 @@ async function loadOlt620(){
     }
   } catch(e){ console.warn('OLT620:',e.message); }
 }
+async function loadRutasNuevas(){
+  try{
+    const d=await jsonpAction(SCRIPT_URL.split('?')[0],'rutasnuevas');
+    if(d&&d.ok){ rowsRN=d.rows; headersRN=d.headers; if(curSection==='rutasnuevas') renderRutasNuevas(); }
+    else console.warn('RutasNuevas:', (d&&d.error)||'Sin datos');
+  }catch(e){ console.warn('Error RutasNuevas:', e.message); }
+}
+
 async function refresh(){
   document.getElementById('btn-ref').classList.add('spinning');
   setSS('spin','Actualizando...');
   await loadData();
   await loadOlt620();
   await loadMigraciones();
+  await loadRutasNuevas();
   document.getElementById('btn-ref').classList.remove('spinning');
 }
 
@@ -1323,6 +1369,123 @@ function filtrarTablaOlt(tipo, valor, color){
   document.getElementById('tb-olt').innerHTML=html;
   const bl=document.getElementById('btn-lim-olt');
   if(bl) bl.onclick=()=>filtrarTablaOlt('todos','','');
+}
+/* ── RUTAS NUEVAS CONSTRUIDAS ── */
+let chartRnEstado=null, chartRnClientes=null;
+function renderRutasNuevas(){
+  if(!rowsRN.length){
+    document.getElementById('rn-kpis').innerHTML='<p style="color:var(--text3);font-size:12px;padding:10px">Cargando datos...</p>';
+    return;
+  }
+
+  const colClientes=headersRN.find(h=>h.toUpperCase().includes('CLIENTES'))||headersRN[0]||'CANTIDAD CLIENTES EN RUTA';
+  const colRutaNueva=headersRN.find(h=>h.toUpperCase().includes('RUTA')&&h.toUpperCase().includes('NUEVA'))||headersRN[1]||'RUTA NUEVA';
+  const colCajas=headersRN.find(h=>h.includes('#CAJAS')||h.includes('# CAJAS')||h.toUpperCase().includes('CAJA'))||headersRN[2]||'#CAJAS';
+  const colRutaVieja=headersRN.find(h=>h.toUpperCase().includes('REEMPLAZAR'))||headersRN[3]||'RUTA A REEMPLAZAR';
+  const colEstado=headersRN.find(h=>h.toUpperCase().includes('ESTADO'))||headersRN[4]||'ESTADO DE MIGRACIÓN';
+  const colUM=headersRN.find(h=>h.toUpperCase().includes('UM')||h.toUpperCase().includes('PENDIENTE'))||headersRN[5]||'UM PENDIENTES DE MIGRAR';
+
+  const total=rowsRN.length;
+  const migradas=rowsRN.filter(r=>(r[colEstado]||'').toUpperCase().includes('MIGRADA')&&!(r[colEstado]||'').toUpperCase().includes('PENDIENTE')).length;
+  const enProceso=rowsRN.filter(r=>(r[colEstado]||'').toUpperCase().includes('PROCESO')).length;
+  const enConstruccion=rowsRN.filter(r=>(r[colEstado]||'').toUpperCase().includes('CONSTRUC')).length;
+  const pendientes=rowsRN.filter(r=>(r[colEstado]||'').toUpperCase().includes('PENDIENTE')).length;
+  const totalClientes=rowsRN.reduce((s,r)=>s+parseInt(r[colClientes]||0),0);
+  const totalUM=rowsRN.reduce((s,r)=>s+parseInt(r[colUM]||0),0);
+  const pct=totalClientes>0?Math.round((totalClientes-totalUM)/totalClientes*100):0;
+
+  // KPIs
+  document.getElementById('rn-kpis').innerHTML=`
+    <div class="kpi-card blue"><span class="kpi-icon">&#127959;</span><div class="kpi-val">${total}</div><div class="kpi-lbl">Rutas nuevas</div><div class="kpi-sub">construidas</div></div>
+    <div class="kpi-card green"><span class="kpi-icon">&#9989;</span><div class="kpi-val">${migradas}</div><div class="kpi-lbl">Rutas migradas</div><div class="kpi-sub">completadas</div></div>
+    <div class="kpi-card amber"><span class="kpi-icon">&#9881;</span><div class="kpi-val">${enProceso+enConstruccion}</div><div class="kpi-lbl">En progreso</div><div class="kpi-sub">${enConstruccion} en construcc. &middot; ${enProceso} en proc.</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#128101;</span><div class="kpi-val">${totalClientes.toLocaleString()}</div><div class="kpi-lbl">Clientes en ruta</div><div class="kpi-sub">impactados</div></div>
+    <div class="kpi-card red" style="border:2px solid var(--red);position:relative;overflow:visible">
+      <div style="position:absolute;top:-8px;right:-8px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;text-transform:uppercase">CRITICO</div>
+      <span class="kpi-icon">&#128101;</span>
+      <div class="kpi-val" style="font-size:28px">${totalUM.toLocaleString()}</div>
+      <div class="kpi-lbl">UMs pendientes</div>
+      <div class="kpi-sub">${pct}% ya migrado</div>
+    </div>`;
+
+  // Chart dona — estado de rutas
+  if(chartRnEstado){chartRnEstado.destroy();chartRnEstado=null;}
+  document.getElementById('wrap-rn-estado').innerHTML='<canvas id="ch-rn-estado"></canvas>';
+  const estMap={};
+  rowsRN.forEach(r=>{
+    let e=(r[colEstado]||'Sin estado').trim().toUpperCase();
+    if(e.includes('MIGRADA')&&!e.includes('PENDIENTE')) e='RUTA MIGRADA';
+    else if(e.includes('PROCESO')) e='EN PROCESO';
+    else if(e.includes('CONSTRUC')) e='EN CONSTRUCCIÓN';
+    else if(e.includes('PENDIENTE')) e='PENDIENTE MIGRAR';
+    estMap[e]=(estMap[e]||0)+1;
+  });
+  const estData=Object.entries(estMap).sort((a,b)=>b[1]-a[1]);
+  const estCols={'RUTA MIGRADA':'#4caf50','EN PROCESO':'#1a73e8','EN CONSTRUCCIÓN':'#ff9800','PENDIENTE MIGRAR':'#e63946'};
+  chartRnEstado=new Chart(document.getElementById('ch-rn-estado'),{type:'doughnut',data:{
+    labels:estData.map(([k,v])=>k+' ('+v+')'),
+    datasets:[{data:estData.map(([,v])=>v),backgroundColor:estData.map(([k])=>estCols[k]||'#90a4ae'),borderWidth:3,borderColor:'#fff',hoverOffset:8}]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:14,padding:10}},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed+' rutas'}}}}});
+
+  // Chart barras — clientes por estado
+  if(chartRnClientes){chartRnClientes.destroy();chartRnClientes=null;}
+  document.getElementById('wrap-rn-clientes').innerHTML='<canvas id="ch-rn-clientes"></canvas>';
+  const cliMap={};
+  rowsRN.forEach(r=>{
+    let e=(r[colEstado]||'Sin estado').trim().toUpperCase();
+    if(e.includes('MIGRADA')&&!e.includes('PENDIENTE')) e='RUTA MIGRADA';
+    else if(e.includes('PROCESO')) e='EN PROCESO';
+    else if(e.includes('CONSTRUC')) e='EN CONSTRUCCIÓN';
+    else if(e.includes('PENDIENTE')) e='PENDIENTE MIGRAR';
+    cliMap[e]=(cliMap[e]||0)+parseInt(r[colClientes]||0);
+  });
+  const cliData=Object.entries(cliMap).sort((a,b)=>b[1]-a[1]);
+  chartRnClientes=new Chart(document.getElementById('ch-rn-clientes'),{type:'bar',data:{
+    labels:cliData.map(([k])=>k),
+    datasets:[{data:cliData.map(([,v])=>v),backgroundColor:cliData.map(([k])=>estCols[k]||'#90a4ae'),borderRadius:5,borderSkipped:false}]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString()+' clientes'}}},scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10},maxRotation:30}}}}});
+
+  // Cards por ruta nueva
+  const rutasSorted=[...rowsRN].sort((a,b)=>parseInt(b[colUM]||0)-parseInt(a[colUM]||0));
+  let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">';
+  rutasSorted.forEach(r=>{
+    const clientes=parseInt(r[colClientes]||0);
+    const um=parseInt(r[colUM]||0);
+    const pctR=clientes>0?Math.round((clientes-um)/clientes*100):100;
+    let estado=(r[colEstado]||'').trim().toUpperCase();
+    let barC='#e63946',estadoTag='PENDIENTE',tagBg='var(--red-light)',tagCol='var(--red)';
+    if(estado.includes('MIGRADA')&&!estado.includes('PENDIENTE')){barC='#4caf50';estadoTag='MIGRADA';tagBg='var(--green-light)';tagCol='var(--green)';}
+    else if(estado.includes('PROCESO')){barC='#1a73e8';estadoTag='EN PROCESO';tagBg='var(--tnblue-light)';tagCol='var(--tnblue2)';}
+    else if(estado.includes('CONSTRUC')){barC='#ff9800';estadoTag='EN CONSTRUCC.';tagBg='var(--amber-light)';tagCol='var(--amber)';}
+    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+        <div style="flex:1;padding-right:8px">
+          <div style="font-size:12px;font-weight:700;color:var(--tnblue);line-height:1.3">${r[colRutaNueva]||'Sin nombre'}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px">Reemplaza: ${(r[colRutaVieja]||'').slice(0,35)}</div>
+        </div>
+        <span style="background:${tagBg};color:${tagCol};padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;white-space:nowrap">${estadoTag}</span>
+      </div>
+      <div style="background:var(--surface3);border-radius:4px;height:5px;margin-bottom:8px;overflow:hidden">
+        <div style="height:100%;border-radius:4px;background:${barC};width:${Math.max(2,pctR)}%"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;margin-top:6px">
+        <div style="background:var(--surface2);border-radius:6px;padding:6px 4px">
+          <div style="font-size:14px;font-weight:700;color:var(--tnblue)">${clientes.toLocaleString()}</div>
+          <div style="font-size:9px;color:var(--text3)">clientes</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:6px 4px">
+          <div style="font-size:14px;font-weight:700;color:var(--text2)">${r[colCajas]||0}</div>
+          <div style="font-size:9px;color:var(--text3)">cajas</div>
+        </div>
+        <div style="background:${um>0?'var(--red-light)':'var(--green-light)'};border-radius:6px;padding:6px 4px">
+          <div style="font-size:14px;font-weight:700;color:${um>0?'var(--red)':'var(--green)'}">${um>0?um.toLocaleString():'✅'}</div>
+          <div style="font-size:9px;color:${um>0?'var(--red)':'var(--green)'}">UM pend.</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById('tb-rn').innerHTML=html;
 }
 </script>
 </body>
