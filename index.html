@@ -476,7 +476,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfUWHbbUp1dVot98BthwKf3qBX9W-Hc1DTUznVBeQTOw4-TU0njIXDyUl4LizncIE29A/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz67t417K8sVPM58xikiGylphRXYqtM_YkkoQIgL5yse1ME-s0gP7NI4Gzht6QJtSeLdw/exec';
 
 let rows=[], headers=[], rowsMig=[], headersMig=[], rowsOlt=[], headersOlt=[];
 let conv=[], chatOpen=false;
@@ -899,8 +899,8 @@ function filtrarTablaMig(tipo,valor,color){
   const colCj=headersMig.find(h=>h.includes('# CAJAS')||h.includes('#CAJAS'))||'# CAJAS';
   const colPd=headersMig.find(h=>h.toUpperCase().includes('PENDIENTES')&&h.toUpperCase().includes('MIGRAR'))||'CAJAS PENDIENTES DE MIGRAR';
   if(tipo==='todos'){rutas=rowsMig.filter(r=>(r[colE]||'').toUpperCase().includes('PENDIENTE'));if(sub)sub.innerHTML='Mostrando todas las rutas pendientes';}
-  else if(tipo==='estado'){rutas=rowsMig.filter(r=>(r[colE]||'').trim()===valor);if(sub)sub.innerHTML='Estado: <strong style="color:'+color+'">'+valor+'</strong> &mdash; '+rutas.length+' rutas <button onclick="filtrarTablaMig('todos','','')" id="btn-lim" style="margin-left:8px;background:var(--surface3);border:none;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">&#10005; Limpiar</button>';}
-  else{rutas=rowsMig.filter(r=>(r[colC]||'').trim()===valor);if(sub)sub.innerHTML='Canton: <strong style="color:'+color+'">'+valor+'</strong> &mdash; '+rutas.length+' rutas <button onclick="filtrarTablaMig('todos','','')" id="btn-lim" style="margin-left:8px;background:var(--surface3);border:none;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">&#10005; Limpiar</button>';}
+  else if(tipo==='estado'){rutas=rowsMig.filter(r=>(r[colE]||'').trim()===valor);if(sub){sub.innerHTML='Estado: <strong style="color:'+color+'">'+valor+'</strong> &mdash; '+rutas.length+' rutas <button id="btn-lim" style="margin-left:8px;background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">&#10005; Limpiar</button>';}}
+  else{rutas=rowsMig.filter(r=>(r[colC]||'').trim()===valor);if(sub){sub.innerHTML='Canton: <strong style="color:'+color+'">'+valor+'</strong> &mdash; '+rutas.length+' rutas <button id="btn-lim" style="margin-left:8px;background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">&#10005; Limpiar</button>';}}
   const el=document.getElementById('tb-mig-pend');
   if(!rutas.length){el.innerHTML='<p style="font-size:12px;color:var(--green);padding:8px 0">&#9989; Sin rutas para este filtro</p>';return;}
   const totPd=rutas.reduce((s,r)=>s+parseInt(r[colPd]||0),0);
@@ -911,7 +911,7 @@ function filtrarTablaMig(tipo,valor,color){
 }
 
 /* ── OLT 620 ── */
-let chartOltNodos=null;
+chartOltNodos=null;
 function renderOlt620(){
   if(!rowsOlt.length){document.getElementById('olt-kpis').innerHTML='<p style="color:var(--text3);font-size:12px;padding:10px">Cargando datos OLT 620...</p>';return;}
   const colE=headersOlt.find(h=>h.toUpperCase().includes('ESTADO'))||'ESTADO';
