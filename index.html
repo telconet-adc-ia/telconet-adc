@@ -908,11 +908,22 @@ function buildAlertaRuta(rFilt){
   if(!top.length){el.style.display='none';return;}
   const [ruta,cnt]=top[0];const pct=Math.round(cnt/rFilt.length*100);
   el.style.display='block';
-  el.innerHTML=`<div style="background:linear-gradient(135deg,#a01e1e,#c0392b);border-radius:12px;padding:14px 18px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+  // Color rojo al 70% de intensidad (más suave)
+  el.innerHTML=`<div style="background:linear-gradient(135deg,#7a2020,#9e3030);border-radius:12px;padding:14px 18px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
     <div><div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;opacity:.8;margin-bottom:3px">&#128680; Ruta con mayor numero de incidencias</div>
     <div style="font-size:14px;font-weight:700">${ruta}</div>
     <div style="font-size:12px;opacity:.85;margin-top:3px"><strong>${cnt} trabajos</strong> &mdash; ${pct}% del total del periodo</div></div>
-    <div style="display:flex;gap:8px">${top.map(([r,v],i)=>`<div style="background:rgba(255,255,255,${i===0?'.2':'.1'});border-radius:8px;padding:7px 12px;text-align:center;border:1px solid rgba(255,255,255,${i===0?'.4':'.15'})"><div style="font-size:18px;font-weight:700">${v}</div><div style="font-size:9px;opacity:.8">#${i+1}</div></div>`).join('')}</div>
+    <div style="display:flex;gap:8px">${top.map(([r,v],i)=>`
+      <div onclick="this.querySelector('.rn-tooltip').style.display=this.querySelector('.rn-tooltip').style.display==='none'?'block':'none'"
+        style="background:rgba(255,255,255,${i===0?'.18':'.09'});border-radius:8px;padding:7px 12px;text-align:center;border:1px solid rgba(255,255,255,${i===0?'.35':'.12'});cursor:pointer;position:relative;user-select:none">
+        <div style="font-size:18px;font-weight:700">${v}</div>
+        <div style="font-size:9px;opacity:.8">#${i+1}</div>
+        <div class="rn-tooltip" style="display:none;position:absolute;bottom:calc(100% + 8px);right:0;background:#1a1a2e;color:#fff;font-size:11px;padding:8px 12px;border-radius:8px;white-space:nowrap;z-index:9999;min-width:180px;max-width:280px;white-space:normal;line-height:1.4;text-align:left;box-shadow:0 4px 16px rgba(0,0,0,.4)">
+          <div style="font-size:10px;opacity:.65;margin-bottom:3px">#${i+1} — ${v} trabajos</div>
+          <div style="font-weight:600">${r}</div>
+        </div>
+      </div>`).join('')}
+    </div>
   </div>`;
 }
 
