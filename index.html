@@ -902,12 +902,25 @@ function buildAlertaRuta(rFilt){
     const caja=(r['CAJA']||'').trim();if(!caja)return;
     const m=caja.match(/^(CUE-.*?-F\d+)/i);
     const ruta=m?m[1].trim():caja.slice(0,40);
-    if(ruta)rutaMap[ruta]=(rutaMap[ruta]||0)+1;
+    if(!ruta) return;
+    if(!rutaMap[ruta]) rutaMap[ruta]={cnt:0,tareas:{}};
+    rutaMap[ruta].cnt++;
+    // Contar tipos de tarea por ruta
+    const tarea=(r['TIPO TAREA']||r['TIPO DE TAREA']||'Sin tipo').trim();
+    rutaMap[ruta].tareas[tarea]=(rutaMap[ruta].tareas[tarea]||0)+1;
   });
-  const top=Object.entries(rutaMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+  const top=Object.entries(rutaMap)
+    .sort((a,b)=>b[1].cnt-a[1].cnt)
+    .slice(0,3)
+    .map(([ruta,info])=>{
+      // Top 2 tipos de tarea para esta ruta
+      const topTareas=Object.entries(info.tareas).sort((a,b)=>b[1]-a[1]).slice(0,2);
+      return {ruta, cnt:info.cnt, topTareas};
+    });
+
   if(!top.length){el.style.display='none';return;}
 
-  // Guardar datos en variable global accesible desde onclick
   window._alertaTop=top;
   window._alertaTotal=rFilt.length;
 
@@ -919,20 +932,30 @@ function buildAlertaHTML(idx){
   const top=window._alertaTop||[];
   const total=window._alertaTotal||1;
   if(!top.length) return '';
-  const [rutaSel,cntSel]=top[idx];
-  const pctSel=Math.round(cntSel/total*100);
-  const btns=top.map(([r,v],i)=>{
+  const item=top[idx];
+  const pctSel=Math.round(item.cnt/total*100);
+
+  // Badges de tipos de tarea
+  const tareasHTML=item.topTareas.map(([t,v])=>
+    '<span style="display:inline-flex;align-items:center;gap:4px;background:#e8eef8;color:#003087;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap">'
+    +'&#128295; '+t+' <span style="background:#003087;color:#fff;border-radius:3px;padding:0 4px;font-size:9px">'+v+'</span>'
+    +'</span>'
+  ).join('');
+
+  const btns=top.map((it,i)=>{
     const active=i===idx;
     return '<div onclick="selAlerta('+i+')" style="background:'+(active?'#E24B4A':'#FCEBEB')+';border:1px solid '+(active?'#E24B4A':'#F7C1C1')+';border-radius:8px;padding:8px 14px;text-align:center;cursor:pointer;min-width:52px;transition:.15s">'
-      +'<div style="font-size:18px;font-weight:700;color:'+(active?'#fff':'#A32D2D')+';line-height:1">'+v+'</div>'
+      +'<div style="font-size:18px;font-weight:700;color:'+(active?'#fff':'#A32D2D')+';line-height:1">'+it.cnt+'</div>'
       +'<div style="font-size:9px;color:'+(active?'rgba(255,255,255,.8)':'#A32D2D')+';margin-top:2px">#'+(i+1)+'</div>'
       +'</div>';
   }).join('');
+
   return '<div style="background:#fff;border:1px solid #e0e4f0;border-left:4px solid #E24B4A;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;box-shadow:0 1px 4px rgba(0,48,135,.06)">'
     +'<div style="flex:1;min-width:200px">'
-    +'<div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#A32D2D;margin-bottom:4px">&#9888; Ruta con mayor numero de incidencias</div>'
-    +'<div style="font-size:14px;font-weight:700;color:#0d1526;line-height:1.3">'+rutaSel+'</div>'
-    +'<div style="font-size:12px;color:#4a5578;margin-top:4px"><strong>'+cntSel+' trabajos</strong> &mdash; '+pctSel+'% del total del periodo</div>'
+    +'<div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#A32D2D;margin-bottom:5px">&#9888; Ruta con mayor numero de incidencias</div>'
+    +'<div style="font-size:14px;font-weight:700;color:#0d1526;line-height:1.3;margin-bottom:5px">'+item.ruta+'</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'+tareasHTML+'</div>'
+    +'<div style="font-size:12px;color:#4a5578"><strong>'+item.cnt+' trabajos</strong> &mdash; '+pctSel+'% del total del periodo</div>'
     +'</div>'
     +'<div style="display:flex;gap:8px">'+btns+'</div>'
     +'</div>';
