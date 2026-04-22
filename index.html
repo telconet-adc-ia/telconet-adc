@@ -1226,49 +1226,6 @@ function buildMapa(){
   });
   const usadas=[...new Set(puntos.map(p=>p.proc))].sort();
   document.getElementById('mapa-leyenda').innerHTML=usadas.map(p=>`<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:12px;height:12px;border-radius:50%;background:${procColor[p]}"></div>${cap(p.toLowerCase())}</div>`).join('');
-  // ── Capa de Regulatorio Interurbano ──
-  if(rowsReg.length){
-    const colLat=headersReg.find(h=>h.toUpperCase().includes('LAT'))||headersReg[1];
-    const colLng=headersReg.find(h=>h.toUpperCase().includes('LON')||h.toUpperCase().includes('LONG'))||headersReg[2];
-    const colTarea=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
-
-    let regCount=0;
-    rowsReg.forEach(r=>{
-      const lat=parseFloat((r[colLat]||'').toString().replace(',','.'));
-      const lng=parseFloat((r[colLng]||'').toString().replace(',','.'));
-      if(isNaN(lat)||isNaN(lng)) return;
-
-      // Marcador especial — triángulo naranja de alerta
-      const icon=L.divIcon({
-        className:'',
-        html:'<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #ff6b00;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))"></div>',
-        iconSize:[16,16],
-        iconAnchor:[8,16]
-      });
-      const mk=L.marker([lat,lng],{icon}).addTo(map);
-      mk.bindPopup(
-        '<div style="font-size:12px;min-width:160px">'+
-        '<div style="background:#ff6b00;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700;letter-spacing:.5px">&#9888; REGULATORIO INT</div>'+
-        '<div style="padding:6px 8px"><strong>Tarea:</strong> '+(r[colTarea]||'Sin número')+'<br>'+
-        '<span style="font-size:10px;color:#666">Cambio de postería — requiere revisión</span></div>'+
-        '</div>'
-      );
-      marcadores.push(mk);
-      regCount++;
-    });
-
-    if(regCount>0){
-      // Agregar a leyenda
-      const leyenda=document.getElementById('mapa-leyenda');
-      if(leyenda){
-        const div=document.createElement('div');
-        div.style.cssText='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)';
-        div.innerHTML='<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:13px solid #ff6b00"></div> Regulatorio Int. ('+regCount+')';
-        leyenda.appendChild(div);
-      }
-      document.getElementById('sub-mapa').textContent+=' · '+regCount+' tareas regulatorio';
-    }
-  }
 
   if(marcadores.length){
     const group=L.featureGroup(marcadores);
@@ -1276,10 +1233,9 @@ function buildMapa(){
   }
   setTimeout(()=>{
     map.invalidateSize();
-    // Agregar capa regulatorio si ya cargó
+    // Agregar capa regulatorio — funciona tanto si ya cargó como si llega después
     if(rowsReg.length) agregarCapaRegulatorio();
-    // Si aún no cargó, se agregará cuando llegue vía loadRegInt
-  },150);
+  },200);
 }
 
 
