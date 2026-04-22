@@ -494,9 +494,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVNnpv1HnR7NKTLrAVJ5soW36CcRoj_PcP_u0Z1_CYTkrPpf0wPDpoVWT2t3PvbN9UwQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxq_vVTg08xaboI6BC937Qgs9EGx3RV5H0lzPJfeqxFlrLK8oNoBmLXpldaHwde5vU68Q/exec';
 
-let rows=[], headers=[], rowsMig=[], headersMig=[], rowsOlt=[], headersOlt=[], rowsRN=[], headersRN=[];
+let rows=[], headers=[], rowsMig=[], headersMig=[], rowsOlt=[], headersOlt=[], rowsRN=[], headersRN=[], rowsReg=[], headersReg=[];
 let conv=[], chatOpen=false;
 let selAnio='2026', selMes='TODOS';
 let curSection='adc';
@@ -515,9 +515,11 @@ window.addEventListener('load',()=>{
   loadOlt620().then(()=>{
     setTimeout(()=>loadMigraciones(), 1000);
     setTimeout(()=>loadRutasNuevas(), 2000);
+    setTimeout(()=>loadRegInt(), 3000);
   }).catch(()=>{
     setTimeout(()=>loadMigraciones(), 1000);
     setTimeout(()=>loadRutasNuevas(), 2000);
+    setTimeout(()=>loadRegInt(), 3000);
   });
 });
 document.addEventListener('click',e=>{
@@ -639,6 +641,18 @@ async function loadRutasNuevas(){
   }catch(e){ console.warn('Error RutasNuevas:', e.message); }
 }
 
+async function loadRegInt(){
+  try{
+    const d=await jsonpAction(SCRIPT_URL.split('?')[0],'regint');
+    if(d&&d.ok){
+      rowsReg=d.rows; headersReg=d.headers;
+      console.log('[REG] Cargado OK:', rowsReg.length, 'tareas');
+      // Si el mapa está activo, refrescar
+      if(curSection==='mapa') buildMapa();
+    } else console.warn('[REG]', (d&&d.error)||'Sin datos');
+  } catch(e){ console.warn('[REG] Error:', e.message); }
+}
+
 async function refresh(){
   document.getElementById('btn-ref').classList.add('spinning');
   setSS('spin','Actualizando...');
@@ -646,6 +660,7 @@ async function refresh(){
   await loadOlt620();
   await loadMigraciones();
   await loadRutasNuevas();
+  await loadRegInt();
   document.getElementById('btn-ref').classList.remove('spinning');
 }
 
@@ -1146,8 +1161,54 @@ function buildMapa(){
   });
   const usadas=[...new Set(puntos.map(p=>p.proc))].sort();
   document.getElementById('mapa-leyenda').innerHTML=usadas.map(p=>`<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:12px;height:12px;border-radius:50%;background:${procColor[p]}"></div>${cap(p.toLowerCase())}</div>`).join('');
-  const group=L.featureGroup(marcadores);
-  map.fitBounds(group.getBounds().pad(0.08));
+  // ── Capa de Regulatorio Interurbano ──
+  if(rowsReg.length){
+    const colLat=headersReg.find(h=>h.toUpperCase().includes('LAT'))||headersReg[1];
+    const colLng=headersReg.find(h=>h.toUpperCase().includes('LON')||h.toUpperCase().includes('LONG'))||headersReg[2];
+    const colTarea=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
+
+    let regCount=0;
+    rowsReg.forEach(r=>{
+      const lat=parseFloat((r[colLat]||'').toString().replace(',','.'));
+      const lng=parseFloat((r[colLng]||'').toString().replace(',','.'));
+      if(isNaN(lat)||isNaN(lng)) return;
+
+      // Marcador especial — triángulo naranja de alerta
+      const icon=L.divIcon({
+        className:'',
+        html:'<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #ff6b00;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))"></div>',
+        iconSize:[16,16],
+        iconAnchor:[8,16]
+      });
+      const mk=L.marker([lat,lng],{icon}).addTo(map);
+      mk.bindPopup(
+        '<div style="font-size:12px;min-width:160px">'+
+        '<div style="background:#ff6b00;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700;letter-spacing:.5px">&#9888; REGULATORIO INT</div>'+
+        '<div style="padding:6px 8px"><strong>Tarea:</strong> '+(r[colTarea]||'Sin número')+'<br>'+
+        '<span style="font-size:10px;color:#666">Cambio de postería — requiere revisión</span></div>'+
+        '</div>'
+      );
+      marcadores.push(mk);
+      regCount++;
+    });
+
+    if(regCount>0){
+      // Agregar a leyenda
+      const leyenda=document.getElementById('mapa-leyenda');
+      if(leyenda){
+        const div=document.createElement('div');
+        div.style.cssText='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)';
+        div.innerHTML='<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:13px solid #ff6b00"></div> Regulatorio Int. ('+regCount+')';
+        leyenda.appendChild(div);
+      }
+      document.getElementById('sub-mapa').textContent+=' · '+regCount+' tareas regulatorio';
+    }
+  }
+
+  if(marcadores.length){
+    const group=L.featureGroup(marcadores);
+    map.fitBounds(group.getBounds().pad(0.08));
+  }
   setTimeout(()=>map.invalidateSize(),150);
 }
 
