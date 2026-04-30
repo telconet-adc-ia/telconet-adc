@@ -496,7 +496,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBNmKb-mkYs0pqssD7cHU8JkGwNk_aQzUMllFHqzJ4XW84B0y1GJmTDE9jHadQNhML6g/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyXES3YZjBFU-fFpBFieXutUrMmPrHpjN3kxjJxgq8wj-1vKNNqv0Yr0OcuirrZYTL-ew/exec';
 
 let rows=[], headers=[], rowsMig=[], headersMig=[], rowsOlt=[], headersOlt=[], rowsRN=[], headersRN=[], rowsReg=[], headersReg=[];
 let conv=[], chatOpen=false;
@@ -1555,8 +1555,29 @@ async function send(){
 }
 async function askIA(q){
   const url=SCRIPT_URL.split('?')[0];
-  const hist=conv.slice(-8);
+  // Solo último turno del historial para reducir tamaño de URL
+  const hist=conv.slice(-2);
+  // Contexto compacto — solo los datos más relevantes
   const ctx=buildContextoAgente();
+  // Comprimir ctx eliminando datos menos críticos si es muy grande
+  const ctxStr=JSON.stringify(ctx);
+  const ctxFinal=ctxStr.length>2000?JSON.stringify({
+    periodo:ctx.periodo,
+    trabajos:{
+      total:ctx.trabajos.total,
+      realizados:ctx.trabajos.realizados,
+      pendientes:ctx.trabajos.pendientes,
+      cumplimiento:ctx.trabajos.cumplimiento,
+      topNodosIncidencias:ctx.trabajos.topNodosIncidencias,
+      topNodosFiscalizacion:ctx.trabajos.topNodosFiscalizacion,
+      topCuadrillas:ctx.trabajos.topCuadrillas,
+      topProcedencias:ctx.trabajos.topProcedencias
+    },
+    olt620:ctx.olt620,
+    mplsPreconect:ctx.mplsPreconect,
+    rutasNuevas:ctx.rutasNuevas
+  }):ctxStr;
+
   return new Promise((res,rej)=>{
     const cb='chat_'+Date.now();
     const s=document.createElement('script');
@@ -1572,7 +1593,7 @@ async function askIA(q){
     s.onerror=()=>{clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);rej(new Error('Error contactando el agente.'));};
     s.src=url+'?action=chat'
       +'&q='+encodeURIComponent(q)
-      +'&ctx='+encodeURIComponent(JSON.stringify(ctx))
+      +'&ctx='+encodeURIComponent(ctxFinal)
       +'&history='+encodeURIComponent(JSON.stringify(hist))
       +'&callback='+cb;
     document.head.appendChild(s);
