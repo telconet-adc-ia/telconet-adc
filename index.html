@@ -469,21 +469,23 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <div class="cwin" id="cwin">
   <div class="cwin-hdr">
     <div style="display:flex;align-items:center">
-      <div class="cwin-av">IA</div>
-      <div><div class="cwin-name">Asistente IA ADC</div><div class="cwin-status"><div class="cwin-sdot"></div>En linea &middot; Telconet</div></div>
+      <div class="cwin-av" style="background:linear-gradient(135deg,#003087,#0047be);font-size:9px;font-weight:800">ADC</div>
+      <div><div class="cwin-name">Asistente ADC · Telconet</div><div class="cwin-status"><div class="cwin-sdot"></div>En linea &middot; Telconet</div></div>
     </div>
     <button class="cwin-close" onclick="toggleChat()">&#x2715;</button>
   </div>
   <div class="qsuggs">
-    <button class="qbtn" onclick="qs('Resumen ejecutivo del mes actual')">&#128202; Resumen</button>
-    <button class="qbtn" onclick="qs('Ranking de cuadrillas')">&#127942; Cuadrillas</button>
-    <button class="qbtn" onclick="qs('Trabajos pendientes de asignar')">&#9888; Pendientes</button>
-    <button class="qbtn" onclick="qs('Informe completo para la jefatura')">&#128203; Informe</button>
+    <button class="qbtn" onclick="qs('¿Cuáles son los sectores con mayor número de incidencias?')">&#128204; Sectores críticos</button>
+    <button class="qbtn" onclick="qs('¿Cuántos trabajos pendientes de asignar hay?')">&#9888; Pendientes</button>
+    <button class="qbtn" onclick="qs('¿Cuál es el cumplimiento mensual?')">&#128200; Cumplimiento</button>
+    <button class="qbtn" onclick="qs('Dame un informe ejecutivo completo para la jefatura')">&#128203; Informe</button>
+    <button class="qbtn" onclick="qs('¿Cuáles son las incidencias más frecuentes?')">&#128293; Incidencias</button>
+    <button class="qbtn" onclick="qs('Estado de fiscalización por sector')">&#128270; Fiscalización</button>
   </div>
   <div class="cmsgs" id="cmsgs"></div>
   <div class="cinp-area">
     <div class="cinp-box">
-      <textarea id="chat-inp" rows="1" placeholder="Escribe tu consulta..." onkeydown="onKey(event)" oninput="rsz(this)" disabled></textarea>
+      <textarea id="chat-inp" rows="1" placeholder="¿Cuáles son los sectores más conflictivos?" onkeydown="onKey(event)" oninput="rsz(this)" disabled></textarea>
       <button class="btn-send" id="btn-send" onclick="send()" disabled>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
@@ -494,7 +496,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzped5622LSPcSe6ZvPuLLZi0EsSblzUIzCKtTb4nOIf-AI7cZfyPsvG2xXNOkTUg1E/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxNpmyjG9eoStIfDTKCBCB3I3BJA8b_T-B6NSQIkxEiXIcsEKS8chsj8AI3oLUke_HaKg/exec';
 
 let rows=[], headers=[], rowsMig=[], headersMig=[], rowsOlt=[], headersOlt=[], rowsRN=[], headersRN=[], rowsReg=[], headersReg=[];
 let conv=[], chatOpen=false;
@@ -798,7 +800,19 @@ function onLoaded(json){
   document.getElementById('chat-inp').disabled=false;
   document.getElementById('btn-send').disabled=false;
   renderDashboard();
-  addMsg('assistant','Bienvenido al <strong>Dashboard de Operaciones Telconet</strong>. Datos cargados: <strong>'+rows.length.toLocaleString()+'</strong> registros.<br><br>Usa el menu lateral para navegar entre secciones. Dime tu consulta.');
+  addMsg('assistant',
+  'Hola, soy el <strong>Asistente ADC de Telconet</strong> 👋<br><br>'+
+  'Datos cargados: <strong>'+rows.length.toLocaleString()+'</strong> trabajos'+
+  (rowsMig.length?' · <strong>'+rowsMig.length+'</strong> rutas MPLS':'')+
+  (rowsOlt.length?' · <strong>'+rowsOlt.length+'</strong> nodos OLT':'')+
+  '.<br><br>Puedo ayudarte con:<br>'+
+  '• Incidencias y sectores más conflictivos<br>'+
+  '• Cumplimiento mensual de cuadrillas<br>'+
+  '• Trabajos pendientes de asignar<br>'+
+  '• Estado de fiscalización por sector<br>'+
+  '• Informes ejecutivos para jefatura<br><br>'+
+  '¿Qué necesitas consultar?'
+);
 }
 
 /* ── RENDER PRINCIPAL ADC ── */
@@ -1540,16 +1554,120 @@ async function send(){
   document.getElementById('btn-send').disabled=false;inp.focus();
 }
 async function askIA(q){
-  const url=SCRIPT_URL.split('?')[0];const hist=conv.slice(-8);
+  const url=SCRIPT_URL.split('?')[0];
+  const hist=conv.slice(-8);
+  const ctx=buildContextoAgente();
   return new Promise((res,rej)=>{
-    const cb='chat_'+Date.now();const s=document.createElement('script');
-    const t=setTimeout(()=>{clean();rej(new Error('La IA tardo demasiado.'));},60000);
-    window[cb]=(d)=>{clean();if(!d.ok){rej(new Error(d.error||'Error'));return;}conv.push({role:'user',content:q});conv.push({role:'assistant',content:d.reply});res(d.reply);};
-    s.onerror=()=>{clean();rej(new Error('Error contactando el script.'));};
-    s.src=url+'?action=chat&q='+encodeURIComponent(q)+'&history='+encodeURIComponent(JSON.stringify(hist))+'&callback='+cb;
+    const cb='chat_'+Date.now();
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{if(s.parentNode)s.parentNode.removeChild(s);rej(new Error('El agente tardó demasiado. Intenta de nuevo.'));},90000);
+    window[cb]=(d)=>{
+      clearTimeout(t);delete window[cb];
+      if(s.parentNode)s.parentNode.removeChild(s);
+      if(!d.ok){rej(new Error(d.error||'Error del agente'));return;}
+      conv.push({role:'user',content:q});
+      conv.push({role:'assistant',content:d.reply});
+      res(d.reply);
+    };
+    s.onerror=()=>{clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);rej(new Error('Error contactando el agente.'));};
+    s.src=url+'?action=chat'
+      +'&q='+encodeURIComponent(q)
+      +'&ctx='+encodeURIComponent(JSON.stringify(ctx))
+      +'&history='+encodeURIComponent(JSON.stringify(hist))
+      +'&callback='+cb;
     document.head.appendChild(s);
-    function clean(){clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
   });
+}
+
+function buildContextoAgente(){
+  const anioCol=getAnioCol();
+  const rowsAnio=rows.filter(r=>String(r[anioCol]||'').trim()===selAnio);
+  const rFilt=selMes==='TODOS'?rowsAnio:rowsAnio.filter(r=>(r['MES']||'').toUpperCase()===selMes);
+  const periodo=selMes==='TODOS'?selAnio:selMes+' '+selAnio;
+  const total=rFilt.length;
+  const realizados=rFilt.filter(r=>(r['ESTADO']||'').toUpperCase().includes('REALIZADO')).length;
+  const pendientes=rFilt.filter(r=>(r['ESTADO']||'').toUpperCase().includes('PENDIENTE')).length;
+  const cumplimiento=total>0?Math.round(realizados/total*100):0;
+  // Procedencias
+  const procMap={};rFilt.forEach(r=>{const p=(r['PROCEDENCIA']||'Sin tipo').trim().toUpperCase();procMap[p]=(procMap[p]||0)+1;});
+  const topProc=Object.entries(procMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  // Tipos de tarea
+  const tareaMap={};rFilt.forEach(r=>{const t=(r['TIPO TAREA']||r['TIPO DE TAREA']||'Sin tipo').trim();tareaMap[t]=(tareaMap[t]||0)+1;});
+  const topTareas=Object.entries(tareaMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  // Nodos
+  const nodoMap={};rFilt.forEach(r=>{const n=(r['NODO']||'').trim();if(n)nodoMap[n]=(nodoMap[n]||0)+1;});
+  const topNodos=Object.entries(nodoMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  // Nodos con incidencias críticas
+  const incMap={};
+  rFilt.filter(r=>{const p=(r['PROCEDENCIA']||'').toUpperCase();return p.includes('INCIDENCIA')||p.includes('INDICE')||p.includes('REGULATORIO')||p.includes('FISCALIZ');})
+    .forEach(r=>{const n=(r['NODO']||'').trim();if(n)incMap[n]=(incMap[n]||0)+1;});
+  const topInc=Object.entries(incMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  // Cuadrillas
+  const cuadMap={};
+  rFilt.filter(r=>(r['ESTADO']||'').toUpperCase().includes('REALIZADO'))
+    .forEach(r=>{const c=(r['CUADRILLA']||'').trim();if(c)cuadMap[c]=(cuadMap[c]||0)+1;});
+  const topCuad=Object.entries(cuadMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  // Tendencia mensual
+  const mesMap={};rowsAnio.forEach(r=>{const m=(r['MES']||'').toUpperCase();if(m)mesMap[m]=(mesMap[m]||0)+1;});
+  // Fiscalización e incidencias por separado
+  const fiscMap={};
+  rFilt.filter(r=>(r['PROCEDENCIA']||'').toUpperCase().includes('FISCALIZ'))
+    .forEach(r=>{const n=(r['NODO']||'').trim();if(n)fiscMap[n]=(fiscMap[n]||0)+1;});
+  const incSoloMap={};
+  rFilt.filter(r=>(r['PROCEDENCIA']||'').toUpperCase().includes('INCIDENCIA'))
+    .forEach(r=>{const n=(r['NODO']||'').trim();if(n)incSoloMap[n]=(incSoloMap[n]||0)+1;});
+  // OLT
+  let oltResumen=null;
+  if(rowsOlt.length){
+    const colPd=headersOlt.find(h=>h.toUpperCase().includes('PENDIENTE'))||'';
+    oltResumen={
+      total:rowsOlt.length,
+      pendientes:rowsOlt.filter(r=>(r['ESTADO']||'').toUpperCase().includes('PENDIENTE')).length,
+      enProceso:rowsOlt.filter(r=>(r['ESTADO']||'').toUpperCase().includes('PROCESO')).length,
+      inventariados:rowsOlt.filter(r=>(r['ESTADO']||'').toUpperCase().includes('INVENTARI')).length,
+      reflejosPend:rowsOlt.reduce((s,r)=>s+parseInt(r[colPd]||0),0)
+    };
+  }
+  // MPLS
+  let mplsResumen=null;
+  if(rowsMig.length){
+    const colPdM=headersMig.find(h=>h.toUpperCase().includes('PENDIENTES'))||'';
+    mplsResumen={
+      total:rowsMig.length,
+      pendientes:rowsMig.filter(r=>(r['ESTADO']||'').toUpperCase().includes('PENDIENTE')).length,
+      migradas:rowsMig.filter(r=>(r['ESTADO']||'').toUpperCase().includes('MIGRADA')&&!(r['ESTADO']||'').toUpperCase().includes('PENDIENTE')).length,
+      cajasPend:rowsMig.reduce((s,r)=>s+parseInt(r[colPdM]||0),0)
+    };
+  }
+  // Rutas nuevas
+  let rnResumen=null;
+  if(rowsRN.length){
+    const colEst=headersRN.find(h=>h.toUpperCase().includes('ESTADO'))||'';
+    const colUM=headersRN.find(h=>h.toUpperCase().includes('UM'))||'';
+    const colRN=headersRN.find(h=>h.toUpperCase().includes('NUEVA'))||'';
+    rnResumen={
+      totalUnicas:new Set(rowsRN.map(r=>(r[colRN]||'').trim())).size,
+      migradas:rowsRN.filter(r=>(r[colEst]||'').toUpperCase().includes('MIGRADA')).length,
+      umPend:rowsRN.reduce((s,r)=>s+parseInt(r[colUM]||0),0)
+    };
+  }
+  return {
+    periodo,selAnio,selMes,
+    trabajos:{
+      total,realizados,pendientes,cumplimiento,
+      topProcedencias:topProc,
+      topTiposTarea:topTareas,
+      topNodos,
+      topNodosIncidencias:topInc,
+      topNodosFiscalizacion:Object.entries(fiscMap).sort((a,b)=>b[1]-a[1]).slice(0,5),
+      topNodosSoloIncidencia:Object.entries(incSoloMap).sort((a,b)=>b[1]-a[1]).slice(0,5),
+      topCuadrillas:topCuad,
+      tendenciaMensual:Object.entries(mesMap)
+    },
+    olt620:oltResumen,
+    mplsPreconect:mplsResumen,
+    rutasNuevas:rnResumen
+  };
 }
 function addMsg(role,html){
   const w=document.getElementById('cmsgs');const d=document.createElement('div');d.className='cmsg '+role;
