@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Telconet · Dashboard Operaciones ADC</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -874,7 +875,31 @@ function buildChartCuad(rFilt){
     .filter(([k])=>k&&k.trim()!=='');
   if(!d.length){document.getElementById('wrap-cuad').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px 0;text-align:center">Sin trabajos realizados para el periodo</p>';return;}
   const cols=d.map((_,i)=>`hsl(${210+i*18},70%,${38+i*4}%)`);
-  chartCuad=new Chart(document.getElementById('ch-cuad'),{type:'bar',data:{labels:d.map(([k])=>k.length>22?k.slice(0,20)+'…':k),datasets:[{data:d.map(([,v])=>v),backgroundColor:cols,borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y+' trabajos'}}},scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:9},maxRotation:35}}}}});
+  chartCuad=new Chart(document.getElementById('ch-cuad'),{
+    type:'bar',
+    plugins:[ChartDataLabels],
+    data:{
+      labels:d.map(([k])=>k.length>22?k.slice(0,20)+'…':k),
+      datasets:[{data:d.map(([,v])=>v),backgroundColor:cols,borderRadius:5,borderSkipped:false}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y+' trabajos'}},
+        datalabels:{
+          anchor:'end',align:'end',offset:2,
+          color:'#003087',font:{size:11,weight:'bold'},
+          formatter:v=>v
+        }
+      },
+      scales:{
+        y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},
+        x:{grid:{display:false},ticks:{font:{size:9},maxRotation:35}}
+      },
+      layout:{padding:{top:20}}
+    }
+  });
 }
 
 function buildChartTipo(rFilt){
@@ -886,10 +911,30 @@ function buildChartTipo(rFilt){
   if(!d.length){document.getElementById('wrap-tipo').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px 0;text-align:center">Sin trabajos realizados</p>';return;}
   const total=d.reduce((s,[,v])=>s+v,0);
   const colors=['#e63946','#2196f3','#ff9800','#4caf50','#9c27b0','#00bcd4','#ff5722','#8bc34a'];
-  chartTipo=new Chart(document.getElementById('ch-tipo'),{type:'doughnut',data:{
-    labels:d.map(([k,v])=>(k.length>16?k.slice(0,14)+'…':k)+' ('+Math.round(v/total*100)+'%)'),
-    datasets:[{data:d.map(([,v])=>v),backgroundColor:colors,borderWidth:3,borderColor:'#fff',hoverOffset:8}]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12,padding:8}},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.toLocaleString()+' realizados ('+Math.round(ctx.parsed/total*100)+'%)' }}}}});
+  chartTipo=new Chart(document.getElementById('ch-tipo'),{
+    type:'doughnut',
+    plugins:[ChartDataLabels],
+    data:{
+      labels:d.map(([k,v])=>(k.length>16?k.slice(0,14)+'…':k)+' ('+Math.round(v/total*100)+'%)'),
+      datasets:[{data:d.map(([,v])=>v),backgroundColor:colors,borderWidth:3,borderColor:'#fff',hoverOffset:8}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'right',labels:{font:{size:10},boxWidth:12,padding:8}},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.toLocaleString()+' realizados ('+Math.round(ctx.parsed/total*100)+'%)'}},
+        datalabels:{
+          color:'#fff',
+          font:{size:11,weight:'bold'},
+          formatter:(v,ctx)=>{
+            const pct=Math.round(v/total*100);
+            return pct>=5?v+'\n('+pct+'%)':'';
+          },
+          textAlign:'center'
+        }
+      }
+    }
+  });
 }
 
 function buildChartMes(rowsAnio){
@@ -898,10 +943,40 @@ function buildChartMes(rowsAnio){
   const mmap={};rowsAnio.forEach(r=>{const k=(r['MES']||'').toUpperCase();if(k)mmap[k]=(mmap[k]||0)+1;});
   const d=Object.entries(mmap).sort((a,b)=>{const ia=MESES.indexOf(a[0]),ib=MESES.indexOf(b[0]);return(ia<0?99:ia)-(ib<0?99:ib);});
   if(!d.length){document.getElementById('wrap-mes').innerHTML='<p style="font-size:12px;color:var(--text3);padding:60px;text-align:center">Sin datos para el año '+selAnio+'</p>';return;}
-  chartMes=new Chart(document.getElementById('ch-mes'),{type:'line',data:{
-    labels:d.map(([k])=>cap(k)),
-    datasets:[{label:'Trabajos',data:d.map(([,v])=>v),borderColor:'rgba(0,48,135,1)',backgroundColor:'rgba(0,48,135,0.08)',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'rgba(0,48,135,1)',fill:true,tension:.35}]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString()+' trabajos'}}},scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},x:{grid:{color:'rgba(0,0,0,0.03)'},ticks:{font:{size:11}}}}}});
+  chartMes=new Chart(document.getElementById('ch-mes'),{
+    type:'line',
+    plugins:[ChartDataLabels],
+    data:{
+      labels:d.map(([k])=>cap(k)),
+      datasets:[{
+        label:'Trabajos',
+        data:d.map(([,v])=>v),
+        borderColor:'rgba(0,48,135,1)',
+        backgroundColor:'rgba(0,48,135,0.08)',
+        borderWidth:2.5,
+        pointRadius:5,
+        pointBackgroundColor:'rgba(0,48,135,1)',
+        fill:true,tension:.35
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString()+' trabajos'}},
+        datalabels:{
+          anchor:'end',align:'top',offset:4,
+          color:'#003087',font:{size:11,weight:'bold'},
+          formatter:v=>v.toLocaleString()
+        }
+      },
+      scales:{
+        y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},
+        x:{grid:{color:'rgba(0,0,0,0.03)'},ticks:{font:{size:11}}}
+      },
+      layout:{padding:{top:24}}
+    }
+  });
 }
 
 function buildChartTareas(rFilt){
