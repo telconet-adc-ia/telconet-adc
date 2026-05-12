@@ -848,7 +848,7 @@ function renderDashboard(){
     <div class="kpi-card amber"><span class="kpi-icon">&#9203;</span><div class="kpi-val">${pend.toLocaleString()}</div><div class="kpi-lbl">Pendiente asignar</div><div class="kpi-sub">requieren atencion</div></div>
     <div class="kpi-card"><span class="kpi-icon">&#128101;</span><div class="kpi-val">${cuadADC}</div><div class="kpi-lbl">Cuadrillas ADC</div><div class="kpi-sub">activas en el periodo</div></div>
     <div class="kpi-card ${sinC>0?'red':'green'}"><span class="kpi-icon">${sinC>0?'&#9888;':'&#127919;'}</span><div class="kpi-val">${sinC}</div><div class="kpi-lbl">Sin cuadrilla</div><div class="kpi-sub">${sinC>0?'requieren asignacion':'todo asignado'}</div></div>
-    <div class="kpi-card cyan"><span class="kpi-icon">&#128956;</span><div class="kpi-val">${new Set(rFilt.map(r=>r['NODO']).filter(Boolean)).size}</div><div class="kpi-lbl">Nodos activos</div><div class="kpi-sub">en el periodo</div></div>`;
+    <div class="kpi-card cyan"><span class="kpi-icon">&#128956;</span><div class="kpi-val">${new Set(rFilt.map(r=>r['NODO']).filter(Boolean)).size}</div><div class="kpi-lbl">Nodos trabajos ADC</div><div class="kpi-sub">en el periodo</div></div>`;
 
   buildChartCuad(rFilt);
   buildChartTipo(rFilt);
@@ -880,14 +880,16 @@ function buildChartCuad(rFilt){
 function buildChartTipo(rFilt){
   if(chartTipo){chartTipo.destroy();chartTipo=null;}
   document.getElementById('wrap-tipo').innerHTML='<canvas id="ch-tipo"></canvas>';
-  const d=grp(rFilt,'PROCEDENCIA',8);
-  if(!d.length){document.getElementById('wrap-tipo').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px 0;text-align:center">Sin datos</p>';return;}
+  // Solo trabajos REALIZADOS para mostrar los trabajos ejecutados
+  const rRealizados=rFilt.filter(r=>(r['ESTADO']||'').toUpperCase().includes('REALIZADO'));
+  const d=grp(rRealizados,'PROCEDENCIA',8);
+  if(!d.length){document.getElementById('wrap-tipo').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px 0;text-align:center">Sin trabajos realizados</p>';return;}
   const total=d.reduce((s,[,v])=>s+v,0);
   const colors=['#e63946','#2196f3','#ff9800','#4caf50','#9c27b0','#00bcd4','#ff5722','#8bc34a'];
   chartTipo=new Chart(document.getElementById('ch-tipo'),{type:'doughnut',data:{
     labels:d.map(([k,v])=>(k.length>16?k.slice(0,14)+'…':k)+' ('+Math.round(v/total*100)+'%)'),
     datasets:[{data:d.map(([,v])=>v),backgroundColor:colors,borderWidth:3,borderColor:'#fff',hoverOffset:8}]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12,padding:8}},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.toLocaleString()+' ('+Math.round(ctx.parsed/total*100)+'%)' }}}}});
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12,padding:8}},tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.toLocaleString()+' realizados ('+Math.round(ctx.parsed/total*100)+'%)' }}}}});
 }
 
 function buildChartMes(rowsAnio){
@@ -1025,22 +1027,27 @@ function normalizarRuta(caja){
 function buildAlertaRuta(rFilt){
   const el=document.getElementById('alerta-ruta');if(!el)return;
   const rutaMap={};
+  // Excluir solo MIGRACION UM A PRECONECTORIZADA — son mejoras, no daños a clientes
+  const EXCLUIR_TAREA=['MIGRACION UM','UM A CAJA PRECONECT','PRECONECT'];
   rFilt.forEach(r=>{
+    const proc=(r['PROCEDENCIA']||'').trim().toUpperCase();
+    const tarea=(r['TIPO TAREA']||r['TIPO DE TAREA']||'').trim().toUpperCase();
+    // Excluir solo si la procedencia es MIGRACIONES Y el tipo involucra UM a preconectorizada
+    const esMigracionUM = proc.includes('MIGRACION') && EXCLUIR_TAREA.some(e=>tarea.includes(e));
+    if(esMigracionUM) return;
     const caja=(r['CAJA']||'').trim();if(!caja)return;
-    // Normalizar: "Estadio 1/Epoca 1" === "Epoca 1/Estadio 1"
     const ruta=normalizarRuta(caja);
     if(!ruta) return;
     if(!rutaMap[ruta]) rutaMap[ruta]={cnt:0,tareas:{}};
     rutaMap[ruta].cnt++;
-    const tarea=(r['TIPO TAREA']||r['TIPO DE TAREA']||'Sin tipo').trim();
-    rutaMap[ruta].tareas[tarea]=(rutaMap[ruta].tareas[tarea]||0)+1;
+    const t=(r['TIPO TAREA']||r['TIPO DE TAREA']||'Sin tipo').trim();
+    rutaMap[ruta].tareas[t]=(rutaMap[ruta].tareas[t]||0)+1;
   });
 
   const top=Object.entries(rutaMap)
     .sort((a,b)=>b[1].cnt-a[1].cnt)
     .slice(0,3)
     .map(([ruta,info])=>{
-      // Top 2 tipos de tarea para esta ruta
       const topTareas=Object.entries(info.tareas).sort((a,b)=>b[1]-a[1]).slice(0,2);
       return {ruta, cnt:info.cnt, topTareas};
     });
