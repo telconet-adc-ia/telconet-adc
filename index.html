@@ -1637,28 +1637,38 @@ async function send(){
 }
 async function askIA(q){
   const url=SCRIPT_URL.split('?')[0];
-  // Solo último turno del historial para reducir tamaño de URL
-  const hist=conv.slice(-2);
-  // Contexto compacto — solo los datos más relevantes
+
+  // NUNCA enviar historial en la URL — causa OpaqueResponseBlocking
+  // El contexto de conversación va en el system prompt del Apps Script
+  const histResumen=conv.slice(-4).map(m=>({
+    role:m.role,
+    // Solo las primeras 120 chars de cada mensaje para referencia mínima
+    content:m.content.replace(/<[^>]+>/g,'').slice(0,120)
+  }));
+
+  // Contexto ultra-compacto — sin detalleRutas, sin topCajas largos
   const ctx=buildContextoAgente();
-  // Comprimir ctx eliminando datos menos críticos si es muy grande
-  const ctxStr=JSON.stringify(ctx);
-  const ctxFinal=ctxStr.length>2000?JSON.stringify({
+  const ctxFinal=JSON.stringify({
     periodo:ctx.periodo,
-    trabajos:{
-      total:ctx.trabajos.total,
-      realizados:ctx.trabajos.realizados,
-      pendientes:ctx.trabajos.pendientes,
-      cumplimiento:ctx.trabajos.cumplimiento,
-      topNodosIncidencias:ctx.trabajos.topNodosIncidencias,
-      topNodosFiscalizacion:ctx.trabajos.topNodosFiscalizacion,
-      topCuadrillas:ctx.trabajos.topCuadrillas,
-      topProcedencias:ctx.trabajos.topProcedencias
+    selAnio:ctx.selAnio,
+    selMes:ctx.selMes,
+    t:{
+      tot:ctx.trabajos.total,
+      rea:ctx.trabajos.realizados,
+      pen:ctx.trabajos.pendientes,
+      cum:ctx.trabajos.cumplimiento,
+      cuad:ctx.trabajos.cuadADC,
+      nod:ctx.trabajos.nodosActivos,
+      proc:(ctx.trabajos.topProcedencias||[]).slice(0,5),
+      inc:(ctx.trabajos.topNodosIncidencias||[]).slice(0,4),
+      fisc:(ctx.trabajos.topNodosFiscalizacion||[]).slice(0,3),
+      cuads:(ctx.trabajos.topCuadrillas||[]).slice(0,5),
+      tend:ctx.trabajos.tendenciaMensual
     },
-    olt620:ctx.olt620,
-    mplsPreconect:ctx.mplsPreconect,
-    rutasNuevas:ctx.rutasNuevas
-  }):ctxStr;
+    olt:ctx.olt620?{tot:ctx.olt620.total,pen:ctx.olt620.pendientes,rPen:ctx.olt620.reflejosPend}:null,
+    mpls:ctx.mplsPreconect?{tot:ctx.mplsPreconect.total,mig:ctx.mplsPreconect.migradas,pen:ctx.mplsPreconect.pendientes,cPen:ctx.mplsPreconect.cajasPend}:null,
+    rn:ctx.rutasNuevas?{tot:ctx.rutasNuevas.totalUnicas,mig:ctx.rutasNuevas.migradas,umP:ctx.rutasNuevas.umPend,cli:ctx.rutasNuevas.totalClientes,est:ctx.rutasNuevas.porEstado}:null
+  });
 
   return new Promise((res,rej)=>{
     const cb='chat_'+Date.now();
@@ -1676,8 +1686,19 @@ async function askIA(q){
     s.src=url+'?action=chat'
       +'&q='+encodeURIComponent(q)
       +'&ctx='+encodeURIComponent(ctxFinal)
-      +'&history='+encodeURIComponent(JSON.stringify(hist))
+      +'&history='+encodeURIComponent(JSON.stringify(histResumen))
       +'&callback='+cb;
+
+    // Verificar tamaño antes de enviar
+    const urlLen=s.src.length;
+    if(urlLen>6000){
+      // URL demasiado larga — enviar sin historial
+      s.src=url+'?action=chat'
+        +'&q='+encodeURIComponent(q)
+        +'&ctx='+encodeURIComponent(ctxFinal)
+        +'&history=%5B%5D'
+        +'&callback='+cb;
+    }
     document.head.appendChild(s);
   });
 }
