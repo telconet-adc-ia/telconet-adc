@@ -496,7 +496,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhf886jbAH59c7e7fwbk4g2MWDEzhctCfIzEW9b1RGhnBk984lgiVQZSRSnI36oRDGYA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytsLSr_gdqnWgcqc6WJJec8yY-TXvEB5K9MC1ISYKli3VKxptTwjDyDyEmFeMrnMIiIg/exec';
 
 let rows=[], headers=[], rowsMig=[], headersMig=[], rowsOlt=[], headersOlt=[], rowsRN=[], headersRN=[], rowsReg=[], headersReg=[];
 let conv=[], chatOpen=false;
@@ -1733,21 +1733,68 @@ function buildContextoAgente(){
     };
   }
 
-  // ── RUTAS NUEVAS ──
+  // ── RUTAS NUEVAS — detalle completo por ruta ──
   let rnResumen=null;
   if(rowsRN.length){
     const colEst=headersRN.find(h=>h.toUpperCase().includes('ESTADO'))||'';
-    const colUM=headersRN.find(h=>h.toUpperCase().includes('UM'))||'';
-    const colRN=headersRN.find(h=>h.toUpperCase().includes('NUEVA'))||'';
+    const colUM=headersRN.find(h=>h.toUpperCase().includes('UM')||h.toUpperCase().includes('PENDIENTE'))||'';
+    const colRN=headersRN.find(h=>h.toUpperCase().includes('RUTA')&&h.toUpperCase().includes('NUEVA'))||'';
     const colCli=headersRN.find(h=>h.toUpperCase().includes('CLIENTE'))||'';
+    const colVieja=headersRN.find(h=>h.toUpperCase().includes('REEMPLAZ'))||'';
+    const colCajas=headersRN.find(h=>h.toUpperCase().includes('CAJA'))||'';
+
+    // Agrupar por ruta nueva (igual que el dashboard)
+    const rutaMapCtx={};
+    rowsRN.forEach(r=>{
+      const nombre=(r[colRN]||'Sin nombre').trim();
+      if(!rutaMapCtx[nombre]) rutaMapCtx[nombre]={
+        nombre, cajas:parseInt(r[colCajas]||0),
+        totalClientes:0, totalUM:0, subrutas:[], estados:[]
+      };
+      const est=(r[colEst]||'').trim();
+      rutaMapCtx[nombre].subrutas.push({
+        ruta:(r[colVieja]||'').trim(),
+        clientes:parseInt(r[colCli]||0),
+        um:parseInt(r[colUM]||0),
+        estado:est
+      });
+      rutaMapCtx[nombre].totalClientes+=parseInt(r[colCli]||0);
+      rutaMapCtx[nombre].totalUM+=parseInt(r[colUM]||0);
+      rutaMapCtx[nombre].estados.push(est.toUpperCase());
+    });
+
+    const rutaList=Object.values(rutaMapCtx).sort((a,b)=>b.totalUM-a.totalUM);
     const estMap={};
-    rowsRN.forEach(r=>{let e=(r[colEst]||'').toUpperCase();if(e.includes('MIGRADA')&&!e.includes('PENDIENTE'))e='MIGRADA';else if(e.includes('PROCESO'))e='EN PROCESO';else if(e.includes('CONSTRUC'))e='EN CONSTRUCCION';else e='PENDIENTE';estMap[e]=(estMap[e]||0)+1;});
+    rowsRN.forEach(r=>{
+      let e=(r[colEst]||'').toUpperCase();
+      if(e.includes('MIGRADA')&&!e.includes('PENDIENTE'))e='MIGRADA';
+      else if(e.includes('PROCESO'))e='EN PROCESO';
+      else if(e.includes('CONSTRUC'))e='EN CONSTRUCCION';
+      else e='PENDIENTE';
+      estMap[e]=(estMap[e]||0)+1;
+    });
+
     rnResumen={
-      totalUnicas:new Set(rowsRN.map(r=>(r[colRN]||'').trim())).size,
-      migradas:rowsRN.filter(r=>(r[colEst]||'').toUpperCase().includes('MIGRADA')).length,
+      totalUnicas:rutaList.length,
+      migradas:rutaList.filter(r=>!r.estados.some(e=>e.includes('PENDIENTE')||e.includes('PROCESO')||e.includes('CONSTRUC'))).length,
       umPend:rowsRN.reduce((s,r)=>s+parseInt(r[colUM]||0),0),
       totalClientes:rowsRN.reduce((s,r)=>s+parseInt(r[colCli]||0),0),
-      porEstado:Object.entries(estMap)
+      porEstado:Object.entries(estMap),
+      // Detalle completo de cada ruta para el agente
+      detalleRutas:rutaList.map(rn=>{
+        let estadoPpal='MIGRADA';
+        if(rn.estados.some(e=>e.includes('PENDIENTE')))estadoPpal='PENDIENTE MIGRAR';
+        else if(rn.estados.some(e=>e.includes('CONSTRUC')))estadoPpal='EN CONSTRUCCION';
+        else if(rn.estados.some(e=>e.includes('PROCESO')))estadoPpal='EN PROCESO';
+        return {
+          ruta:rn.nombre,
+          estado:estadoPpal,
+          cajas:rn.cajas,
+          totalClientes:rn.totalClientes,
+          umPendientes:rn.totalUM,
+          subrutas:rn.subrutas.map(s=>s.ruta+'|'+s.estado+'|'+s.um+'UM|'+s.clientes+'cli').join(' / ')
+        };
+      })
     };
   }
 
