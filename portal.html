@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Telconet &middot; Portal de Operaciones</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Bebas+Neue&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#0E429C;--azul2:#0A2F7A;--azul3:#071E52;
+  --acento:#10A8C7;--naranja:#EB6100;--acento2:#FFD100;
+  --bg:#F0F2F5;--bg2:#E8ECF2;
+  --surface:rgba(255,255,255,0.85);--surface2:rgba(255,255,255,0.95);
+  --border:rgba(14,66,156,0.12);
+  --text:#0D1F3C;--text2:rgba(13,31,60,0.65);--text3:rgba(13,31,60,0.38);
+  --radius:20px;
+}
+html,body{height:100%;overflow-x:hidden}
+body{font-family:'DM Sans',sans-serif;background:linear-gradient(160deg,#EEF2F8 0%,#E4EAF4 50%,#EDF1F8 100%);color:var(--text);min-height:100vh;position:relative;}
+.bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(14,66,156,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(14,66,156,0.05) 1px,transparent 1px);background-size:60px 60px;animation:gridShift 20s linear infinite;}
+@keyframes gridShift{to{background-position:60px 60px}}
+.bg-orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;}
+.bg-orb-1{width:600px;height:600px;background:radial-gradient(circle,rgba(14,66,156,0.08) 0%,transparent 70%);top:-200px;left:-200px;animation:orbFloat1 12s ease-in-out infinite;}
+.bg-orb-2{width:500px;height:500px;background:radial-gradient(circle,rgba(16,168,199,0.07) 0%,transparent 70%);bottom:-100px;right:-100px;animation:orbFloat2 15s ease-in-out infinite;}
+.bg-orb-3{width:300px;height:300px;background:radial-gradient(circle,rgba(235,97,0,0.04) 0%,transparent 70%);top:40%;left:50%;animation:orbFloat3 18s ease-in-out infinite;}
+@keyframes orbFloat1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,40px)}}
+@keyframes orbFloat2{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,-60px)}}
+@keyframes orbFloat3{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.3)}}
+.wrapper{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;padding:0 24px 40px;}
+header{padding:20px 0 0;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.logo-area{display:flex;flex-direction:column;align-items:flex-start;gap:4px;flex-shrink:0;}
+.logo-img{height:62px;width:auto;filter:drop-shadow(0 2px 10px rgba(14,66,156,0.18));}
+.logo-sub{font-size:10px;color:rgba(14,66,156,0.5);letter-spacing:3px;text-transform:uppercase;padding-left:2px;}
+.header-center{flex:1;display:flex;justify-content:center;}
+.hero-label{display:inline-flex;align-items:center;gap:8px;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:#0E429C;background:rgba(14,66,156,0.06);border:1px solid rgba(14,66,156,0.15);border-radius:20px;padding:8px 22px;}
+.header-right{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(14,66,156,0.08);border:1px solid rgba(14,66,156,0.2);border-radius:20px;padding:6px 14px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#0E429C;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#0E429C;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.date-chip{font-size:12px;color:var(--text3);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;}
+.hero{text-align:center;padding:36px 0 28px;}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,7vw,88px);font-weight:400;line-height:1.05;letter-spacing:3px;margin-bottom:24px;}
+.hero-title .hl{background:linear-gradient(135deg,#0E429C,#10A8C7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:16px;color:var(--text2);max-width:520px;margin:0 auto;line-height:1.65;font-weight:300;}
+.stats-bar{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:0;margin:0 auto 28px;max-width:700px;overflow:hidden;}
+.stat-item{flex:1;min-width:120px;padding:14px 24px;text-align:center;border-right:1px solid var(--border);}
+.stat-item:last-child{border-right:none}
+.stat-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1;margin-bottom:4px;}
+.stat-val.blue{color:#10A8C7}
+.stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
+.areas-title{text-align:center;font-family:'Syne',sans-serif;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:rgba(13,31,60,0.35);margin-bottom:20px;}
+.areas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:1200px;margin:0 auto;width:100%;}
+.area-card{position:relative;border-radius:var(--radius);border:1.5px solid rgba(14,66,156,0.22);background:rgba(255,255,255,0.80);box-shadow:0 4px 24px rgba(14,66,156,0.10);padding:22px 22px 20px;cursor:pointer;overflow:hidden;transition:transform .3s cubic-bezier(.34,1.56,.64,1),border-color .25s,box-shadow .3s;text-decoration:none;color:inherit;display:block;backdrop-filter:blur(8px);}
+.area-card::before{content:'';position:absolute;inset:0;background:var(--card-gradient);opacity:0;transition:opacity .3s;}
+.area-card:hover{transform:translateY(-6px) scale(1.01);border-color:var(--card-color);box-shadow:0 24px 48px rgba(0,0,0,.08),0 0 0 1px var(--card-color);}
+.area-card:hover::before{opacity:1}
+.card-adc{--card-color:rgba(235,97,0,0.5);--card-rgb:235,97,0;--card-gradient:linear-gradient(135deg,rgba(235,97,0,0.06) 0%,transparent 60%);border:2px solid rgba(235,97,0,0.55) !important;box-shadow:0 6px 32px rgba(235,97,0,0.18),0 0 0 4px rgba(235,97,0,0.07) !important;}
+.card-soporte{--card-color:rgba(74,222,128,0.5);--card-rgb:74,222,128;--card-gradient:linear-gradient(135deg,rgba(74,222,128,0.06) 0%,transparent 60%);}
+.card-interurbanas{--card-color:rgba(251,146,60,0.5);--card-rgb:251,146,60;--card-gradient:linear-gradient(135deg,rgba(251,146,60,0.06) 0%,transparent 60%);}
+.card-electricos{--card-color:rgba(250,204,21,0.5);--card-rgb:250,204,21;--card-gradient:linear-gradient(135deg,rgba(250,204,21,0.06) 0%,transparent 60%);}
+.card-retiros{--card-color:rgba(192,132,252,0.5);--card-rgb:192,132,252;--card-gradient:linear-gradient(135deg,rgba(192,132,252,0.06) 0%,transparent 60%);}
+.card-glow{position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,var(--card-color) 0%,transparent 70%);opacity:.15;transition:opacity .3s;filter:blur(20px);}
+.area-card:hover .card-glow{opacity:.35}
+.card-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:20px;border:1px solid currentColor;}
+.badge-live{color:var(--naranja);background:rgba(235,97,0,0.08)}
+.badge-dev{color:rgba(13,31,60,0.3);background:rgba(13,31,60,0.05);border-color:rgba(14,66,156,0.1)}
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge-live .badge-dot{animation:pulse 2s ease-in-out infinite}
+.card-icon{font-size:34px;margin-bottom:10px;display:block;filter:drop-shadow(0 0 20px var(--card-color));transition:transform .3s;}
+.area-card:hover .card-icon{transform:scale(1.1) rotate(-5deg)}
+.card-name{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px;}
+.card-desc{font-size:13px;color:var(--text2);line-height:1.55;font-weight:300;margin-bottom:14px;}
+.card-stats{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;}
+.cs{display:flex;flex-direction:column;gap:2px;}
+.cs-val{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;line-height:1;}
+.cs-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;}
+.card-cta{display:flex;align-items:center;justify-content:space-between;padding-top:18px;border-top:1px solid var(--border);}
+.cta-text{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
+.cta-arrow{width:32px;height:32px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .2s,transform .2s;color:var(--text);}
+.area-card:hover .cta-arrow{background:var(--card-color);transform:translateX(3px);}
+.coming-overlay{position:absolute;inset:0;background:rgba(238,242,248,0.5);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;border-radius:var(--radius);opacity:0;transition:opacity .25s;pointer-events:none;}
+.area-card.coming:hover .coming-overlay{opacity:1}
+.area-card.coming{cursor:not-allowed}
+.area-card.coming:hover{transform:none;box-shadow:0 2px 20px rgba(14,66,156,0.06)}
+.coming-badge{background:rgba(255,255,255,.08);border:1px solid rgba(14,66,156,0.15);border-radius:12px;padding:12px 24px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:rgba(13,31,60,.5);}
+footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid rgba(14,66,156,0.1);font-size:12px;color:rgba(13,31,60,0.35);letter-spacing:1px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.animate{opacity:0;animation:fadeUp .6s ease forwards;}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}
+.d5{animation-delay:.5s}.d6{animation-delay:.55s}.d7{animation-delay:.6s}.d8{animation-delay:.65s}
+.d9{animation-delay:.7s}.d10{animation-delay:.75s}
+@media(max-width:640px){.areas-grid{grid-template-columns:1fr}.stats-bar{flex-direction:column}.stat-item{border-right:none;border-bottom:1px solid var(--border)}.stat-item:last-child{border-bottom:none}.hero-title{font-size:52px}}
+</style>
+</head>
+<body>
+<canvas id="net-canvas" style="position:fixed;inset:0;z-index:0;pointer-events:none;"></canvas>
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+<div class="bg-orb bg-orb-3"></div>
+<div class="wrapper">
+
+  <header class="animate d1">
+    <div class="logo-area">
+      <img src="data:image/png;base64,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" alt="Telconet Latam" class="logo-img"/>
+      <div class="logo-sub">Portal de Operaciones</div>
+    </div>
+    <div class="header-center">
+      <div class="hero-label">&#9889; Centro de Operaciones</div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div>Sistema activo</div>
+      <div class="date-chip" id="fecha-hoy"></div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1 class="hero-title animate d3">Gesti&oacute;n Operativa <span class="hl">Inteligente</span></h1>
+    <p class="hero-sub animate d4">Plataforma centralizada de monitoreo y an&aacute;lisis operativo. Selecciona el &aacute;rea que deseas gestionar.</p>
+  </div>
+
+  <div class="stats-bar animate d4">
+    <div class="stat-item"><div class="stat-val">5</div><div class="stat-lbl">&Aacute;reas operativas</div></div>
+    <div class="stat-item"><div class="stat-val">1</div><div class="stat-lbl">En producci&oacute;n</div></div>
+    <div class="stat-item"><div class="stat-val blue">ADC</div><div class="stat-lbl">Activo ahora</div></div>
+  </div>
+
+  <p class="areas-title animate d5">&mdash; Seleccionar &aacute;rea &mdash;</p>
+
+  <div class="areas-grid">
+
+    <a href="./adc.html" class="area-card card-adc animate d5">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-live"><div class="badge-dot"></div>En producci&oacute;n</div>
+      <span class="card-icon">&#128268;</span>
+      <div class="card-name">ADC</div>
+      <div class="card-desc">Red pasiva &middot; Planta externa &middot; Fibra &oacute;ptica. Monitoreo de trabajos, incidencias, cajas reincidentes y migraciones.</div>
+
+      <div class="card-cta">
+        <span class="cta-text">Abrir dashboard</span>
+        <div class="cta-arrow">&#8594;</div>
+      </div>
+    </a>
+
+    <div class="area-card card-soporte coming animate d6">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#128296;</span>
+      <div class="card-name">Soporte</div>
+      <div class="card-desc">Gesti&oacute;n de tickets de soporte t&eacute;cnico, tiempos de respuesta, SLA y seguimiento de incidencias al cliente.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(74,222,128,0.4)">&mdash;</div><div class="cs-lbl">Tickets</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(74,222,128,0.4)">&mdash;</div><div class="cs-lbl">SLA activos</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <div class="area-card card-interurbanas coming animate d7">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#128739;</span>
+      <div class="card-name">Interurbanas</div>
+      <div class="card-desc">Control de rutas interurbanas, cambio de poster&iacute;a, inspecciones regulatorias y obras de infraestructura en carretera.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(251,146,60,0.4)">&mdash;</div><div class="cs-lbl">Rutas</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(251,146,60,0.4)">&mdash;</div><div class="cs-lbl">Obras activas</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <div class="area-card card-electricos coming animate d8">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#9889;</span>
+      <div class="card-name">El&eacute;ctricos</div>
+      <div class="card-desc">Supervisi&oacute;n de trabajos el&eacute;ctricos, instalaciones, mantenimientos preventivos y correctivos de infraestructura energ&eacute;tica.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(250,204,21,0.4)">&mdash;</div><div class="cs-lbl">&Oacute;rdenes</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(250,204,21,0.4)">&mdash;</div><div class="cs-lbl">Pendientes</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <div class="area-card card-retiros coming animate d9">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#128230;</span>
+      <div class="card-name">Retiros</div>
+      <div class="card-desc">Control de retiro de equipos, gesti&oacute;n de devoluciones, inventario de material recuperado y trazabilidad de activos.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(192,132,252,0.4)">&mdash;</div><div class="cs-lbl">Retiros</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(192,132,252,0.4)">&mdash;</div><div class="cs-lbl">Equipos</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+  </div>
+
+  <footer class="animate d10">
+    Telconet S.A. &middot; Portal de Operaciones &middot; v1.0 &middot; 2026 &nbsp;&middot;&nbsp; Powered by IA
+  </footer>
+</div>
+
+<script>
+// Fecha
+const d=new Date();
+const opts={weekday:'long',day:'numeric',month:'long',year:'numeric'};
+const fecha=d.toLocaleDateString('es-EC',opts);
+document.getElementById('fecha-hoy').textContent=fecha.charAt(0).toUpperCase()+fecha.slice(1);
+
+// Cards coming
+document.querySelectorAll('.area-card.coming').forEach(c=>{
+  c.addEventListener('click',e=>{
+    e.preventDefault();
+    c.style.transform='translateX(-4px)';
+    setTimeout(()=>{c.style.transform='translateX(4px)';},60);
+    setTimeout(()=>{c.style.transform='';},120);
+  });
+});
+
+// Red neuronal interactiva
+(function(){
+  const cv=document.getElementById('net-canvas');
+  const ctx=cv.getContext('2d');
+  let W,H,nodes=[];
+
+  function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;}
+  resize();
+  window.addEventListener('resize',()=>{resize();init();});
+
+  function init(){
+    nodes=[];
+    const count=Math.max(38,Math.floor((W*H)/15000));
+    for(let i=0;i<count;i++){
+      nodes.push({
+        x:Math.random()*W, y:Math.random()*H,
+        vx:(Math.random()-.5)*.28, vy:(Math.random()-.5)*.28,
+        r:Math.random()*1.8+.6,
+        op:Math.random()*.45+.15,
+        phase:Math.random()*Math.PI*2
+      });
+    }
+  }
+  init();
+
+  let mx=-9999,my=-9999;
+  window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const t=Date.now()/1000;
+
+    nodes.forEach(n=>{
+      n.x+=n.vx; n.y+=n.vy;
+      if(n.x<0||n.x>W)n.vx*=-1;
+      if(n.y<0||n.y>H)n.vy*=-1;
+      // Atracción suave al mouse
+      const dx=mx-n.x,dy=my-n.y,dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<180&&dist>0){n.x+=dx*.005;n.y+=dy*.005;}
+      // Pulso
+      const pulse=Math.sin(t*1.2+n.phase)*.25+.75;
+      // Nodo
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,n.r*pulse,0,Math.PI*2);
+      ctx.fillStyle=`rgba(14,66,156,${n.op*pulse})`;
+      ctx.fill();
+      // Halo mouse
+      if(dist<160){
+        ctx.beginPath();
+        ctx.arc(n.x,n.y,n.r*3.5,0,Math.PI*2);
+        ctx.fillStyle=`rgba(16,168,199,${(1-dist/160)*0.10})`;
+        ctx.fill();
+      }
+    });
+
+    // Conexiones
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<115){
+          const base=(1-d/115)*0.14;
+          const dm=Math.min(
+            Math.sqrt((mx-nodes[i].x)**2+(my-nodes[i].y)**2),
+            Math.sqrt((mx-nodes[j].x)**2+(my-nodes[j].y)**2)
+          );
+          const boost=dm<180?(1-dm/180)*0.20:0;
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x,nodes[i].y);
+          ctx.lineTo(nodes[j].x,nodes[j].y);
+          ctx.strokeStyle=boost>0
+            ?`rgba(16,168,199,${base+boost})`
+            :`rgba(14,66,156,${base})`;
+          ctx.lineWidth=boost>0?1.1:.55;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+</body>
+</html>
