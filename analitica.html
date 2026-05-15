@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analítica ADC — Nacional | Telconet</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Nunito+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===== PALETA TELCONET ===== */
+:root{
+  --tc-blue:#003087;      /* azul corporativo Telconet */
+  --tc-blue2:#0047AB;     /* azul medio */
+  --tc-blue3:#1A5FC8;     /* azul acento */
+  --tc-blue4:#E8F0FC;     /* azul muy claro (bg) */
+  --tc-red:#E63312;       /* rojo Telconet */
+  --tc-red2:#FF4D2E;      /* rojo claro */
+  --tc-orange:#F26522;    /* naranja complementario */
+  --tc-white:#FFFFFF;
+  --tc-offwhite:#F4F6FA;
+  --tc-gray1:#F0F3F8;
+  --tc-gray2:#E2E8F0;
+  --tc-gray3:#CBD5E1;
+  --tc-gray4:#94A3B8;
+  --tc-gray5:#64748B;
+  --tc-gray6:#475569;
+  --tc-dark:#1E293B;
+  --tc-darker:#0F172A;
+  --tc-green:#16A34A;
+  --tc-amber:#D97706;
+  --radius:8px;--radius2:12px;--radius3:16px;
+  --shadow:0 1px 3px rgba(0,47,135,.08),0 1px 2px rgba(0,47,135,.04);
+  --shadow2:0 4px 12px rgba(0,47,135,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito Sans',sans-serif;background:var(--tc-offwhite);color:var(--tc-dark);min-height:100vh;display:flex;flex-direction:column}
+
+/* === TOPBAR === */
+.topbar{background:var(--tc-blue);padding:0 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;gap:12px;flex-wrap:wrap;height:56px}
+.topbar-brand{display:flex;align-items:center;gap:12px}
+.topbar-logo{background:var(--tc-white);border-radius:6px;padding:4px 10px;display:flex;align-items:center;justify-content:center;gap:6px}
+.logo-t{font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;color:var(--tc-blue);letter-spacing:-.3px}
+.logo-dot{width:6px;height:6px;border-radius:50%;background:var(--tc-red);flex-shrink:0}
+.topbar-divider{width:1px;height:28px;background:rgba(255,255,255,.2)}
+.topbar-title{font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px}
+.topbar-sub{font-size:11px;color:rgba(255,255,255,.65);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:3px 9px;border-radius:99px;font-weight:600;white-space:nowrap}
+.badge-white{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)}
+.badge-live{background:rgba(22,163,74,.2);color:#4ADE80;border:1px solid rgba(22,163,74,.35)}
+.dot-live{width:6px;height:6px;border-radius:50%;background:#4ADE80;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.btn-reload{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:var(--radius);padding:5px 13px;font-size:11px;color:#fff;cursor:pointer;font-family:'Nunito Sans',sans-serif;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:5px}
+.btn-reload:hover{background:rgba(255,255,255,.2)}
+.btn-reload.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.last-update{font-size:10px;color:rgba(255,255,255,.5)}
+
+/* === LAYOUT === */
+.layout{display:flex;flex:1;min-height:0;overflow:hidden}
+
+/* === SIDEBAR === */
+.sidebar{width:216px;min-width:216px;background:var(--tc-white);border-right:1px solid var(--tc-gray2);padding:12px 10px 20px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;flex-shrink:0;box-shadow:2px 0 8px rgba(0,48,135,.04);position:sticky;top:56px;height:calc(100vh - 56px);align-self:flex-start}
+.sidebar-section{font-size:10px;font-weight:700;color:var(--tc-gray4);text-transform:uppercase;letter-spacing:.08em;padding:12px 10px 6px}
+.filter-btn{width:100%;text-align:left;padding:7px 11px;border-radius:var(--radius);border:1px solid transparent;background:transparent;color:var(--tc-gray5);font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:500;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between;gap:4px}
+.filter-btn:hover{background:var(--tc-gray1);color:var(--tc-dark);border-color:var(--tc-gray2)}
+.filter-btn.active{background:var(--tc-blue4);color:var(--tc-blue);border-color:rgba(0,48,135,.2);font-weight:700}
+.filter-count{font-size:10px;font-family:'Nunito',sans-serif;font-weight:700;background:var(--tc-gray1);padding:1px 6px;border-radius:4px;color:var(--tc-gray4);min-width:28px;text-align:right;flex-shrink:0}
+.filter-btn.active .filter-count{background:rgba(0,48,135,.12);color:var(--tc-blue)}
+.sidebar-div{height:1px;background:var(--tc-gray2);margin:6px 0}
+.filter-btn-cuad{background:rgba(230,51,18,.04);border:1px solid rgba(230,51,18,.2);color:var(--tc-red)}
+.filter-btn-cuad:hover,.filter-btn-cuad.active{background:rgba(230,51,18,.1);color:var(--tc-red);border-color:rgba(230,51,18,.35);font-weight:700}
+
+/* === CUAD PANEL === */
+.cuad-panel{display:none;width:268px;min-width:268px;background:var(--tc-white);border-right:1px solid var(--tc-gray2);flex-direction:column;overflow:hidden;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);align-self:flex-start}
+.cuad-panel.open{display:flex}
+.cuad-panel-hdr{padding:14px 16px 10px;border-bottom:1px solid var(--tc-gray2);background:var(--tc-blue4);flex-shrink:0}
+.cuad-panel-title{font-size:12px;font-weight:700;color:var(--tc-blue);font-family:'Nunito',sans-serif}
+.cuad-panel-sub{font-size:10px;color:var(--tc-gray5);margin-top:2px}
+.cuad-list{overflow-y:auto;flex:1}
+.cuad-item{padding:10px 16px;border-bottom:1px solid var(--tc-gray1);cursor:pointer;transition:background .12s}
+.cuad-item:hover{background:var(--tc-gray1)}
+.cuad-item.active{background:var(--tc-blue4);border-left:3px solid var(--tc-blue)}
+.cuad-name{font-size:11px;font-weight:600;color:var(--tc-dark);line-height:1.4;word-break:break-word}
+.cuad-pills{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.cp{font-size:9px;padding:2px 7px;border-radius:99px;font-weight:700}
+
+/* === MAIN === */
+.main{flex:1;overflow-y:auto;padding:20px 24px;min-width:0;height:calc(100vh - 56px)}
+
+/* === LOADING / ERROR === */
+.state-box{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:14px;color:var(--tc-gray5);font-size:13px}
+.spinner{width:36px;height:36px;border:3px solid var(--tc-gray2);border-top-color:var(--tc-blue);border-radius:50%;animation:spin .8s linear infinite}
+.error-box{background:#fff;border:1px solid rgba(230,51,18,.2);border-radius:var(--radius2);padding:20px 24px;max-width:520px;text-align:center;box-shadow:var(--shadow2)}
+.error-box h3{color:var(--tc-red);font-size:14px;font-family:'Nunito',sans-serif;margin-bottom:10px}
+.error-box p{font-size:12px;color:var(--tc-gray5);line-height:1.7}
+.error-box code{font-size:11px;background:var(--tc-gray1);padding:2px 6px;border-radius:4px;color:var(--tc-blue)}
+.config-input{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.config-input input{background:var(--tc-gray1);border:1px solid var(--tc-gray3);border-radius:var(--radius);padding:8px 12px;font-size:12px;color:var(--tc-dark);font-family:'Nunito Sans',sans-serif;width:340px;max-width:100%}
+.config-input input:focus{outline:none;border-color:var(--tc-blue)}
+.config-input button{background:var(--tc-blue);border:none;border-radius:var(--radius);padding:8px 18px;font-size:12px;color:#fff;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700}
+
+/* === ALERT === */
+.alert{background:#FFF9F9;border:1px solid rgba(230,51,18,.25);border-left:4px solid var(--tc-red);border-radius:var(--radius);padding:10px 16px;margin-bottom:16px;font-size:12px;color:var(--tc-gray6);display:flex;gap:10px;align-items:flex-start}
+
+/* === METRICS === */
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:10px;margin-bottom:16px}
+.mc{background:var(--tc-white);border:1px solid var(--tc-gray2);border-radius:var(--radius2);padding:14px 16px;box-shadow:var(--shadow);transition:box-shadow .2s}
+.mc:hover{box-shadow:var(--shadow2)}
+.mc-lbl{font-size:10px;color:var(--tc-gray4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:700}
+.mc-val{font-size:24px;font-weight:700;color:var(--tc-dark);line-height:1;font-family:'Nunito',sans-serif}
+.mc-sub{font-size:11px;margin-top:6px;display:inline-flex;align-items:center;gap:3px;font-weight:600}
+.up{color:var(--tc-green)}.dn{color:var(--tc-red)}.neutral{color:var(--tc-blue)}.warn{color:var(--tc-amber)}
+.mc-accent-blue{border-top:3px solid var(--tc-blue)}
+.mc-accent-red{border-top:3px solid var(--tc-red)}
+.mc-accent-green{border-top:3px solid var(--tc-green)}
+
+/* === CHARTS === */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:880px){.row2{grid-template-columns:1fr}}
+.card{background:var(--tc-white);border:1px solid var(--tc-gray2);border-radius:var(--radius2);padding:18px;box-shadow:var(--shadow)}
+.card-full{background:var(--tc-white);border:1px solid var(--tc-gray2);border-radius:var(--radius2);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.ct{font-size:11px;font-weight:700;color:var(--tc-gray5);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.ct-badge{font-size:10px;padding:2px 9px;border-radius:99px;background:rgba(230,51,18,.08);color:var(--tc-red);border:1px solid rgba(230,51,18,.2);font-weight:700;text-transform:none}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;font-size:11px;color:var(--tc-gray5);font-weight:500}
+.ld{width:12px;height:3px;border-radius:99px;display:inline-block;margin-right:4px;vertical-align:middle}
+
+/* === DONUT === */
+.donut-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.donut-canvas{flex-shrink:0;position:relative;width:170px;height:170px}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:7px;overflow-y:auto;max-height:190px;min-width:100px}
+.dl-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--tc-gray6);font-weight:500}
+.dl-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.dl-label{flex:1;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+.dl-pct{font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;color:var(--tc-dark);flex-shrink:0}
+
+/* === SEC HEADER === */
+.sec-hdr{font-size:10px;font-weight:700;color:var(--tc-gray4);text-transform:uppercase;letter-spacing:.08em;margin:20px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--tc-gray2);display:flex;align-items:center;gap:8px}
+.sec-hdr-icon{width:22px;height:22px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+
+/* === GAUGES === */
+.gauge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(162px,1fr));gap:10px;margin-bottom:14px}
+.gauge-card{background:var(--tc-white);border:1px solid var(--tc-gray2);border-radius:var(--radius);padding:13px 15px;position:relative;overflow:hidden;cursor:pointer;transition:box-shadow .15s,border-color .15s;box-shadow:var(--shadow)}
+.gauge-card:hover{box-shadow:var(--shadow2);border-color:var(--tc-gray3)}
+.gauge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.lvl-ex::before{background:var(--tc-red)}.lvl-hi::before{background:var(--tc-amber)}.lvl-md::before{background:var(--tc-blue)}.lvl-lo::before{background:var(--tc-gray3)}
+.g-name{font-size:10px;color:var(--tc-gray5);margin-bottom:4px;line-height:1.4;word-break:break-word;font-weight:500}
+.g-pct{font-size:22px;font-weight:700;font-family:'Nunito',sans-serif;line-height:1;margin-bottom:5px}
+.g-bar{height:4px;background:var(--tc-gray2);border-radius:99px;overflow:hidden;margin-bottom:5px}
+.g-fill{height:100%;border-radius:99px}
+.g-detail{font-size:10px;color:var(--tc-gray4);font-weight:500}
+
+/* === TABLES === */
+.tabs{display:flex;gap:4px;margin-bottom:12px;background:var(--tc-gray1);padding:3px;border-radius:var(--radius);width:fit-content;border:1px solid var(--tc-gray2)}
+.tab{font-size:11px;padding:5px 14px;border-radius:6px;border:none;background:transparent;color:var(--tc-gray5);cursor:pointer;font-family:'Nunito Sans',sans-serif;font-weight:600;transition:all .15s;white-space:nowrap}
+.tab.active{background:var(--tc-white);color:var(--tc-blue);box-shadow:var(--shadow)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:var(--tc-gray4);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--tc-gray2);white-space:nowrap;background:var(--tc-gray1)}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--tc-gray1);color:var(--tc-dark);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--tc-blue4)}
+.rk{font-family:'Nunito',sans-serif;font-size:11px;color:var(--tc-gray4);font-weight:700}
+.nm{font-size:12px;font-weight:600;cursor:pointer;color:var(--tc-blue);font-family:'Nunito Sans',sans-serif}
+.nm:hover{text-decoration:underline}
+.cuad-nm-full{font-size:11px;font-weight:600;color:var(--tc-dark);white-space:normal;word-break:break-word;line-height:1.4}
+.pill{font-size:10px;padding:2px 9px;border-radius:99px;font-weight:700;white-space:nowrap}
+.pill-b{background:rgba(0,48,135,.08);color:var(--tc-blue);border:1px solid rgba(0,48,135,.15)}
+.pill-g{background:rgba(22,163,74,.08);color:var(--tc-green);border:1px solid rgba(22,163,74,.15)}
+.pill-a{background:rgba(217,119,6,.08);color:var(--tc-amber);border:1px solid rgba(217,119,6,.15)}
+.pill-r{background:rgba(230,51,18,.08);color:var(--tc-red);border:1px solid rgba(230,51,18,.15)}
+.pill-t{background:rgba(22,163,74,.06);color:#16a34a;border:1px solid rgba(22,163,74,.12)}
+.bbar{display:flex;align-items:center;gap:6px}
+.bbg{flex:1;height:5px;background:var(--tc-gray2);border-radius:99px;overflow:hidden;min-width:50px}
+.bbf{height:100%;border-radius:99px;background:var(--tc-blue)}
+
+/* === CUAD DETAIL === */
+.cuad-detail{background:var(--tc-blue4);border:1px solid rgba(0,48,135,.2);border-left:4px solid var(--tc-blue);border-radius:var(--radius2);padding:18px;margin-bottom:14px;display:none;box-shadow:var(--shadow)}
+.cuad-detail.show{display:block}
+.cd-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px}
+.cd-name{font-size:15px;font-weight:700;color:var(--tc-blue);font-family:'Nunito',sans-serif;line-height:1.4}
+.cd-suc{font-size:11px;color:var(--tc-gray5);margin-top:3px;font-weight:500}
+.cd-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:600px){.cd-stats{grid-template-columns:repeat(2,1fr)}}
+.cs{background:var(--tc-white);border:1px solid var(--tc-gray2);border-radius:var(--radius);padding:11px 13px;box-shadow:var(--shadow)}
+.cs-lbl{font-size:10px;color:var(--tc-gray4);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.cs-val{font-size:20px;font-weight:700;font-family:'Nunito',sans-serif;margin-top:4px}
+.close-btn{background:var(--tc-white);border:1px solid var(--tc-gray3);border-radius:var(--radius);padding:5px 12px;font-size:11px;color:var(--tc-gray5);cursor:pointer;font-family:'Nunito Sans',sans-serif;font-weight:600;box-shadow:var(--shadow)}
+.close-btn:hover{border-color:var(--tc-blue);color:var(--tc-blue)}
+
+/* ===== AGENTE IA FLOTANTE ===== */
+.ai-fab{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.ai-bubble-btn{width:54px;height:54px;border-radius:50%;background:var(--tc-blue);border:2px solid rgba(255,255,255,.3);box-shadow:0 4px 20px rgba(0,48,135,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;flex-shrink:0}
+.ai-bubble-btn:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(0,48,135,.55);background:var(--tc-blue3)}
+.ai-bubble-btn svg{width:26px;height:26px;fill:#fff}
+.ai-notif{position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--tc-red);border:2px solid #fff;animation:pulse 2s infinite;display:none}
+.ai-notif.show{display:block}
+.ai-window{background:#fff;border:1px solid var(--tc-gray2);border-radius:var(--radius3);width:350px;max-width:calc(100vw - 48px);box-shadow:0 12px 48px rgba(0,48,135,.18),0 2px 8px rgba(0,0,0,.08);display:none;flex-direction:column;overflow:hidden;max-height:500px}
+.ai-window.open{display:flex}
+.ai-win-hdr{background:var(--tc-blue);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
+.ai-win-hdr-info{display:flex;align-items:center;gap:10px}
+.ai-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ai-win-title{font-size:13px;font-weight:700;color:#fff;font-family:'Nunito',sans-serif}
+.ai-win-sub{font-size:10px;color:rgba(255,255,255,.65);margin-top:1px;display:flex;align-items:center;gap:4px}
+.ai-win-sub-dot{width:5px;height:5px;border-radius:50%;background:#4ADE80}
+.ai-close{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:rgba(255,255,255,.8);cursor:pointer;font-size:15px;line-height:1;padding:4px 8px;font-family:sans-serif;transition:background .15s}
+.ai-close:hover{background:rgba(255,255,255,.2);color:#fff}
+.ai-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--tc-offwhite)}
+.ai-msg{max-width:90%;display:flex;flex-direction:column;gap:3px}
+.ai-msg.bot{align-self:flex-start}
+.ai-msg.user{align-self:flex-end}
+.ai-msg-bubble{padding:10px 14px;border-radius:14px;font-size:12px;line-height:1.6;font-weight:500}
+.ai-msg.bot .ai-msg-bubble{background:#fff;color:var(--tc-dark);border:1px solid var(--tc-gray2);border-bottom-left-radius:4px;box-shadow:var(--shadow)}
+.ai-msg.user .ai-msg-bubble{background:var(--tc-blue);color:#fff;border-bottom-right-radius:4px}
+.ai-msg-time{font-size:9px;color:var(--tc-gray4);padding:0 4px;font-weight:500}
+.ai-msg.user .ai-msg-time{text-align:right}
+.ai-typing{display:flex;gap:4px;padding:10px 14px;align-items:center;background:#fff;border:1px solid var(--tc-gray2);border-radius:14px;border-bottom-left-radius:4px;box-shadow:var(--shadow);width:fit-content}
+.ai-typing span{width:7px;height:7px;border-radius:50%;background:var(--tc-blue3);animation:blink 1.2s infinite;opacity:.3}
+.ai-typing span:nth-child(2){animation-delay:.2s}
+.ai-typing span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.ai-input-row{display:flex;gap:8px;padding:12px;border-top:1px solid var(--tc-gray2);flex-shrink:0;background:#fff}
+.ai-input{flex:1;background:var(--tc-gray1);border:1px solid var(--tc-gray2);border-radius:var(--radius);padding:8px 12px;font-size:12px;color:var(--tc-dark);font-family:'Nunito Sans',sans-serif;font-weight:500;resize:none;height:38px;outline:none;transition:border-color .15s}
+.ai-input:focus{border-color:var(--tc-blue);background:#fff}
+.ai-send{background:var(--tc-blue);border:none;border-radius:var(--radius);padding:8px 16px;color:#fff;cursor:pointer;font-size:12px;font-family:'Nunito',sans-serif;font-weight:700;transition:background .15s;flex-shrink:0;display:flex;align-items:center;gap:5px}
+.ai-send:hover{background:var(--tc-blue3)}
+.ai-send:disabled{opacity:.5;cursor:not-allowed}
+.ai-suggestions{display:flex;flex-wrap:wrap;gap:5px;padding:0 14px 10px;background:var(--tc-offwhite)}
+.ai-sug{font-size:10px;padding:4px 10px;border-radius:99px;border:1px solid rgba(0,48,135,.2);background:rgba(0,48,135,.04);color:var(--tc-blue);cursor:pointer;font-weight:600;transition:all .15s;white-space:nowrap}
+.ai-sug:hover{background:var(--tc-blue);color:#fff}
+.ai-error-msg{font-size:11px;color:var(--tc-red);padding:6px 14px;background:rgba(230,51,18,.06);text-align:center;font-weight:500}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--tc-gray3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--tc-gray4)}
+
+/* ===== RENDIMIENTO ===== */
+.rend-header{background:linear-gradient(135deg,var(--tc-blue) 0%,var(--tc-blue2) 100%);border-radius:var(--radius2);padding:18px 22px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.rend-header-left{display:flex;align-items:center;gap:14px}
+.rend-icon{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.rend-title{font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;color:#fff}
+.rend-sub{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px}
+.rend-kpis{display:flex;gap:10px;flex-wrap:wrap}
+.rend-kpi{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:var(--radius);padding:10px 16px;text-align:center;min-width:90px}
+.rend-kpi-val{font-family:'Nunito',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1}
+.rend-kpi-lbl{font-size:10px;color:rgba(255,255,255,.65);margin-top:3px;font-weight:600}
+.rend-kpi.warn .rend-kpi-val{color:#FCD34D}
+.rend-kpi.danger .rend-kpi-val{color:#FCA5A5}
+.rend-kpi.good .rend-kpi-val{color:#86EFAC}
+
+.rend-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+@media(max-width:920px){.rend-row3{grid-template-columns:1fr}}
+
+/* Gauge circular */
+.perf-gauge{text-align:center;position:relative}
+.gauge-svg{width:100px;height:100px}
+.gauge-track{fill:none;stroke:var(--tc-gray2);stroke-width:10}
+.gauge-arc{fill:none;stroke-width:10;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50px 50px;transition:stroke-dasharray .6s ease}
+.gauge-text{font-family:'Nunito',sans-serif;font-weight:700;font-size:14px;fill:var(--tc-dark)}
+.gauge-sub-text{font-size:9px;fill:var(--tc-gray4);font-weight:600}
+
+/* Barra rendimiento */
+
+.rend-bar-name{font-size:11px;font-weight:600;color:var(--tc-dark);min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.rend-bar-track{flex:0 0 120px;height:7px;background:var(--tc-gray2);border-radius:99px;overflow:hidden}
+.rend-bar-fill{height:100%;border-radius:99px;transition:width .4s}
+.rend-bar-pct{font-size:11px;font-family:'Nunito',sans-serif;font-weight:700;min-width:42px;text-align:right;flex-shrink:0}
+.rend-bar-badge{flex-shrink:0}
+.rend-bar-row:hover{background:var(--tc-gray1);border-radius:var(--radius);margin:0 -6px 8px;padding:0 6px}
+
+/* Tabla rendimiento */
+.rend-status-ok{color:var(--tc-green);font-weight:700}
+.rend-status-ko{color:var(--tc-red);font-weight:700}
+.rend-pct-cell{font-family:'Nunito',sans-serif;font-weight:700}
+.progress-mini{height:6px;background:var(--tc-gray2);border-radius:99px;overflow:hidden;min-width:60px}
+.progress-fill{height:100%;border-radius:99px}
+.dias-grid{display:flex;gap:2px;flex-wrap:wrap;max-width:160px}
+.dia-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+
+/* ===== PANTALLA CONEXIÓN ===== */
+.conn-overlay{position:fixed;inset:0;background:var(--tc-offwhite);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px}
+.conn-card{background:var(--tc-white);border-radius:20px;box-shadow:0 20px 60px rgba(0,48,135,.15),0 4px 16px rgba(0,0,0,.06);width:100%;max-width:480px;overflow:hidden}
+.conn-header{background:var(--tc-blue);padding:28px 32px 24px}
+.conn-logo-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.conn-logo{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);border-radius:10px;padding:6px 14px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.conn-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--tc-red)}
+.conn-title{font-family:'Nunito',sans-serif;font-size:20px;font-weight:700;color:#fff;line-height:1.2}
+.conn-subtitle{font-size:12px;color:rgba(255,255,255,.7);margin-top:6px}
+.conn-body{padding:28px 32px}
+.conn-label{font-size:12px;font-weight:700;color:var(--tc-gray6);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.conn-input-wrap{position:relative;margin-bottom:8px}
+.conn-input{width:100%;background:var(--tc-gray1);border:2px solid var(--tc-gray2);border-radius:10px;padding:13px 16px;font-size:13px;color:var(--tc-dark);font-family:'Nunito Sans',sans-serif;font-weight:500;outline:none;transition:border-color .2s,box-shadow .2s}
+.conn-input:focus{border-color:var(--tc-blue);background:#fff;box-shadow:0 0 0 4px rgba(0,48,135,.08)}
+.conn-input.error{border-color:var(--tc-red);background:#FFF9F9}
+.conn-input.success{border-color:var(--tc-green);background:#F0FDF4}
+.conn-hint{font-size:11px;color:var(--tc-gray4);margin-bottom:20px;line-height:1.5}
+.conn-hint code{font-size:10px;background:var(--tc-gray2);padding:1px 5px;border-radius:4px;color:var(--tc-gray6)}
+.conn-btn{width:100%;padding:14px;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.conn-btn-primary{background:var(--tc-blue);color:#fff;box-shadow:0 4px 12px rgba(0,48,135,.3)}
+.conn-btn-primary:hover{background:var(--tc-blue3);box-shadow:0 6px 20px rgba(0,48,135,.4);transform:translateY(-1px)}
+.conn-btn-primary:active{transform:translateY(0)}
+.conn-btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.conn-status{margin-top:14px;padding:11px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;align-items:center;gap:8px}
+.conn-status.loading{display:flex;background:var(--tc-blue4);color:var(--tc-blue);border:1px solid rgba(0,48,135,.15)}
+.conn-status.error{display:flex;background:#FFF1F0;color:var(--tc-red);border:1px solid rgba(230,51,18,.2)}
+.conn-status.success{display:flex;background:#F0FDF4;color:var(--tc-green);border:1px solid rgba(22,163,74,.2)}
+.conn-mini-spinner{width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+.conn-footer{border-top:1px solid var(--tc-gray1);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.conn-footer-note{font-size:11px;color:var(--tc-gray4)}
+.conn-steps{font-size:10px;color:var(--tc-gray4);line-height:1.8;margin-top:12px}
+.conn-steps b{color:var(--tc-blue)}
+
+/* Botón desconectar en topbar */
+.btn-disconnect{background:rgba(230,51,18,.12);border:1px solid rgba(230,51,18,.3);border-radius:var(--radius);padding:5px 12px;font-size:11px;color:var(--tc-red);cursor:pointer;font-family:'Nunito Sans',sans-serif;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:5px}
+.btn-disconnect:hover{background:rgba(230,51,18,.22);border-color:var(--tc-red)}
+.conn-saved-pill{background:rgba(0,48,135,.08);border:1px solid rgba(0,48,135,.15);border-radius:99px;padding:3px 10px;font-size:10px;color:var(--tc-blue);font-weight:600;display:none;align-items:center;gap:5px;cursor:pointer}
+.conn-saved-pill:hover{background:rgba(0,48,135,.15)}
+.conn-saved-pill.show{display:inline-flex}
+
+
+.rend-status-ok{color:var(--tc-green);font-weight:700}
+.rend-status-ko{color:var(--tc-red);font-weight:700}
+.rend-status-al{color:var(--tc-amber);font-weight:700}
+
+.rend-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;min-height:24px;padding:2px 4px;border-radius:6px;transition:background .12s}
+.rend-bar-row:hover{background:var(--tc-gray1)}
+.rend-bar-name{font-size:11px;font-weight:600;color:var(--tc-dark);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rend-bar-track{flex:0 0 100px;height:7px;background:var(--tc-gray2);border-radius:99px;overflow:hidden}
+.rend-bar-fill{height:100%;border-radius:99px;transition:width .4s}
+.rend-bar-pct{font-size:11px;font-family:Nunito,sans-serif;font-weight:700;min-width:52px;text-align:right;flex-shrink:0}
+.rend-bar-badge{flex-shrink:0}
+
+</style>
+</head>
+<body>
+
+
+<!-- ===== PANTALLA DE CONEXIÓN ===== -->
+<div class="conn-overlay" id="conn-overlay" style="display:none">
+  <div class="conn-card">
+
+    <div class="conn-header">
+      <div class="conn-logo-row">
+        <div class="conn-logo">TELCONET<span style="color:var(--tc-red)">.</span></div>
+      </div>
+      <div class="conn-title">Dashboard Trabajos ADC</div>
+      <div class="conn-subtitle">Conecta con tu Google Sheet para ver los datos en tiempo real</div>
+    </div>
+
+    <div class="conn-body">
+      <div class="conn-label">URL del Apps Script</div>
+      <div class="conn-input-wrap">
+        <input
+          class="conn-input"
+          id="conn-url-input"
+          type="text"
+          placeholder="https://script.google.com/macros/s/.../exec"
+          onkeydown="if(event.key==='Enter') conectar()"
+          oninput="limpiarEstadoConn()"
+          autocomplete="off"
+          spellcheck="false"
+        >
+      </div>
+      <div class="conn-hint">
+        Obtén esta URL en tu Google Sheet → <b>Extensiones → Apps Script → Implementar → Aplicación web</b><br>
+        El acceso debe ser: <code>Cualquier persona</code>
+      </div>
+
+      <button class="conn-btn conn-btn-primary" id="conn-btn" onclick="conectar()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Conectar al dashboard
+      </button>
+
+      <div class="conn-status" id="conn-status">
+        <span class="conn-mini-spinner" id="conn-spinner" style="display:none"></span>
+        <span id="conn-status-txt"></span>
+      </div>
+
+      <div class="conn-steps" id="conn-steps" style="display:none">
+        <b>¿Cómo obtener la URL?</b><br>
+        1. Abre tu Google Sheet<br>
+        2. Ve a <b>Extensiones → Apps Script</b><br>
+        3. Clic en <b>Implementar → Nueva implementación</b><br>
+        4. Tipo: <b>Aplicación web</b> · Acceso: <b>Cualquier persona</b><br>
+        5. Copia la URL generada y pégala arriba
+      </div>
+    </div>
+
+    <div class="conn-footer">
+      <span class="conn-footer-note">© Telconet — Dashboard ADC Nacional</span>
+      <span
+        class="conn-saved-pill"
+        id="conn-saved-pill"
+        onclick="usarURLGuardada()"
+        title="Clic para usar esta URL guardada"
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+        Usar URL guardada
+      </span>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- TOPBAR TELCONET -->
+<div class="topbar">
+  <div class="topbar-brand">
+      <a href="./index.html" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:5px 12px;color:#fff;font-size:12px;font-weight:500;cursor:pointer;text-decoration:none;transition:.15s;white-space:nowrap;margin-right:4px" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.10)'">&#8592; Portal</a>
+    <div class="topbar-logo">
+      <span class="logo-t">TELCONET</span>
+      <span class="logo-dot"></span>
+    </div>
+    <div class="topbar-divider"></div>
+    <div>
+      <div class="topbar-title">Trabajos ADC — Nacional</div>
+      <div class="topbar-sub" id="ctx-sub">Conectando a Google Sheets...</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="badge badge-white" id="badge-total">— registros</span>
+    <span class="badge badge-white" id="badge-cuads">— cuadrillas</span>
+    <span class="last-update" id="last-update"></span>
+    <button class="btn-reload" onclick="cargarDatos()" id="btn-reload">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+      Actualizar
+    </button>
+    <button class="btn-disconnect" onclick="desconectar()" title="Desconectar y cambiar URL">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Desconectar
+    </button>
+    <span class="badge badge-live"><span class="dot-live"></span>EN VIVO</span>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">Mes</div>
+    <button class="filter-btn active" id="btn-mes-TODOS" onclick="setMes('TODOS',this)">Todos <span class="filter-count" id="cnt-mes-TODOS">—</span></button>
+    <button class="filter-btn" id="btn-mes-Enero" onclick="setMes('Enero',this)">Enero <span class="filter-count" id="cnt-mes-Enero">—</span></button>
+    <button class="filter-btn" id="btn-mes-Febrero" onclick="setMes('Febrero',this)">Febrero <span class="filter-count" id="cnt-mes-Febrero">—</span></button>
+    <button class="filter-btn" id="btn-mes-Marzo" onclick="setMes('Marzo',this)">Marzo <span class="filter-count" id="cnt-mes-Marzo">—</span></button>
+    <button class="filter-btn" id="btn-mes-Abril" onclick="setMes('Abril',this)">Abril <span class="filter-count" id="cnt-mes-Abril">—</span></button>
+    <div class="sidebar-div"></div>
+    <div class="sidebar-section">Técnica Sucursal</div>
+    <button class="filter-btn active" id="btn-suc-TODAS" onclick="setSuc('TODAS',this)">Nacional <span class="filter-count" id="cnt-suc-TODAS">—</span></button>
+    <div id="suc-buttons"></div>
+    <div class="sidebar-div"></div>
+    <div class="sidebar-section">Ver</div>
+    <button class="filter-btn filter-btn-cuad" id="btn-cuad-list" onclick="toggleCuadPanel(this)">&#9776; Lista de cuadrillas</button>
+  </aside>
+
+  <!-- PANEL CUADRILLAS -->
+  <div class="cuad-panel" id="cuad-panel">
+    <div class="cuad-panel-hdr">
+      <div class="cuad-panel-title" id="cp-title">Cuadrillas</div>
+      <div class="cuad-panel-sub" id="cp-sub">Selecciona para ver detalle</div>
+    </div>
+    <div class="cuad-list" id="cuad-list-items"></div>
+  </div>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="state-box" id="loading-box" style="display:none">
+      <div class="spinner"></div>
+      <div>Cargando datos desde Google Sheets...</div>
+    </div>
+    <div id="dashboard-content" style="display:none">
+
+      <!-- ALERT -->
+      <div class="alert">
+        <span style="font-size:16px;flex-shrink:0;color:var(--tc-red)">⚠</span>
+        <div><strong>Alerta operacional:</strong> El cierre de tareas en menos de 10 minutos indica <strong>mala gestión</strong>, las cuadrillas con alto porcentaje requieren revisión inmediata.</div>
+      </div>
+
+      <!-- DETALLE CUADRILLA -->
+      <div class="cuad-detail" id="cuad-detail">
+        <div class="cd-hdr">
+          <div><div class="cd-name" id="cd-name"></div><div class="cd-suc" id="cd-suc"></div></div>
+          <button class="close-btn" onclick="closeCuadDetail()">✕ Cerrar</button>
+        </div>
+        <div class="cd-stats" id="cd-stats"></div>
+        <div style="position:relative;height:130px"><canvas id="cd-chart"></canvas></div>
+      </div>
+
+      <!-- METRICS -->
+      <div class="metrics" id="metrics"></div>
+
+      <!-- CHARTS ROW -->
+      <div class="row2">
+        <div class="card">
+          <div class="ct">Trabajos por cuadrilla (top 8)</div>
+          <div style="position:relative;height:240px"><canvas id="ch-cuad"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ct">Cierre de tareas más recurrentes</div>
+          <div class="donut-wrap">
+            <div class="donut-canvas"><canvas id="ch-tipos"></canvas></div>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TENDENCIA -->
+      <div class="card-full">
+        <div class="ct">Tendencia mensual de trabajos</div>
+        <div class="legend" id="leg-tend"></div>
+        <div style="position:relative;height:175px"><canvas id="ch-tend"></canvas></div>
+      </div>
+
+      <!-- GAUGES <10 MIN -->
+      <div class="sec-hdr">
+        <span class="sec-hdr-icon" style="background:rgba(230,51,18,.1);color:var(--tc-red)">⚠</span>
+        Cierre &lt;10 min — Alerta de mala gestión
+      </div>
+      <div class="gauge-grid" id="gauges"></div>
+
+      <!-- TABLA <10 MIN -->
+      <div class="card-full">
+        <div class="ct">Ranking cierre &lt;10 min <span class="ct-badge">Indicador de mala gestión</span></div>
+        <div class="tabs">
+          <button class="tab active" onclick="setTabRap('alta',this)">Alto &gt;10%</button>
+          <button class="tab" onclick="setTabRap('media',this)">Medio 5–10%</button>
+          <button class="tab" onclick="setTabRap('baja',this)">Bajo &lt;5%</button>
+        </div>
+        <div class="tbl-wrap">
+          <table><thead><tr>
+            <th>#</th><th>Cuadrilla</th><th>Sucursal</th><th>Total tareas</th>
+            <th>Cierres &lt;10 min</th><th>% alerta</th><th>Barra</th><th>Nivel</th>
+          </tr></thead><tbody id="tbl-rap"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ===== SECCIÓN RENDIMIENTO ===== -->
+      <div id="rend-section">
+
+        <!-- HEADER -->
+        <div class="rend-header">
+          <div class="rend-header-left">
+            <div class="rend-icon">📊</div>
+            <div>
+              <div class="rend-title">Índices de Rendimiento de Cuadrillas</div>
+              <div class="rend-sub">Cumple: 4–5 pts/día · Bajo: &lt;4 pts/día · Alerta: &gt;5 pts/día · Promedio = Pts totales ÷ Días con actividad</div>
+            </div>
+          </div>
+          <div class="rend-kpis" id="rend-kpis-header"></div>
+        </div>
+
+        <!-- DONA ESTADO + KPI CARDS -->
+        <div class="row2" style="margin-bottom:14px">
+          <div class="card" style="display:flex;align-items:center;gap:20px">
+            <div style="flex-shrink:0;position:relative;width:160px;height:160px">
+              <canvas id="ch-rend-donut"></canvas>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                <div style="font-size:22px;font-weight:700;font-family:Nunito,sans-serif;color:var(--tc-dark)" id="donut-total-n">—</div>
+                <div style="font-size:10px;color:var(--tc-gray4);font-weight:600">cuadrillas</div>
+              </div>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:11px;font-weight:700;color:var(--tc-gray5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Estado de rendimiento</div>
+              <div id="rend-donut-legend"></div>
+            </div>
+          </div>
+          <div class="metrics" id="rend-metrics" style="margin-bottom:0;grid-template-columns:repeat(2,1fr)"></div>
+        </div>
+
+        <!-- rend bars hidden (removed from view) -->
+        <div id="rend-mensual-bars" style="display:none"></div>
+        <div id="rend-anual-bars"   style="display:none"></div>
+
+        <!-- CHART EVOLUCIÓN -->
+        <div class="card-full">
+          <div class="ct">Evolución del promedio diario por sucursal (pts/día)</div>
+          <div class="legend" id="leg-rend"></div>
+          <div style="position:relative;height:200px"><canvas id="ch-rend"></canvas></div>
+        </div>
+
+        <!-- TABLA MENSUAL DETALLE -->
+        <div class="card-full" style="border-left:4px solid var(--tc-blue)">
+          <div class="ct">Detalle de rendimiento mensual por cuadrilla
+            <span style="font-size:10px;color:var(--tc-gray4);font-weight:500;text-transform:none">Se actualiza al cambiar mes o sucursal</span>
+          </div>
+          <div class="tabs">
+            <button class="tab active" onclick="setTabRend('ko',this)">Bajo &lt;4 pts</button>
+            <button class="tab" onclick="setTabRend('ok',this)">Cumple 4–5 pts</button>
+            <button class="tab" onclick="setTabRend('al',this)">Alerta &gt;5 pts</button>
+            <button class="tab" onclick="setTabRend('all',this)">Todas</button>
+          </div>
+          <div class="tbl-wrap"><table>
+            <thead><tr>
+              <th>#</th><th>Cuadrilla</th><th>Sucursal</th>
+              <th>Pts/día prom.</th><th>Pts totales</th><th>Días con actividad</th>
+              <th>% Cumplimiento</th><th>Estado</th>
+            </tr></thead>
+            <tbody id="tbl-rend-mes"></tbody>
+          </table></div>
+        </div>
+
+        <!-- RANKING ANUAL -->
+        <div class="card-full">
+          <div class="ct">Ranking anual de rendimiento — Todas las cuadrillas</div>
+          <div class="tbl-wrap"><table>
+            <thead><tr>
+              <th>#</th><th>Cuadrilla</th><th>Sucursal</th>
+              <th>Pts/día prom.</th><th>Pts totales</th><th>Meses transcurridos</th>
+              <th>% Cumplimiento</th><th>Barra</th><th>Estado</th>
+            </tr></thead>
+            <tbody id="tbl-rend-anual"></tbody>
+          </table></div>
+        </div>
+
+      </div><!-- /rend-section -->
+
+      <!-- CUADRILLAS POR TAREAS -->
+      <div class="card-full">
+        <div class="ct">Cuadrillas por cantidad de tareas ejecutadas</div>
+        <div class="tabs">
+          <button class="tab active" onclick="setTabGen('total',this)">Por total</button>
+          <button class="tab" onclick="setTabGen('internas',this)">Por internas</button>
+          <button class="tab" onclick="setTabGen('externas',this)">Por externas</button>
+        </div>
+        <div class="tbl-wrap">
+          <table><thead><tr>
+            <th>#</th><th>Cuadrilla</th><th>Sucursal</th>
+            <th>Total</th><th>Internas</th><th>Externas</th><th>% Int.</th>
+          </tr></thead><tbody id="tbl-gen"></tbody></table>
+        </div>
+      </div>
+
+      <!-- TOP TIPOS -->
+      <div class="card-full">
+        <div class="ct">Top cierre de tareas</div>
+        <div class="tbl-wrap">
+          <table><thead><tr>
+            <th>#</th><th>Tipo de tarea</th><th>Cantidad</th><th>% total</th><th>Categoría</th>
+          </tr></thead><tbody id="tbl-tipos"></tbody></table>
+        </div>
+      </div>
+
+      <div style="height:90px"></div>
+    </div>
+    </div>
+  </main>
+</div>
+
+<!-- ===== AGENTE IA FLOTANTE ===== -->
+<div class="ai-fab" id="ai-fab">
+  <div class="ai-window" id="ai-window">
+    <div class="ai-win-hdr">
+      <div class="ai-win-hdr-info">
+        <div class="ai-avatar">🤖</div>
+        <div>
+          <div class="ai-win-title">Asistente IA de ADC</div>
+          <div class="ai-win-sub"><span class="ai-win-sub-dot"></span>En línea · responde al instante</div>
+        </div>
+      </div>
+      <button class="ai-close" onclick="toggleAI()">✕</button>
+    </div>
+    <div class="ai-messages" id="ai-messages"></div>
+    <div class="ai-suggestions" id="ai-sugs"></div>
+    <div id="ai-error-row"></div>
+    <div class="ai-input-row">
+      <input class="ai-input" id="ai-input" type="text" placeholder="Escribe tu consulta..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)enviarMensaje()">
+      <button class="ai-send" id="ai-send" onclick="enviarMensaje()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Enviar
+      </button>
+    </div>
+  </div>
+  <div style="position:relative">
+    <button class="ai-bubble-btn" onclick="toggleAI()" title="Asistente IA ADC">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.54.36 2.98.97 4.29L1 23l6.71-1.97C9.02 21.64 10.46 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.4 0-2.72-.37-3.86-1.01l-.27-.16-4.04 1.19 1.06-3.96-.18-.29C4.38 14.78 4 13.43 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>
+    </button>
+    <div class="ai-notif" id="ai-notif"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN — PEGAR TU URL DE APPS SCRIPT AQUÍ
+// ============================================================
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMO0hcDLC8ZlQHv0pavRlCGcoQzpu4pHqnz0ZDx5XBxUrTSY_UmaIyj3epDQsdSZ5O-Q/exec';
+// Precargar en localStorage para persistencia
+localStorage.setItem('adc_url', 'https://script.google.com/macros/s/AKfycbzMO0hcDLC8ZlQHv0pavRlCGcoQzpu4pHqnz0ZDx5XBxUrTSY_UmaIyj3epDQsdSZ5O-Q/exec');
+// Ejemplo: 'https://script.google.com/macros/s/XXXX.../exec'
+// ============================================================
+
+var MESES=['Enero','Febrero','Marzo','Abril'];
+var MC=['Ene','Feb','Mar','Abr'];
+var curMes='TODOS',curSuc='TODAS',tabRap='alta',tabGen='total';
+var chCuad=null,chTipos=null,chTend=null,chCd=null;
+var cuadPanelOpen=false,activeCuad=null,allData=[];
+var PAL=['#003087','#E63312','#F26522','#16A34A','#0047AB','#D97706','#1A5FC8','#7C3AED','#0891B2','#DC2626'];
+
+function sTipo(t){return t;}
+function riskColor(p){return p>=20?'#E63312':p>=10?'#D97706':p>=5?'#0047AB':'#94A3B8';}
+function riskClass(p){return p>=20?'lvl-ex':p>=10?'lvl-hi':p>=5?'lvl-md':'lvl-lo';}
+function riskLabel(p){return p>=20?'Alto riesgo':p>=10?'Riesgo medio':p>=5?'Bajo riesgo':'Sin alerta';}
+function riskPill(p){return p>=20?'pill-r':p>=10?'pill-a':p>=5?'pill-b':'pill-t';}
+function destroy(){[chCuad,chTipos,chTend].forEach(function(c){if(c)c.destroy();});chCuad=chTipos=chTend=null;}
+function hora(){return new Date().toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'});}
+
+// ---- CARGA ----
+
+
+
+
+// ---- PROCESAR ----
+function procesarDatos(filas){
+  allData=filas;if(!filas.length)return;
+  var keys=Object.keys(filas[0]);
+  var cM=keys.find(function(k){return /^mes$/i.test(k.trim());})||'Mes';
+  var cS=keys.find(function(k){return /sucursal/i.test(k);})||'TECNICA_SUCURSAL';
+  var cC=keys.find(function(k){return /cuadrilla/i.test(k);})||'NOMBRE CUADRILLA';
+  var cT=keys.find(function(k){return /tipo.*tarea/i.test(k);})||'TIPO DE TAREA';
+  var cE=keys.find(function(k){return /evento.*10|10.*min/i.test(k);})||'EVENTO MAYOR A 10 MIN';
+  var cN=keys.find(function(k){return /upper.*nombre|nombre.*tarea/i.test(k);})||'UPPER([Nombre Tarea])';
+  window._cols={mes:cM,suc:cS,cuad:cC,tipo:cT,evento:cE,nombre:cN};
+  var mu=[],su=[],cu=[];
+  filas.forEach(function(f){
+    var m=String(f[cM]||'').trim(),s=String(f[cS]||'').trim(),c=String(f[cC]||'').trim();
+    if(m&&mu.indexOf(m)<0)mu.push(m);
+    if(s&&su.indexOf(s)<0)su.push(s);
+    if(c&&cu.indexOf(c)<0)cu.push(c);
+  });
+  var ord=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  mu.sort(function(a,b){return ord.indexOf(a)-ord.indexOf(b);});su.sort();
+  window._meses=mu;window._sucs=su;
+  document.getElementById('badge-total').textContent=filas.length.toLocaleString()+' registros';
+  document.getElementById('badge-cuads').textContent=cu.length+' cuadrillas';
+  renderMesButtons(mu);renderSucButtons(su);
+  document.getElementById('loading-box').style.display='none';
+  document.getElementById('dashboard-content').style.display='block';
+  if(curMes!=='TODOS'&&mu.indexOf(curMes)<0)curMes='TODOS';
+  if(curSuc!=='TODAS'&&su.indexOf(curSuc)<0)curSuc='TODAS';
+  actualizarConteos();render();
+  if(cuadPanelOpen)renderCuadPanel();
+}
+function renderMesButtons(m){['Enero','Febrero','Marzo','Abril'].forEach(function(ms){var b=document.getElementById('btn-mes-'+ms);if(b)b.style.display=m.indexOf(ms)>=0?'':'none';});}
+function renderSucButtons(sucs){
+  var nm={'AMBATO':'Ambato','COCA':'Coca','CUENCA':'Cuenca','ESMERALDAS':'Esmeraldas','IBARRA':'Ibarra','LAGO AGRIO':'Lago Agrio','LOJA':'Loja','MACHALA':'Machala','MANTA':'Manta','MILAGRO':'Milagro','QUEVEDO':'Quevedo','RIOBAMBA':'Riobamba','SALINAS':'Salinas','SANTO DOMINGO':'Santo Domingo'};
+  document.getElementById('suc-buttons').innerHTML=sucs.map(function(s){var lbl=nm[s]||s;return '<button class="filter-btn'+(curSuc===s?' active':'')+'" id="btn-suc-'+s.replace(/ /g,'_')+'" onclick="setSucDyn(\''+s+'\',this)">'+lbl+' <span class="filter-count" id="cnt-suc-'+s.replace(/ /g,'_')+'">—</span></button>';}).join('');
+}
+
+// ---- FILTRAR/AGRUPAR ----
+function filtrar(){var c=window._cols;if(!c)return[];return allData.filter(function(f){return(curMes==='TODOS'||String(f[c.mes]||'').trim()===curMes)&&(curSuc==='TODAS'||String(f[c.suc]||'').trim()===curSuc);});}
+function agrupar(filas){
+  var c=window._cols;var cm={},tm={},totR=0;
+  filas.forEach(function(f){
+    var cuad=String(f[c.cuad]||'').trim();
+    var tipo=String(f[c.tipo]||'').trim();   // TIPO DE TAREA → interno/externo
+    var nombre=String(f[c.nombre]||f[c.tipo]||'').trim(); // UPPER([Nombre Tarea]) → dona + top
+    var esI=/interna/i.test(tipo);
+    var ev=f[c.evento];
+    var rap=(ev===false||ev==='FALSE'||ev===0||ev==='0'||String(ev).toLowerCase()==='false');
+    if(!cm[cuad])cm[cuad]={n:cuad,t:0,i:0,e:0,r:0};
+    cm[cuad].t++;if(esI)cm[cuad].i++;else cm[cuad].e++;
+    if(rap){cm[cuad].r++;totR++;}
+    if(nombre){if(!tm[nombre])tm[nombre]={c:0,esI:esI};tm[nombre].c++;}
+  });
+  var cuads=Object.values(cm).map(function(c){c.pi=c.t>0?parseFloat((c.i/c.t*100).toFixed(1)):0;c.pr=c.t>0?parseFloat((c.r/c.t*100).toFixed(1)):0;return c;}).sort(function(a,b){return b.t-a.t;});
+  var tipos=Object.entries(tm).map(function(e){return{tp:e[0],c:e[1].c,esI:e[1].esI};}).sort(function(a,b){return b.c-a.c;}).slice(0,10);
+  return{cuads:cuads,tipos:tipos,totalRap:totR};
+}
+function tendenciaMes(){
+  var c=window._cols;var m=window._meses||MESES;var td={},ti={};
+  var sub=curSuc==='TODAS'?allData:allData.filter(function(f){return String(f[c.suc]||'').trim()===curSuc;});
+  sub.forEach(function(f){var ms=String(f[c.mes]||'').trim();var tp=String(f[c.tipo]||'').trim();td[ms]=(td[ms]||0)+1;if(/interna/i.test(tp))ti[ms]=(ti[ms]||0)+1;});
+  return{tend:m.map(function(ms){return td[ms]||0;}),tendi:m.map(function(ms){return ti[ms]||0;})};
+}
+
+// ---- CONTEOS ----
+function actualizarConteos(){
+  var c=window._cols;if(!c)return;
+  var m=window._meses||[];var s=window._sucs||[];
+  var subS=curSuc==='TODAS'?allData:allData.filter(function(f){return String(f[c.suc]||'').trim()===curSuc;});
+  var cM={TODOS:subS.length};subS.forEach(function(f){var ms=String(f[c.mes]||'').trim();cM[ms]=(cM[ms]||0)+1;});
+  ['TODOS'].concat(m).forEach(function(ms){var el=document.getElementById('cnt-mes-'+ms);if(el)el.textContent=(cM[ms]||0).toLocaleString();});
+  var subM=curMes==='TODOS'?allData:allData.filter(function(f){return String(f[c.mes]||'').trim()===curMes;});
+  var cS={TODAS:subM.length};subM.forEach(function(f){var sc=String(f[c.suc]||'').trim();cS[sc]=(cS[sc]||0)+1;});
+  var elT=document.getElementById('cnt-suc-TODAS');if(elT)elT.textContent=cS['TODAS'].toLocaleString();
+  s.forEach(function(sc){var el=document.getElementById('cnt-suc-'+sc.replace(/ /g,'_'));if(el)el.textContent=(cS[sc]||0).toLocaleString();});
+}
+
+// ---- FILTROS ----
+function setMes(m,el){curMes=m;document.querySelectorAll('[id^=btn-mes-]').forEach(function(b){b.classList.remove('active');});el.classList.add('active');actualizarConteos();render();if(cuadPanelOpen)renderCuadPanel();if(activeCuad)closeCuadDetail();}
+function setSuc(s,el){curSuc=s;document.querySelectorAll('[id^=btn-suc-]').forEach(function(b){b.classList.remove('active');});el.classList.add('active');activeCuad=null;document.getElementById('cuad-detail').classList.remove('show');actualizarConteos();render();if(cuadPanelOpen)renderCuadPanel();}
+function setSucDyn(s,el){setSuc(s,el);}
+function setTabRap(f,el){tabRap=f;el.closest('.tabs').querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');renderTblRap();}
+function setTabGen(f,el){tabGen=f;el.closest('.tabs').querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');renderTblGen();}
+function toggleCuadPanel(el){cuadPanelOpen=!cuadPanelOpen;var p=document.getElementById('cuad-panel');if(cuadPanelOpen){p.classList.add('open');el.classList.add('active');renderCuadPanel();}else{p.classList.remove('open');el.classList.remove('active');closeCuadDetail();}}
+
+// ---- PANEL CUADRILLAS ----
+function renderCuadPanel(){
+  var agr=agrupar(filtrar());var cuads=agr.cuads;
+  document.getElementById('cp-title').textContent='Cuadrillas'+(curSuc!='TODAS'?' — '+curSuc:'');
+  document.getElementById('cp-sub').textContent=cuads.length+' equipos · '+(curMes=='TODOS'?'Todo el año':curMes);
+  document.getElementById('cuad-list-items').innerHTML=cuads.map(function(c){
+    var act=activeCuad&&activeCuad.n===c.n?'active':'';
+    var rc=riskColor(c.pr);
+    var cd=JSON.stringify(c).replace(/'/g,'&#39;');
+    return '<div class="cuad-item '+act+'" onclick=\'showCuadDetail('+cd+')\'><div class="cuad-name">'+c.n+'</div><div class="cuad-pills"><span class="cp pill-b">'+c.t+' tareas</span><span class="cp pill-g">'+c.pi.toFixed(0)+'% int</span><span class="cp" style="background:rgba(230,51,18,.08);color:'+rc+';border:1px solid rgba(230,51,18,.2)">'+c.pr+'% &lt;10m</span></div></div>';
+  }).join('');
+}
+function showCuadDetail(c){
+  if(typeof c==='string')c=JSON.parse(c);
+  activeCuad=c;if(chCd){chCd.destroy();chCd=null;}
+  var d=document.getElementById('cuad-detail');d.classList.add('show');
+  document.getElementById('cd-name').textContent=c.n;
+  document.getElementById('cd-suc').textContent=c.n.split(' ')[0]+' · '+(curMes==='TODOS'?'Todos los meses':curMes);
+  var rc=riskColor(c.pr);
+  document.getElementById('cd-stats').innerHTML=
+    '<div class="cs"><div class="cs-lbl">Total</div><div class="cs-val" style="color:var(--tc-blue)">'+c.t+'</div></div>'+
+    '<div class="cs"><div class="cs-lbl">Internas</div><div class="cs-val" style="color:var(--tc-green)">'+c.i+' <span style="font-size:11px;color:var(--tc-gray4)">('+c.pi.toFixed(0)+'%)</span></div></div>'+
+    '<div class="cs"><div class="cs-lbl">Externas</div><div class="cs-val" style="color:var(--tc-amber)">'+c.e+'</div></div>'+
+    '<div class="cs"><div class="cs-lbl">&lt;10 min ⚠</div><div class="cs-val" style="color:'+rc+'">'+c.r+' <span style="font-size:11px;color:var(--tc-gray4)">('+c.pr+'%)</span></div></div>';
+  chCd=new Chart(document.getElementById('cd-chart'),{type:'bar',data:{labels:['Total','Internas','Externas','<10 min'],datasets:[{data:[c.t,c.i,c.e,c.r],backgroundColor:['rgba(0,48,135,.7)','rgba(22,163,74,.7)','rgba(242,101,34,.7)','rgba(230,51,18,.7)'],borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748B',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#64748B',font:{size:10}},grid:{color:'rgba(226,232,240,.8)'}}}}});
+  if(cuadPanelOpen)renderCuadPanel();
+  d.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeCuadDetail(){document.getElementById('cuad-detail').classList.remove('show');activeCuad=null;if(chCd){chCd.destroy();chCd=null;}if(cuadPanelOpen)renderCuadPanel();}
+
+// ---- RENDER ----
+function render(){
+  destroy();
+  var filas=filtrar();var agr=agrupar(filas);
+  var cuads=agr.cuads,tipos=agr.tipos,tend=tendenciaMes();
+  var m=window._meses||MESES;var mc=m.map(function(ms){return ms.substring(0,3);});
+  var total=filas.length,int=cuads.reduce(function(s,c){return s+c.i;},0),ext=total-int;
+  var pI=total>0?Math.round(int/total*100):0;
+  var rap=agr.totalRap,pRap=total>0?parseFloat((rap/total*100).toFixed(1)):0;
+  var mesLbl=curMes==='TODOS'?'Todos los meses':curMes;
+  var sucLbl=curSuc==='TODAS'?'Nacional':curSuc;
+  document.getElementById('ctx-sub').textContent=mesLbl+' · '+sucLbl+' · '+total.toLocaleString()+' trabajos';
+  var tC=cuads[0],tI=cuads.slice().sort(function(a,b){return b.i-a.i;})[0],tR=cuads.slice().sort(function(a,b){return b.pr-a.pr;})[0];
+  var rc=riskColor(pRap);
+  document.getElementById('metrics').innerHTML=
+    mch('Total trabajos',total.toLocaleString(),mesLbl,'neutral','mc-accent-blue')+
+    mch('Tareas internas',int.toLocaleString(),'↑ '+pI+'% del total','up','mc-accent-green')+
+    mch('Tareas externas',ext.toLocaleString(),(100-pI)+'%','neutral','')+
+    mchR('Cierres &lt;10 min ⚠','<span style="color:'+rc+'">'+rap+'</span>',pRap+'% — mala gestión',pRap>=10?'dn':pRap>=5?'warn':'neutral','mc-accent-red')+
+    mch('Cuadrillas',cuads.length,cuads.length+' cuadrillas activas','neutral','')+
+    mch('#1 volumen',tC?tC.n:'—',tC?tC.t+' tareas':'','neutral','',true)+
+    mch('#1 internas',tI?tI.n:'—',tI?(tI.i+' internas · '+tI.pi.toFixed(0)+'% del total'):'','up','',true)+
+    mchR('Mayor alerta &lt;10m',tR&&tR.pr>0?tR.n:'—',tR&&tR.pr>0?(tR.r+' cierres · '+tR.pr+'% del total'):'','dn','',true);
+
+  // BARRAS azul sólido
+  var top8=cuads.slice().sort(function(a,b){return b.t-a.t;}).slice(0,8);
+  chCuad=new Chart(document.getElementById('ch-cuad'),{
+    type:'bar',
+    data:{labels:top8.map(function(c){return c.n;}),datasets:[{label:'Tareas',data:top8.map(function(c){return c.t;}),backgroundColor:'rgba(0,71,171,0.82)',borderColor:'#003087',borderWidth:1,borderRadius:5,hoverBackgroundColor:'rgba(230,51,18,0.82)'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{title:function(i){return i[0].label;},label:function(ctx){return ' Total tareas: '+ctx.parsed.y;}}},
+        datalabels:{
+          anchor:'end',align:'end',
+          color:'#003087',
+          font:{size:10,weight:'bold',family:'Nunito'},
+          formatter:function(v){return v.toLocaleString();}
+        }
+      },
+      scales:{
+        x:{ticks:{color:'#64748B',font:{size:9},maxRotation:45,autoSkip:false},grid:{display:false}},
+        y:{ticks:{color:'#64748B',font:{size:9}},grid:{color:'rgba(226,232,240,.8)'},
+          grace:'15%'}
+      }
+    },
+    plugins:[{
+      id:'barLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx2=chart.ctx;
+        chart.data.datasets.forEach(function(dataset,i){
+          var meta=chart.getDatasetMeta(i);
+          meta.data.forEach(function(bar,idx){
+            var val=dataset.data[idx];
+            ctx2.save();
+            ctx2.fillStyle='#003087';
+            ctx2.font='bold 10px Nunito,sans-serif';
+            ctx2.textAlign='center';
+            ctx2.textBaseline='bottom';
+            ctx2.fillText(val.toLocaleString(), bar.x, bar.y - 3);
+            ctx2.restore();
+          });
+        });
+      }
+    }]
+  });
+
+  // DONUT
+  var totT=tipos.reduce(function(s,t){return s+t.c;},0);
+  chTipos=new Chart(document.getElementById('ch-tipos'),{
+    type:'doughnut',
+    data:{labels:tipos.map(function(t){return t.tp;}),datasets:[{data:tipos.map(function(t){return t.c;}),backgroundColor:PAL.slice(0,tipos.length),borderWidth:3,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+      layout:{padding:{top:8,bottom:8,left:8,right:8}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          position:'nearest',
+          backgroundColor:'rgba(15,23,42,0.92)',
+          titleColor:'#fff',
+          bodyColor:'#CBD5E1',
+          padding:10,
+          cornerRadius:8,
+          boxPadding:4,
+          callbacks:{
+            title:function(items){
+              // Truncate long names in tooltip title
+              var lbl=items[0].label||'';
+              return lbl.length>40?lbl.substring(0,40)+'…':lbl;
+            },
+            label:function(ctx){
+              return '  '+ctx.parsed.toLocaleString()+' tareas ('+Math.round(ctx.parsed/totT*100)+'%)';
+            }
+          }
+        }
+      }
+    }
+  });
+  document.getElementById('donut-legend').innerHTML=tipos.map(function(t,i){
+    var pct=totT>0?Math.round(t.c/totT*100):0;
+    var lbl=t.tp; // full name - CSS handles overflow with ellipsis
+    return '<div class="dl-item" title="'+t.tp+'"><div class="dl-dot" style="background:'+PAL[i]+'"></div><div class="dl-label">'+lbl+'</div><div class="dl-pct">'+pct+'%</div></div>';
+  }).join('');
+
+  // TENDENCIA
+  var extT=tend.tend.map(function(v,i){return v-(tend.tendi[i]||0);});
+  chTend=new Chart(document.getElementById('ch-tend'),{type:'line',data:{labels:mc,datasets:[{label:'Total',data:tend.tend,borderColor:'#003087',backgroundColor:'rgba(0,48,135,.07)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#003087',fill:true,tension:0.4},{label:'Internas',data:tend.tendi,borderColor:'#16A34A',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,3],pointRadius:3,pointBackgroundColor:'#16A34A',tension:0.4},{label:'Externas',data:extT,borderColor:'#E63312',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,3],pointRadius:3,pointBackgroundColor:'#E63312',tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748B',font:{size:11}},grid:{display:false}},y:{ticks:{color:'#64748B',font:{size:10}},grid:{color:'rgba(226,232,240,.8)'}}}}});
+  document.getElementById('leg-tend').innerHTML='<span><span class="ld" style="background:#003087"></span>Total</span><span><span class="ld" style="background:#16A34A"></span>Internas</span><span><span class="ld" style="background:#E63312"></span>Externas</span>';
+
+  // GAUGES
+  var tR10=cuads.slice().sort(function(a,b){return b.pr-a.pr;}).slice(0,10);
+  var mxP=Math.max.apply(null,tR10.map(function(c){return c.pr;}))||1;
+  document.getElementById('gauges').innerHTML=tR10.map(function(c){
+    var clr=riskColor(c.pr);var cd=JSON.stringify(c).replace(/'/g,'&#39;');
+    return '<div class="gauge-card '+riskClass(c.pr)+'" onclick=\'showCuadDetail('+cd+')\'><div class="g-name">'+c.n+'</div><div class="g-pct" style="color:'+clr+'">'+c.pr+'%</div><div class="g-bar"><div class="g-fill" style="width:'+Math.round(c.pr/mxP*100)+'%;background:'+clr+'"></div></div><div class="g-detail">'+c.r+' de '+c.t+' &lt;10 min</div></div>';
+  }).join('');
+
+  window._cuads=cuads;window._tipos=tipos;
+  renderTblRap();renderTblGen();renderTblTipos();
+  renderRendimiento();
+}
+
+function mch(l,v,s,cls,acc,sm){
+  var fs=sm?'font-size:12px;line-height:1.4':'';
+  return '<div class="mc '+(acc||'')+'"><div class="mc-lbl">'+l+'</div><div class="mc-val" style="'+fs+'">'+v+'</div><span class="mc-sub '+cls+'">'+s+'</span></div>';
+}
+function mchR(l,v,s,cls,acc,sm){
+  var fs=sm?'font-size:12px;line-height:1.4':'';
+  return '<div class="mc '+(acc||'')+'"><div class="mc-lbl">'+l+'</div><div class="mc-val" style="'+fs+'">'+v+'</div><span class="mc-sub '+cls+'">'+s+'</span></div>';
+}
+
+function renderTblRap(){
+  var cuads=window._cuads||[];
+  // Exclude cuadrillas with 0 alerts
+  var all=cuads.slice().filter(function(c){return c.pr>0;}).sort(function(a,b){return b.pr-a.pr;});
+  var rows=all;
+  if(tabRap==='alta')      rows=all.filter(function(c){return c.pr>10;});
+  else if(tabRap==='media') rows=all.filter(function(c){return c.pr>=5&&c.pr<=10;});
+  else if(tabRap==='baja')  rows=all.filter(function(c){return c.pr>0&&c.pr<5;});
+  var mxP=Math.max.apply(null,rows.map(function(c){return c.pr;}))||1;
+  function nivelLabel(p){ return p>10?'Alto riesgo':p>=5?'Riesgo medio':'Riesgo bajo'; }
+  function nivelPill(p){  return p>10?'pill-r':p>=5?'pill-a':'pill-b'; }
+  function nivelColor(p){ return p>10?'#E63312':p>=5?'#D97706':'#0047AB'; }
+  document.getElementById('tbl-rap').innerHTML=rows.map(function(c,i){
+    var clr=nivelColor(c.pr);
+    var cd=JSON.stringify(c).replace(/'/g,'&#39;');
+    return '<tr>'+
+      '<td><span class="rk">'+(i+1)+'</span></td>'+
+      '<td><span class="nm" onclick=\'showCuadDetail('+cd+')\'>'+c.n+'</span></td>'+
+      '<td style="font-size:10px;color:var(--tc-gray4)">'+c.n.split(' ')[0]+'</td>'+
+      '<td style="font-weight:600">'+c.t+'</td>'+
+      '<td style="color:'+clr+';font-weight:700">'+c.r+'</td>'+
+      '<td style="color:'+clr+';font-weight:700">'+c.pr+'%</td>'+
+      '<td><div class="bbar"><div class="bbg"><div style="height:100%;border-radius:99px;background:'+clr+';width:'+Math.round(c.pr/mxP*100)+'%"></div></div></div></td>'+
+      '<td><span class="pill '+nivelPill(c.pr)+'">'+nivelLabel(c.pr)+'</span></td>'+
+    '</tr>';
+  }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--tc-gray4);padding:16px">Sin cuadrillas en este rango</td></tr>';
+}
+function renderTblGen(){
+  var cuads=window._cuads||[];var rows=cuads.slice();
+  if(tabGen==='internas')rows.sort(function(a,b){return b.i-a.i;});
+  else if(tabGen==='externas')rows.sort(function(a,b){return b.e-a.e;});
+  else rows.sort(function(a,b){return b.t-a.t;});
+  var mxT=Math.max.apply(null,rows.map(function(c){return c.t;}))||1;
+  document.getElementById('tbl-gen').innerHTML=rows.map(function(c,i){
+    var pp=c.pi>=80?'pill-g':c.pi>=50?'pill-b':c.pi>=30?'pill-a':'pill-r';
+    var pf=c.pi>=80?'Alta interna':c.pi>=50?'Mixta':c.pi>=30?'Baja interna':'Externa';
+    var cd=JSON.stringify(c).replace(/'/g,'&#39;');
+    return '<tr><td><span class="rk">'+(i+1)+'</span></td><td><div class="cuad-nm-full">'+c.n+'</div></td><td style="font-size:10px;color:var(--tc-gray4)">'+c.n.split(' ')[0]+'</td><td style="font-weight:700">'+c.t+'</td><td>'+c.i+'</td><td>'+c.e+'</td><td>'+c.pi.toFixed(0)+'%</td></tr>';
+  }).join('');
+}
+function renderTblTipos(){
+  var tipos=window._tipos||[];var totT=tipos.reduce(function(s,t){return s+t.c;},0);
+  document.getElementById('tbl-tipos').innerHTML=tipos.map(function(t,i){
+    var isI=t.esI!==undefined?t.esI:/interna/i.test(t.tp);
+    return '<tr><td><span class="rk">'+(i+1)+'</span></td><td>'+t.tp+'</td><td style="font-weight:700">'+t.c.toLocaleString()+'</td><td style="color:var(--tc-gray4)">'+Math.round(t.c/totT*100)+'%</td><td><span class="pill '+(isI?'pill-b':'pill-a')+'">'+(isI?'Interna':'Externa')+'</span></td></tr>';
+  }).join('');
+}
+
+// ===== AGENTE IA — PROXY VÍA APPS SCRIPT =====
+var aiOpen=false,aiIniciado=false,aiCargando=false,aiMsgs=[];
+var SUGS=['¿Qué cuadrilla tiene más tareas?','¿Cuáles son los trabajos más frecuentes?','¿Qué sucursal tiene más alertas <10 min?','Resumen del mes actual'];
+
+function toggleAI(){
+  aiOpen=!aiOpen;
+  var win=document.getElementById('ai-window');
+  var notif=document.getElementById('ai-notif');
+  if(aiOpen){
+    win.classList.add('open');notif.classList.remove('show');
+    if(!aiIniciado){aiIniciado=true;agregarMsgBot('Hola, soy tu Asistente IA de ADC. ¿Cuál es tu consulta?');renderSugs();}
+    setTimeout(function(){document.getElementById('ai-input').focus();},100);
+  }else{win.classList.remove('open');}
+}
+
+function renderSugs(){
+  var s=document.getElementById('ai-sugs');
+  s.innerHTML=SUGS.map(function(q){return '<span class="ai-sug" onclick="usarSug(\''+q+'\')">'+q+'</span>';}).join('');
+}
+function usarSug(q){document.getElementById('ai-input').value=q;enviarMensaje();}
+
+function agregarMsgBot(txt){
+  var msgs=document.getElementById('ai-messages');
+  var div=document.createElement('div');div.className='ai-msg bot';
+  div.innerHTML='<div class="ai-msg-bubble">'+txt+'</div><div class="ai-msg-time">'+hora()+'</div>';
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+  aiMsgs.push({role:'assistant',content:txt});
+}
+function agregarMsgUser(txt){
+  var msgs=document.getElementById('ai-messages');
+  var div=document.createElement('div');div.className='ai-msg user';
+  div.innerHTML='<div class="ai-msg-bubble">'+txt+'</div><div class="ai-msg-time">'+hora()+'</div>';
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+  aiMsgs.push({role:'user',content:txt});
+  // Ocultar sugerencias al escribir
+  document.getElementById('ai-sugs').innerHTML='';
+}
+function mostrarTyping(){
+  var msgs=document.getElementById('ai-messages');
+  var div=document.createElement('div');div.className='ai-msg bot';div.id='ai-typing-wrap';
+  div.innerHTML='<div class="ai-typing"><span></span><span></span><span></span></div>';
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+function quitarTyping(){var t=document.getElementById('ai-typing-wrap');if(t)t.remove();}
+
+function contextoActual(){
+  var filas=filtrar();var agr=agrupar(filas);
+  var top3=agr.cuads.slice(0,3).map(function(c){return c.n+' ('+c.t+' tareas, '+c.pi.toFixed(0)+'% int, '+c.pr+'% <10min)';}).join('; ');
+  var top3t=agr.tipos.slice(0,3).map(function(t){return sTipo(t.tp)+' ('+t.c+')';}).join(', ');
+  var mesLbl=curMes==='TODOS'?'todos los meses':curMes;
+  var sucLbl=curSuc==='TODAS'?'todas las sucursales':curSuc;
+  return 'Filtro activo: '+mesLbl+', '+sucLbl+'. Total tareas: '+filas.length+'. Top cuadrillas: '+top3+'. Tipos más frecuentes: '+top3t+'. Nota: cierre <10 min indica mala gestión.';
+}
+
+function setAIError(msg){
+  document.getElementById('ai-error-row').innerHTML=msg?'<div class="ai-error-msg">'+msg+'</div>':'';
+}
+
+function enviarMensaje(){
+  if(!APPS_SCRIPT_URL){
+    setAIError('⚠ Primero conecta el dashboard a tu Google Sheet para usar el asistente.');return;
+  }
+  var inp=document.getElementById('ai-input');
+  var txt=inp.value.trim();if(!txt||aiCargando)return;
+  inp.value='';aiCargando=true;setAIError('');
+  document.getElementById('ai-send').disabled=true;
+  agregarMsgUser(txt);mostrarTyping();
+
+  var sistema='Eres el Asistente IA del Dashboard de Trabajos ADC de Telconet Ecuador. Responde en español de forma concisa, clara y profesional. '+contextoActual();
+  var msgs=aiMsgs.slice(-10).map(function(m){return{role:m.role,content:m.content};});
+
+  // Llamar al proxy del Apps Script en lugar de la API directamente
+  fetch(APPS_SCRIPT_URL+'?action=ai',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({system:sistema,messages:msgs})
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    quitarTyping();aiCargando=false;document.getElementById('ai-send').disabled=false;
+    if(data.ok&&data.respuesta){
+      agregarMsgBot(data.respuesta);
+    }else{
+      var errMsg=data.error||'Error desconocido';
+      if(errMsg.indexOf('ANTHROPIC_KEY')<0&&errMsg.indexOf('null')<0){
+        agregarMsgBot('No pude obtener respuesta: '+errMsg);
+      }else{
+        setAIError('⚠ El asistente necesita configuración adicional. Ejecuta la función <strong>configurarAPIKey()</strong> en Apps Script.');
+      }
+    }
+  })
+  .catch(function(e){
+    quitarTyping();aiCargando=false;document.getElementById('ai-send').disabled=false;
+    setAIError('⚠ Error de red al contactar al asistente. Verifica tu conexión.');
+  });
+}
+
+// INIT
+window.addEventListener('DOMContentLoaded',function(){
+  // URL precargada — cargar datos directamente sin mostrar pantalla de conexión
+  if(APPS_SCRIPT_URL){
+    localStorage.setItem('adc_url', APPS_SCRIPT_URL);
+    document.getElementById('conn-overlay').style.display = 'none';
+    cargarDatos();
+  } else {
+    mostrarPantallaConexion();
+  }
+});
+
+
+// ===== GESTIÓN DE CONEXIÓN =====
+
+function mostrarPantallaConexion() {
+  document.getElementById('conn-overlay').style.display = 'flex';
+  var inp = document.getElementById('conn-input');
+  if(inp && !inp.value) inp.value = APPS_SCRIPT_URL;
+  document.getElementById('dashboard-content').style.display = 'none';
+  document.getElementById('loading-box').style.display = 'none';
+  var saved = localStorage.getItem('adc_url');
+  var pill = document.getElementById('conn-saved-pill');
+  if (saved && saved.indexOf('script.google.com') >= 0) {
+    pill.classList.add('show');
+    document.getElementById('conn-url-input').value = saved;
+  } else {
+    pill.classList.remove('show');
+  }
+  // Reset estado del botón
+  var btn = document.getElementById('conn-btn');
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Conectar al dashboard';
+  setTimeout(function(){ document.getElementById('conn-url-input').focus(); }, 200);
+}
+
+function usarURLGuardada() {
+  var saved = localStorage.getItem('adc_url');
+  if (saved) {
+    document.getElementById('conn-url-input').value = saved;
+    conectar();
+  }
+}
+
+function limpiarEstadoConn() {
+  var st = document.getElementById('conn-status');
+  st.className = 'conn-status';
+  st.style.display = 'none';
+  document.getElementById('conn-url-input').className = 'conn-input';
+  document.getElementById('conn-steps').style.display = 'none';
+}
+
+function setConnStatus(tipo, msg) {
+  var st  = document.getElementById('conn-status');
+  var txt = document.getElementById('conn-status-txt');
+  var sp  = document.getElementById('conn-spinner');
+  st.className = 'conn-status ' + tipo;
+  st.style.display = 'flex';
+  txt.textContent = msg;
+  sp.style.display = tipo === 'loading' ? 'inline-block' : 'none';
+}
+
+function conectar() {
+  var rawUrl = document.getElementById('conn-url-input').value.trim();
+  var input  = document.getElementById('conn-url-input');
+  var btn    = document.getElementById('conn-btn');
+
+  // Validar que no esté vacía
+  if (!rawUrl) {
+    input.className = 'conn-input error';
+    setConnStatus('error', 'Por favor ingresa la URL del Apps Script.');
+    return;
+  }
+
+  // Validar dominio de Google
+  if (rawUrl.indexOf('script.google.com') < 0) {
+    input.className = 'conn-input error';
+    setConnStatus('error', 'La URL debe ser de Google Apps Script (script.google.com).');
+    document.getElementById('conn-steps').style.display = 'block';
+    return;
+  }
+
+  // Auto-añadir /exec si falta
+  var url = rawUrl;
+  if (url.indexOf('/exec') < 0) {
+    url = url.replace(/\/+$/, '') + '/exec';
+    document.getElementById('conn-url-input').value = url;
+  }
+
+  // Bloquear botón y mostrar progreso
+  btn.disabled = true;
+  btn.textContent = 'Conectando...';
+  setConnStatus('loading', 'Probando conexión con Google Sheets...');
+
+  var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timer = controller ? setTimeout(function() { controller.abort(); }, 22000) : null;
+
+  fetch(url, {
+    method: 'GET',
+    mode: 'cors',
+    redirect: 'follow',
+    cache: 'no-cache',
+    signal: controller ? controller.signal : undefined
+  })
+  .then(function(resp) {
+    if (timer) clearTimeout(timer);
+    if (!resp.ok) throw new Error('Error HTTP ' + resp.status + '. Asegúrate que el acceso sea "Cualquier persona".');
+    return resp.text();
+  })
+  .then(function(txt) {
+    var data;
+    try {
+      data = JSON.parse(txt);
+    } catch(e) {
+      throw new Error('La respuesta del servidor no es válida. Verifica que el Apps Script esté publicado correctamente.');
+    }
+    if (!data.ok) throw new Error(data.error || 'El script respondió con error.');
+
+    // ✓ ÉXITO
+    input.className = 'conn-input success';
+    setConnStatus('success', '✓ Conectado. Cargando ' + (data.total || 0).toLocaleString() + ' registros...');
+    APPS_SCRIPT_URL = url;
+    localStorage.setItem('adc_url', url);
+
+    setTimeout(function() {
+      document.getElementById('conn-overlay').style.display = 'none';
+      procesarDatos(data.filas);
+      document.getElementById('last-update').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-EC');
+      if (window._autoRefresh) clearInterval(window._autoRefresh);
+      window._autoRefresh = setInterval(cargarDatos, 5 * 60 * 1000);
+    }, 700);
+  })
+  .catch(function(e) {
+    if (timer) clearTimeout(timer);
+    input.className = 'conn-input error';
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Reintentar';
+    var msg = (e.name === 'AbortError')
+      ? 'Tiempo agotado (22s). Verifica tu internet e intenta de nuevo.'
+      : e.message;
+    setConnStatus('error', '✗ ' + msg);
+    document.getElementById('conn-steps').style.display = 'block';
+  });
+}
+
+function desconectar() {
+  if (!confirm('¿Desconectar el dashboard?\nSe borrará la URL guardada y deberás ingresar la URL nuevamente.')) return;
+  APPS_SCRIPT_URL = '';
+  localStorage.removeItem('adc_url');
+  if (window._autoRefresh) { clearInterval(window._autoRefresh); window._autoRefresh = null; }
+  allData = [];
+  document.getElementById('badge-total').textContent = '— registros';
+  document.getElementById('badge-cuads').textContent = '— cuadrillas';
+  document.getElementById('ctx-sub').textContent = 'Sin conexión';
+  document.getElementById('last-update').textContent = '';
+  // Limpiar estado del formulario
+  limpiarEstadoConn();
+  document.getElementById('conn-url-input').value = '';
+  mostrarPantallaConexion();
+}
+
+function cargarDatos() {
+  if (!APPS_SCRIPT_URL) { mostrarPantallaConexion(); return; }
+  var btn = document.getElementById('btn-reload');
+  if (btn) btn.classList.add('spin');
+  document.getElementById('last-update').textContent = 'Actualizando...';
+
+  var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timer = controller ? setTimeout(function() { controller.abort(); }, 25000) : null;
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'GET',
+    mode: 'cors',
+    redirect: 'follow',
+    cache: 'no-cache',
+    signal: controller ? controller.signal : undefined
+  })
+  .then(function(resp) {
+    if (timer) clearTimeout(timer);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return resp.text();
+  })
+  .then(function(txt) {
+    var data = JSON.parse(txt);
+    if (!data.ok) throw new Error(data.error || 'Error en respuesta');
+    procesarDatos(data.filas);
+    localStorage.setItem('adc_url', APPS_SCRIPT_URL);
+    document.getElementById('last-update').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-EC');
+    if (btn) btn.classList.remove('spin');
+  })
+  .catch(function(e) {
+    if (timer) clearTimeout(timer);
+    if (btn) btn.classList.remove('spin');
+    var msg = (e.name === 'AbortError') ? 'Tiempo agotado' : e.message;
+    document.getElementById('last-update').textContent = '⚠ ' + msg;
+  });
+}
+
+function mostrarError(msg) {
+  // Solo redirige a pantalla de conexión con el error visible
+  mostrarPantallaConexion();
+  setTimeout(function() {
+    setConnStatus('error', '✗ ' + msg);
+    document.getElementById('conn-url-input').className = 'conn-input error';
+    document.getElementById('conn-steps').style.display = 'block';
+  }, 60);
+}
+
+// ===== DATOS RENDIMIENTO =====
+const REND = {"AMBATO":{"Enero":{"avg":4.75,"nc":0,"c":3,"al":0,"cr":[{"n":"AMB PROV AMB ADC 02","pm":143.22,"dt":29,"avg":4.94,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":94.45,"dt":20,"avg":4.72,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":91.72,"dt":20,"avg":4.59,"e":"cumple","pct":"100%"}],"ca":[{"n":"AMB PROV AMB ADC 02","suc":"AMBATO","pa":423.48,"meses":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","suc":"AMBATO","pa":263.64,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","suc":"AMBATO","pa":279.91,"meses":4,"avg":4.49,"e":"cumple","pct":"100%"}]},"Febrero":{"avg":4.56,"nc":0,"c":3,"al":0,"cr":[{"n":"AMB PROV AMB ADC 03","pm":84.53,"dt":18,"avg":4.7,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","pm":116.47,"dt":25,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":77.55,"dt":18,"avg":4.31,"e":"cumple","pct":"100%"}],"ca":[{"n":"AMB PROV AMB ADC 02","suc":"AMBATO","pa":423.48,"meses":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","suc":"AMBATO","pa":263.64,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","suc":"AMBATO","pa":279.91,"meses":4,"avg":4.49,"e":"cumple","pct":"100%"}]},"Marzo":{"avg":4.71,"nc":0,"c":3,"al":0,"cr":[{"n":"AMB PROV AMB ADC 03","pm":72.0,"dt":15,"avg":4.8,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","pm":145.61,"dt":31,"avg":4.7,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":101.81,"dt":22,"avg":4.63,"e":"cumple","pct":"100%"}],"ca":[{"n":"AMB PROV AMB ADC 02","suc":"AMBATO","pa":423.48,"meses":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","suc":"AMBATO","pa":263.64,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","suc":"AMBATO","pa":279.91,"meses":4,"avg":4.49,"e":"cumple","pct":"100%"}]},"Abril":{"avg":4.39,"nc":0,"c":3,"al":0,"cr":[{"n":"AMB PROV AMB ADC 02","pm":18.18,"dt":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":8.83,"dt":2,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":12.66,"dt":3,"avg":4.22,"e":"cumple","pct":"100%"}],"ca":[{"n":"AMB PROV AMB ADC 02","suc":"AMBATO","pa":423.48,"meses":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","suc":"AMBATO","pa":263.64,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","suc":"AMBATO","pa":279.91,"meses":4,"avg":4.49,"e":"cumple","pct":"100%"}]},"TODOS":{"avg":4.6,"nc":0,"c":3,"al":0,"cr":[{"n":"AMB PROV AMB ADC 02","pm":423.48,"dt":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":263.64,"dt":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":279.91,"dt":4,"avg":4.49,"e":"cumple","pct":"100%"}],"ca":[{"n":"AMB PROV AMB ADC 02","suc":"AMBATO","pa":423.48,"meses":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","suc":"AMBATO","pa":263.64,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","suc":"AMBATO","pa":279.91,"meses":4,"avg":4.49,"e":"cumple","pct":"100%"}]}},"COCA":{"Enero":{"avg":3.26,"nc":1,"c":0,"al":0,"cr":[{"n":"COC PROV COC ADC 01","pm":78.14,"dt":24,"avg":3.26,"e":"bajo","pct":"81.5%"}],"ca":[{"n":"COC PROV COC ADC 01","suc":"COCA","pa":265.11,"meses":4,"avg":3.76,"e":"bajo","pct":"94.0%"}]},"Febrero":{"avg":3.81,"nc":1,"c":0,"al":0,"cr":[{"n":"COC PROV COC ADC 01","pm":83.79,"dt":22,"avg":3.81,"e":"bajo","pct":"95.2%"}],"ca":[{"n":"COC PROV COC ADC 01","suc":"COCA","pa":265.11,"meses":4,"avg":3.76,"e":"bajo","pct":"94.0%"}]},"Marzo":{"avg":4.36,"nc":0,"c":1,"al":0,"cr":[{"n":"COC PROV COC ADC 01","pm":95.98,"dt":22,"avg":4.36,"e":"cumple","pct":"100%"}],"ca":[{"n":"COC PROV COC ADC 01","suc":"COCA","pa":265.11,"meses":4,"avg":3.76,"e":"bajo","pct":"94.0%"}]},"Abril":{"avg":3.6,"nc":1,"c":0,"al":0,"cr":[{"n":"COC PROV COC ADC 01","pm":7.2,"dt":2,"avg":3.6,"e":"bajo","pct":"90.0%"}],"ca":[{"n":"COC PROV COC ADC 01","suc":"COCA","pa":265.11,"meses":4,"avg":3.76,"e":"bajo","pct":"94.0%"}]},"TODOS":{"avg":3.76,"nc":1,"c":0,"al":0,"cr":[{"n":"COC PROV COC ADC 01","pm":265.11,"dt":4,"avg":3.76,"e":"bajo","pct":"94.0%"}],"ca":[{"n":"COC PROV COC ADC 01","suc":"COCA","pa":265.11,"meses":4,"avg":3.76,"e":"bajo","pct":"94.0%"}]}},"CUENCA":{"Enero":{"avg":4.25,"nc":0,"c":3,"al":0,"cr":[{"n":"CUE PROV CUE ADC 01","pm":100.29,"dt":23,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":96.69,"dt":23,"avg":4.2,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","pm":96.62,"dt":23,"avg":4.2,"e":"cumple","pct":"100%"}],"ca":[{"n":"CUE PROV CUE ADC 03","suc":"CUENCA","pa":278.74,"meses":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","suc":"CUENCA","pa":197.15,"meses":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","suc":"CUENCA","pa":276.57,"meses":4,"avg":4.14,"e":"cumple","pct":"100%"}]},"Febrero":{"avg":4.37,"nc":0,"c":3,"al":0,"cr":[{"n":"CUE PROV CUE ADC 03","pm":53.93,"dt":11,"avg":4.9,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":74.83,"dt":18,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","pm":77.13,"dt":19,"avg":4.06,"e":"cumple","pct":"100%"}],"ca":[{"n":"CUE PROV CUE ADC 03","suc":"CUENCA","pa":278.74,"meses":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","suc":"CUENCA","pa":197.15,"meses":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","suc":"CUENCA","pa":276.57,"meses":4,"avg":4.14,"e":"cumple","pct":"100%"}]},"Marzo":{"avg":4.86,"nc":0,"c":3,"al":0,"cr":[{"n":"CUE PROV CUE ADC 01","pm":19.73,"dt":4,"avg":4.93,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","pm":118.19,"dt":24,"avg":4.92,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":94.72,"dt":20,"avg":4.74,"e":"cumple","pct":"100%"}],"ca":[{"n":"CUE PROV CUE ADC 03","suc":"CUENCA","pa":278.74,"meses":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","suc":"CUENCA","pa":197.15,"meses":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","suc":"CUENCA","pa":276.57,"meses":4,"avg":4.14,"e":"cumple","pct":"100%"}]},"Abril":{"avg":4.22,"nc":1,"c":1,"al":0,"cr":[{"n":"CUE PROV CUE ADC 03","pm":10.0,"dt":2,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":10.33,"dt":3,"avg":3.44,"e":"bajo","pct":"86.0%"}],"ca":[{"n":"CUE PROV CUE ADC 03","suc":"CUENCA","pa":278.74,"meses":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","suc":"CUENCA","pa":197.15,"meses":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","suc":"CUENCA","pa":276.57,"meses":4,"avg":4.14,"e":"cumple","pct":"100%"}]},"TODOS":{"avg":4.45,"nc":0,"c":3,"al":0,"cr":[{"n":"CUE PROV CUE ADC 03","pm":278.74,"dt":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","pm":197.15,"dt":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":276.57,"dt":4,"avg":4.14,"e":"cumple","pct":"100%"}],"ca":[{"n":"CUE PROV CUE ADC 03","suc":"CUENCA","pa":278.74,"meses":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","suc":"CUENCA","pa":197.15,"meses":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","suc":"CUENCA","pa":276.57,"meses":4,"avg":4.14,"e":"cumple","pct":"100%"}]}},"ESMERALDAS":{"Enero":{"avg":4.25,"nc":1,"c":2,"al":0,"cr":[{"n":"ESM PROV ESM ADC 03","pm":92.31,"dt":20,"avg":4.62,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":120.8,"dt":29,"avg":4.17,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","pm":79.35,"dt":20,"avg":3.97,"e":"bajo","pct":"99.2%"}],"ca":[{"n":"ESM PROV ESM ADC 03","suc":"ESMERALDAS","pa":275.68,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","suc":"ESMERALDAS","pa":274.13,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","suc":"ESMERALDAS","pa":354.93,"meses":4,"avg":4.31,"e":"cumple","pct":"100%"}]},"Febrero":{"avg":4.5,"nc":0,"c":3,"al":0,"cr":[{"n":"ESM PROV ESM ADC 01","pm":85.11,"dt":18,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":110.14,"dt":25,"avg":4.41,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":78.59,"dt":18,"avg":4.37,"e":"cumple","pct":"100%"}],"ca":[{"n":"ESM PROV ESM ADC 03","suc":"ESMERALDAS","pa":275.68,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","suc":"ESMERALDAS","pa":274.13,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","suc":"ESMERALDAS","pa":354.93,"meses":4,"avg":4.31,"e":"cumple","pct":"100%"}]},"Marzo":{"avg":4.26,"nc":1,"c":2,"al":0,"cr":[{"n":"ESM PROV ESM ADC 01","pm":99.67,"dt":22,"avg":4.53,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":94.96,"dt":21,"avg":4.52,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":104.32,"dt":28,"avg":3.73,"e":"bajo","pct":"93.2%"}],"ca":[{"n":"ESM PROV ESM ADC 03","suc":"ESMERALDAS","pa":275.68,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","suc":"ESMERALDAS","pa":274.13,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","suc":"ESMERALDAS","pa":354.93,"meses":4,"avg":4.31,"e":"cumple","pct":"100%"}]},"Abril":{"avg":4.94,"nc":0,"c":3,"al":0,"cr":[{"n":"ESM PROV ESM ADC 01","pm":10.0,"dt":2,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":19.67,"dt":4,"avg":4.92,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":9.82,"dt":2,"avg":4.91,"e":"cumple","pct":"100%"}],"ca":[{"n":"ESM PROV ESM ADC 03","suc":"ESMERALDAS","pa":275.68,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","suc":"ESMERALDAS","pa":274.13,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","suc":"ESMERALDAS","pa":354.93,"meses":4,"avg":4.31,"e":"cumple","pct":"100%"}]},"TODOS":{"avg":4.49,"nc":0,"c":3,"al":0,"cr":[{"n":"ESM PROV ESM ADC 03","pm":275.68,"dt":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","pm":274.13,"dt":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":354.93,"dt":4,"avg":4.31,"e":"cumple","pct":"100%"}],"ca":[{"n":"ESM PROV ESM ADC 03","suc":"ESMERALDAS","pa":275.68,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","suc":"ESMERALDAS","pa":274.13,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","suc":"ESMERALDAS","pa":354.93,"meses":4,"avg":4.31,"e":"cumple","pct":"100%"}]}},"IBARRA":{"Enero":{"avg":4.44,"nc":1,"c":1,"al":0,"cr":[{"n":"IBA PROV IBA ADC 01","pm":99.07,"dt":20,"avg":4.95,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","pm":86.48,"dt":22,"avg":3.93,"e":"bajo","pct":"98.2%"}],"ca":[{"n":"IBA PROV IBA ADC 01","suc":"IBARRA","pa":299.85,"meses":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 02","suc":"IBARRA","pa":283.95,"meses":4,"avg":4.54,"e":"cumple","pct":"100%"}]},"Febrero":{"avg":4.82,"nc":0,"c":2,"al":0,"cr":[{"n":"IBA PROV IBA ADC 01","pm":89.54,"dt":18,"avg":4.97,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","pm":84.32,"dt":18,"avg":4.68,"e":"cumple","pct":"100%"}],"ca":[{"n":"IBA PROV IBA ADC 01","suc":"IBARRA","pa":299.85,"meses":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 02","suc":"IBARRA","pa":283.95,"meses":4,"avg":4.54,"e":"cumple","pct":"100%"}]},"Marzo":{"avg":4.5,"nc":0,"c":2,"al":0,"cr":[{"n":"IBA PROV IBA ADC 02","pm":98.66,"dt":21,"avg":4.7,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 01","pm":98.58,"dt":23,"avg":4.29,"e":"cumple","pct":"100%"}],"ca":[{"n":"IBA PROV IBA ADC 01","suc":"IBARRA","pa":299.85,"meses":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 02","suc":"IBARRA","pa":283.95,"meses":4,"avg":4.54,"e":"cumple","pct":"100%"}]},"Abril":{"avg":5.58,"nc":0,"c":1,"al":1,"cr":[{"n":"IBA PROV IBA ADC 01","pm":12.66,"dt":2,"avg":6.33,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 02","pm":14.49,"dt":3,"avg":4.83,"e":"cumple","pct":"100%"}],"ca":[{"n":"IBA PROV IBA ADC 01","suc":"IBARRA","pa":299.85,"meses":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 02","suc":"IBARRA","pa":283.95,"meses":4,"avg":4.54,"e":"cumple","pct":"100%"}]},"TODOS":{"avg":4.84,"nc":0,"c":1,"al":1,"cr":[{"n":"IBA PROV IBA ADC 01","pm":299.85,"dt":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 02","pm":283.95,"dt":4,"avg":4.54,"e":"cumple","pct":"100%"}],"ca":[{"n":"IBA PROV IBA ADC 01","suc":"IBARRA","pa":299.85,"meses":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 02","suc":"IBARRA","pa":283.95,"meses":4,"avg":4.54,"e":"cumple","pct":"100%"}]}},"LAGO AGRIO":{"Enero":{"avg":4.68,"nc":0,"c":1,"al":0,"cr":[{"n":"LAG PROV LAG ADC 01","pm":93.67,"dt":20,"avg":4.68,"e":"cumple","pct":"100%"}],"ca":[{"n":"LAG PROV LAG ADC 01","suc":"LAGO AGRIO","pa":250.7,"meses":4,"avg":3.4,"e":"bajo","pct":"85.0%"}]},"Febrero":{"avg":4.12,"nc":0,"c":1,"al":0,"cr":[{"n":"LAG PROV LAG ADC 01","pm":70.06,"dt":17,"avg":4.12,"e":"cumple","pct":"100%"}],"ca":[{"n":"LAG PROV LAG ADC 01","suc":"LAGO AGRIO","pa":250.7,"meses":4,"avg":3.4,"e":"bajo","pct":"85.0%"}]},"Marzo":{"avg":4.11,"nc":0,"c":1,"al":0,"cr":[{"n":"LAG PROV LAG ADC 01","pm":86.3,"dt":21,"avg":4.11,"e":"cumple","pct":"100%"}],"ca":[{"n":"LAG PROV LAG ADC 01","suc":"LAGO AGRIO","pa":250.7,"meses":4,"avg":3.4,"e":"bajo","pct":"85.0%"}]},"Abril":{"avg":0.67,"nc":1,"c":0,"al":0,"cr":[{"n":"LAG PROV LAG ADC 01","pm":0.67,"dt":1,"avg":0.67,"e":"bajo","pct":"16.8%"}],"ca":[{"n":"LAG PROV LAG ADC 01","suc":"LAGO AGRIO","pa":250.7,"meses":4,"avg":3.4,"e":"bajo","pct":"85.0%"}]},"TODOS":{"avg":3.4,"nc":1,"c":0,"al":0,"cr":[{"n":"LAG PROV LAG ADC 01","pm":250.7,"dt":4,"avg":3.4,"e":"bajo","pct":"85.0%"}],"ca":[{"n":"LAG PROV LAG ADC 01","suc":"LAGO AGRIO","pa":250.7,"meses":4,"avg":3.4,"e":"bajo","pct":"85.0%"}]}},"LOJA":{"Enero":{"avg":4.51,"nc":0,"c":1,"al":0,"cr":[{"n":"LOJ PROV LOJ ADC 01","pm":121.77,"dt":27,"avg":4.51,"e":"cumple","pct":"100%"}],"ca":[{"n":"LOJ PROV LOJ ADC 01","suc":"LOJA","pa":386.81,"meses":4,"avg":4.34,"e":"cumple","pct":"100%"}]},"Febrero":{"avg":4.58,"nc":0,"c":1,"al":0,"cr":[{"n":"LOJ PROV LOJ ADC 01","pm":114.57,"dt":25,"avg":4.58,"e":"cumple","pct":"100%"}],"ca":[{"n":"LOJ PROV LOJ ADC 01","suc":"LOJA","pa":386.81,"meses":4,"avg":4.34,"e":"cumple","pct":"100%"}]},"Marzo":{"avg":4.62,"nc":0,"c":1,"al":0,"cr":[{"n":"LOJ PROV LOJ ADC 01","pm":143.16,"dt":31,"avg":4.62,"e":"cumple","pct":"100%"}],"ca":[{"n":"LOJ PROV LOJ ADC 01","suc":"LOJA","pa":386.81,"meses":4,"avg":4.34,"e":"cumple","pct":"100%"}]},"Abril":{"avg":3.66,"nc":1,"c":0,"al":0,"cr":[{"n":"LOJ PROV LOJ ADC 01","pm":7.31,"dt":2,"avg":3.66,"e":"bajo","pct":"91.5%"}],"ca":[{"n":"LOJ PROV LOJ ADC 01","suc":"LOJA","pa":386.81,"meses":4,"avg":4.34,"e":"cumple","pct":"100%"}]},"TODOS":{"avg":4.34,"nc":0,"c":1,"al":0,"cr":[{"n":"LOJ PROV LOJ ADC 01","pm":386.81,"dt":4,"avg":4.34,"e":"cumple","pct":"100%"}],"ca":[{"n":"LOJ PROV LOJ ADC 01","suc":"LOJA","pa":386.81,"meses":4,"avg":4.34,"e":"cumple","pct":"100%"}]}},"MACHALA":{"Enero":{"avg":3.97,"nc":1,"c":1,"al":0,"cr":[{"n":"MCH PROV MCH ADC 01","pm":116.61,"dt":29,"avg":4.02,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","pm":82.45,"dt":21,"avg":3.93,"e":"bajo","pct":"98.2%"}],"ca":[{"n":"MCH PROV MCH ADC 02","suc":"MACHALA","pa":271.45,"meses":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","suc":"MACHALA","pa":372.27,"meses":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 001","suc":"MACHALA","pa":7.16,"meses":1,"avg":3.58,"e":"bajo","pct":"89.5%"}]},"Febrero":{"avg":3.98,"nc":1,"c":1,"al":0,"cr":[{"n":"MCH PROV MCH ADC 01","pm":104.07,"dt":24,"avg":4.34,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","pm":68.78,"dt":19,"avg":3.62,"e":"bajo","pct":"90.5%"}],"ca":[{"n":"MCH PROV MCH ADC 02","suc":"MACHALA","pa":271.45,"meses":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","suc":"MACHALA","pa":372.27,"meses":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 001","suc":"MACHALA","pa":7.16,"meses":1,"avg":3.58,"e":"bajo","pct":"89.5%"}]},"Marzo":{"avg":4.3,"nc":1,"c":2,"al":0,"cr":[{"n":"MCH PROV MCH ADC 02","pm":110.89,"dt":23,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":135.23,"dt":30,"avg":4.51,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 001","pm":7.16,"dt":2,"avg":3.58,"e":"bajo","pct":"89.5%"}],"ca":[{"n":"MCH PROV MCH ADC 02","suc":"MACHALA","pa":271.45,"meses":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","suc":"MACHALA","pa":372.27,"meses":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 001","suc":"MACHALA","pa":7.16,"meses":1,"avg":3.58,"e":"bajo","pct":"89.5%"}]},"Abril":{"avg":4.38,"nc":0,"c":2,"al":0,"cr":[{"n":"MCH PROV MCH ADC 02","pm":9.33,"dt":2,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":16.36,"dt":4,"avg":4.09,"e":"cumple","pct":"100%"}],"ca":[{"n":"MCH PROV MCH ADC 02","suc":"MACHALA","pa":271.45,"meses":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","suc":"MACHALA","pa":372.27,"meses":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 001","suc":"MACHALA","pa":7.16,"meses":1,"avg":3.58,"e":"bajo","pct":"89.5%"}]},"TODOS":{"avg":4.03,"nc":1,"c":2,"al":0,"cr":[{"n":"MCH PROV MCH ADC 02","pm":271.45,"dt":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":372.27,"dt":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 001","pm":7.16,"dt":1,"avg":3.58,"e":"bajo","pct":"89.5%"}],"ca":[{"n":"MCH PROV MCH ADC 02","suc":"MACHALA","pa":271.45,"meses":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","suc":"MACHALA","pa":372.27,"meses":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 001","suc":"MACHALA","pa":7.16,"meses":1,"avg":3.58,"e":"bajo","pct":"89.5%"}]}},"MANTA":{"Enero":{"avg":4.78,"nc":0,"c":7,"al":1,"cr":[{"n":"MNT PROV MNT ADC 01","pm":102.4,"dt":20,"avg":5.12,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 06","pm":93.71,"dt":19,"avg":4.93,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","pm":93.56,"dt":19,"avg":4.92,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 03","pm":96.54,"dt":20,"avg":4.83,"e":"cumple","pct":"100%"},{"n":"MNT PROV PVO ADC 01","pm":91.16,"dt":19,"avg":4.8,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","pm":92.65,"dt":20,"avg":4.63,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":91.88,"dt":20,"avg":4.59,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","pm":87.67,"dt":20,"avg":4.38,"e":"cumple","pct":"100%"}],"ca":[{"n":"MNT PROV PVO ADC 01","suc":"MANTA","pa":287.79,"meses":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","suc":"MANTA","pa":294.38,"meses":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","suc":"MANTA","pa":272.25,"meses":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","suc":"MANTA","pa":244.35,"meses":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","suc":"MANTA","pa":304.71,"meses":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","suc":"MANTA","pa":267.37,"meses":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","suc":"MANTA","pa":268.68,"meses":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","suc":"MANTA","pa":197.93,"meses":4,"avg":4.43,"e":"cumple","pct":"100%"}]},"Febrero":{"avg":4.62,"nc":0,"c":7,"al":1,"cr":[{"n":"MNT PROV PVO ADC 01","pm":90.32,"dt":18,"avg":5.02,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","pm":68.23,"dt":14,"avg":4.87,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","pm":86.87,"dt":18,"avg":4.83,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","pm":81.69,"dt":17,"avg":4.81,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","pm":87.9,"dt":20,"avg":4.4,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","pm":79.23,"dt":18,"avg":4.4,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":74.39,"dt":17,"avg":4.38,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","pm":71.73,"dt":17,"avg":4.22,"e":"cumple","pct":"100%"}],"ca":[{"n":"MNT PROV PVO ADC 01","suc":"MANTA","pa":287.79,"meses":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","suc":"MANTA","pa":294.38,"meses":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","suc":"MANTA","pa":272.25,"meses":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","suc":"MANTA","pa":244.35,"meses":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","suc":"MANTA","pa":304.71,"meses":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","suc":"MANTA","pa":267.37,"meses":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","suc":"MANTA","pa":268.68,"meses":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","suc":"MANTA","pa":197.93,"meses":4,"avg":4.43,"e":"cumple","pct":"100%"}]},"Marzo":{"avg":4.64,"nc":0,"c":6,"al":2,"cr":[{"n":"MNT PROV MNT ADC 03","pm":109.15,"dt":21,"avg":5.2,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 02","pm":10.05,"dt":2,"avg":5.03,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 05","pm":74.99,"dt":15,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","pm":95.8,"dt":21,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","pm":94.43,"dt":21,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"MNT PROV PVO ADC 01","pm":92.46,"dt":21,"avg":4.4,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","pm":102.06,"dt":24,"avg":4.25,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":92.76,"dt":22,"avg":4.22,"e":"cumple","pct":"100%"}],"ca":[{"n":"MNT PROV PVO ADC 01","suc":"MANTA","pa":287.79,"meses":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","suc":"MANTA","pa":294.38,"meses":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","suc":"MANTA","pa":272.25,"meses":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","suc":"MANTA","pa":244.35,"meses":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","suc":"MANTA","pa":304.71,"meses":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","suc":"MANTA","pa":267.37,"meses":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","suc":"MANTA","pa":268.68,"meses":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","suc":"MANTA","pa":197.93,"meses":4,"avg":4.43,"e":"cumple","pct":"100%"}]},"Abril":{"avg":5.09,"nc":1,"c":2,"al":3,"cr":[{"n":"MNT PROV PVO ADC 01","pm":13.85,"dt":2,"avg":6.92,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV CHO ADC 01","pm":11.16,"dt":2,"avg":5.58,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","pm":20.46,"dt":4,"avg":5.12,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 04","pm":9.65,"dt":2,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","pm":13.38,"dt":3,"avg":4.46,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","pm":7.33,"dt":2,"avg":3.66,"e":"bajo","pct":"91.5%"}],"ca":[{"n":"MNT PROV PVO ADC 01","suc":"MANTA","pa":287.79,"meses":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","suc":"MANTA","pa":294.38,"meses":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","suc":"MANTA","pa":272.25,"meses":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","suc":"MANTA","pa":244.35,"meses":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","suc":"MANTA","pa":304.71,"meses":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","suc":"MANTA","pa":267.37,"meses":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","suc":"MANTA","pa":268.68,"meses":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","suc":"MANTA","pa":197.93,"meses":4,"avg":4.43,"e":"cumple","pct":"100%"}]},"TODOS":{"avg":4.75,"nc":0,"c":7,"al":1,"cr":[{"n":"MNT PROV PVO ADC 01","pm":287.79,"dt":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","pm":294.38,"dt":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","pm":272.25,"dt":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","pm":244.35,"dt":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","pm":304.71,"dt":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","pm":267.37,"dt":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":268.68,"dt":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","pm":197.93,"dt":4,"avg":4.43,"e":"cumple","pct":"100%"}],"ca":[{"n":"MNT PROV PVO ADC 01","suc":"MANTA","pa":287.79,"meses":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","suc":"MANTA","pa":294.38,"meses":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","suc":"MANTA","pa":272.25,"meses":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","suc":"MANTA","pa":244.35,"meses":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","suc":"MANTA","pa":304.71,"meses":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","suc":"MANTA","pa":267.37,"meses":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","suc":"MANTA","pa":268.68,"meses":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","suc":"MANTA","pa":197.93,"meses":4,"avg":4.43,"e":"cumple","pct":"100%"}]}},"MILAGRO":{"Enero":{"avg":4.19,"nc":1,"c":3,"al":0,"cr":[{"n":"MIL PROV DAU ADC 01","pm":120.13,"dt":26,"avg":4.62,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":64.94,"dt":15,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":93.24,"dt":22,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 03","pm":74.99,"dt":21,"avg":3.57,"e":"bajo","pct":"89.2%"}],"ca":[{"n":"MIL PROV DAU ADC 01","suc":"MILAGRO","pa":380.15,"meses":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","suc":"MILAGRO","pa":263.41,"meses":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","suc":"MILAGRO","pa":294.85,"meses":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 03","suc":"MILAGRO","pa":74.99,"meses":1,"avg":3.57,"e":"bajo","pct":"89.2%"}]},"Febrero":{"avg":4.15,"nc":0,"c":3,"al":0,"cr":[{"n":"MIL PROV MIL ADC 01","pm":85.4,"dt":20,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":77.83,"dt":19,"avg":4.1,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","pm":97.61,"dt":24,"avg":4.07,"e":"cumple","pct":"100%"}],"ca":[{"n":"MIL PROV DAU ADC 01","suc":"MILAGRO","pa":380.15,"meses":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","suc":"MILAGRO","pa":263.41,"meses":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","suc":"MILAGRO","pa":294.85,"meses":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 03","suc":"MILAGRO","pa":74.99,"meses":1,"avg":3.57,"e":"bajo","pct":"89.2%"}]},"Marzo":{"avg":4.55,"nc":0,"c":3,"al":0,"cr":[{"n":"MIL PROV MIL ADC 02","pm":112.47,"dt":23,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","pm":144.25,"dt":31,"avg":4.65,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":102.81,"dt":25,"avg":4.11,"e":"cumple","pct":"100%"}],"ca":[{"n":"MIL PROV DAU ADC 01","suc":"MILAGRO","pa":380.15,"meses":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","suc":"MILAGRO","pa":263.41,"meses":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","suc":"MILAGRO","pa":294.85,"meses":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 03","suc":"MILAGRO","pa":74.99,"meses":1,"avg":3.57,"e":"bajo","pct":"89.2%"}]},"Abril":{"avg":4.36,"nc":0,"c":3,"al":0,"cr":[{"n":"MIL PROV DAU ADC 01","pm":18.16,"dt":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":13.4,"dt":3,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":8.17,"dt":2,"avg":4.08,"e":"cumple","pct":"100%"}],"ca":[{"n":"MIL PROV DAU ADC 01","suc":"MILAGRO","pa":380.15,"meses":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","suc":"MILAGRO","pa":263.41,"meses":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","suc":"MILAGRO","pa":294.85,"meses":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 03","suc":"MILAGRO","pa":74.99,"meses":1,"avg":3.57,"e":"bajo","pct":"89.2%"}]},"TODOS":{"avg":4.16,"nc":1,"c":3,"al":0,"cr":[{"n":"MIL PROV DAU ADC 01","pm":380.15,"dt":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":263.41,"dt":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":294.85,"dt":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 03","pm":74.99,"dt":1,"avg":3.57,"e":"bajo","pct":"89.2%"}],"ca":[{"n":"MIL PROV DAU ADC 01","suc":"MILAGRO","pa":380.15,"meses":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","suc":"MILAGRO","pa":263.41,"meses":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","suc":"MILAGRO","pa":294.85,"meses":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 03","suc":"MILAGRO","pa":74.99,"meses":1,"avg":3.57,"e":"bajo","pct":"89.2%"}]}},"QUEVEDO":{"Enero":{"avg":4.52,"nc":0,"c":3,"al":1,"cr":[{"n":"QVD PROV QVD ADC 03","pm":102.14,"dt":20,"avg":5.11,"e":"alerta","pct":"ALERTA"},{"n":"QVD PROV QVD ADC 01","pm":130.47,"dt":29,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","pm":95.26,"dt":22,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":115.94,"dt":28,"avg":4.14,"e":"cumple","pct":"100%"}],"ca":[{"n":"QVD PROV QVD ADC 02","suc":"QUEVEDO","pa":293.87,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","suc":"QUEVEDO","pa":342.83,"meses":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","suc":"QUEVEDO","pa":277.96,"meses":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","suc":"QUEVEDO","pa":341.5,"meses":4,"avg":4.09,"e":"cumple","pct":"100%"}]},"Febrero":{"avg":4.33,"nc":0,"c":4,"al":0,"cr":[{"n":"QVD PROV QVD ADC 02","pm":85.55,"dt":18,"avg":4.75,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":93.11,"dt":22,"avg":4.23,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","pm":75.48,"dt":18,"avg":4.19,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","pm":103.51,"dt":25,"avg":4.14,"e":"cumple","pct":"100%"}],"ca":[{"n":"QVD PROV QVD ADC 02","suc":"QUEVEDO","pa":293.87,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","suc":"QUEVEDO","pa":342.83,"meses":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","suc":"QUEVEDO","pa":277.96,"meses":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","suc":"QUEVEDO","pa":341.5,"meses":4,"avg":4.09,"e":"cumple","pct":"100%"}]},"Marzo":{"avg":4.08,"nc":1,"c":3,"al":0,"cr":[{"n":"QVD PROV QVD ADC 03","pm":94.67,"dt":21,"avg":4.51,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","pm":98.49,"dt":23,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":116.62,"dt":29,"avg":4.02,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","pm":87.7,"dt":25,"avg":3.51,"e":"bajo","pct":"87.8%"}],"ca":[{"n":"QVD PROV QVD ADC 02","suc":"QUEVEDO","pa":293.87,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","suc":"QUEVEDO","pa":342.83,"meses":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","suc":"QUEVEDO","pa":277.96,"meses":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","suc":"QUEVEDO","pa":341.5,"meses":4,"avg":4.09,"e":"cumple","pct":"100%"}]},"Abril":{"avg":4.24,"nc":2,"c":1,"al":1,"cr":[{"n":"QVD PROV QVD ADC 01","pm":21.15,"dt":4,"avg":5.29,"e":"alerta","pct":"ALERTA"},{"n":"QVD PROV QVD ADC 02","pm":14.57,"dt":3,"avg":4.86,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":15.83,"dt":4,"avg":3.96,"e":"bajo","pct":"99.0%"},{"n":"QVD PROV QVD ADC 03","pm":5.67,"dt":2,"avg":2.84,"e":"bajo","pct":"71.0%"}],"ca":[{"n":"QVD PROV QVD ADC 02","suc":"QUEVEDO","pa":293.87,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","suc":"QUEVEDO","pa":342.83,"meses":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","suc":"QUEVEDO","pa":277.96,"meses":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","suc":"QUEVEDO","pa":341.5,"meses":4,"avg":4.09,"e":"cumple","pct":"100%"}]},"TODOS":{"avg":4.29,"nc":0,"c":4,"al":0,"cr":[{"n":"QVD PROV QVD ADC 02","pm":293.87,"dt":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","pm":342.83,"dt":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","pm":277.96,"dt":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":341.5,"dt":4,"avg":4.09,"e":"cumple","pct":"100%"}],"ca":[{"n":"QVD PROV QVD ADC 02","suc":"QUEVEDO","pa":293.87,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","suc":"QUEVEDO","pa":342.83,"meses":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","suc":"QUEVEDO","pa":277.96,"meses":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","suc":"QUEVEDO","pa":341.5,"meses":4,"avg":4.09,"e":"cumple","pct":"100%"}]}},"RIOBAMBA":{"Enero":{"avg":4.38,"nc":0,"c":2,"al":0,"cr":[{"n":"RIO PROV RIO ADC 01","pm":91.71,"dt":20,"avg":4.59,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":87.62,"dt":21,"avg":4.17,"e":"cumple","pct":"100%"}],"ca":[{"n":"RIO PROV RIO ADC 01","suc":"RIOBAMBA","pa":278.61,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","suc":"RIOBAMBA","pa":222.21,"meses":4,"avg":3.84,"e":"bajo","pct":"96.0%"}]},"Febrero":{"avg":4.29,"nc":0,"c":2,"al":0,"cr":[{"n":"RIO PROV RIO ADC 01","pm":78.01,"dt":18,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":55.4,"dt":13,"avg":4.26,"e":"cumple","pct":"100%"}],"ca":[{"n":"RIO PROV RIO ADC 01","suc":"RIOBAMBA","pa":278.61,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","suc":"RIOBAMBA","pa":222.21,"meses":4,"avg":3.84,"e":"bajo","pct":"96.0%"}]},"Marzo":{"avg":4.29,"nc":0,"c":2,"al":0,"cr":[{"n":"RIO PROV RIO ADC 01","pm":98.91,"dt":22,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":73.5,"dt":18,"avg":4.08,"e":"cumple","pct":"100%"}],"ca":[{"n":"RIO PROV RIO ADC 01","suc":"RIOBAMBA","pa":278.61,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","suc":"RIOBAMBA","pa":222.21,"meses":4,"avg":3.84,"e":"bajo","pct":"96.0%"}]},"Abril":{"avg":3.92,"nc":1,"c":1,"al":0,"cr":[{"n":"RIO PROV RIO ADC 01","pm":9.98,"dt":2,"avg":4.99,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":5.69,"dt":2,"avg":2.84,"e":"bajo","pct":"71.0%"}],"ca":[{"n":"RIO PROV RIO ADC 01","suc":"RIOBAMBA","pa":278.61,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","suc":"RIOBAMBA","pa":222.21,"meses":4,"avg":3.84,"e":"bajo","pct":"96.0%"}]},"TODOS":{"avg":4.22,"nc":1,"c":1,"al":0,"cr":[{"n":"RIO PROV RIO ADC 01","pm":278.61,"dt":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":222.21,"dt":4,"avg":3.84,"e":"bajo","pct":"96.0%"}],"ca":[{"n":"RIO PROV RIO ADC 01","suc":"RIOBAMBA","pa":278.61,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","suc":"RIOBAMBA","pa":222.21,"meses":4,"avg":3.84,"e":"bajo","pct":"96.0%"}]}},"SALINAS":{"Enero":{"avg":4.61,"nc":0,"c":5,"al":0,"cr":[{"n":"STL PROV PLY ADC 01","pm":97.7,"dt":20,"avg":4.88,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","pm":95.67,"dt":20,"avg":4.78,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":92.55,"dt":20,"avg":4.63,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","pm":77.17,"dt":17,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","pm":114.38,"dt":27,"avg":4.24,"e":"cumple","pct":"100%"}],"ca":[{"n":"STL PROV SLN ADC 02","suc":"SALINAS","pa":299.0,"meses":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","suc":"SALINAS","pa":288.28,"meses":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","suc":"SALINAS","pa":278.42,"meses":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","suc":"SALINAS","pa":255.85,"meses":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","suc":"SALINAS","pa":295.67,"meses":4,"avg":4.22,"e":"cumple","pct":"100%"}]},"Febrero":{"avg":4.54,"nc":0,"c":5,"al":0,"cr":[{"n":"STL PROV SLN ADC 02","pm":87.65,"dt":18,"avg":4.87,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","pm":79.41,"dt":17,"avg":4.67,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":83.73,"dt":18,"avg":4.65,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","pm":73.62,"dt":17,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","pm":78.97,"dt":19,"avg":4.16,"e":"cumple","pct":"100%"}],"ca":[{"n":"STL PROV SLN ADC 02","suc":"SALINAS","pa":299.0,"meses":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","suc":"SALINAS","pa":288.28,"meses":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","suc":"SALINAS","pa":278.42,"meses":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","suc":"SALINAS","pa":255.85,"meses":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","suc":"SALINAS","pa":295.67,"meses":4,"avg":4.22,"e":"cumple","pct":"100%"}]},"Marzo":{"avg":4.76,"nc":0,"c":4,"al":1,"cr":[{"n":"STL PROV SLN ADC 04","pm":95.99,"dt":18,"avg":5.33,"e":"alerta","pct":"ALERTA"},{"n":"STL PROV SLN ADC 02","pm":102.51,"dt":21,"avg":4.88,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","pm":99.6,"dt":21,"avg":4.74,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":97.62,"dt":21,"avg":4.65,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","pm":88.1,"dt":21,"avg":4.2,"e":"cumple","pct":"100%"}],"ca":[{"n":"STL PROV SLN ADC 02","suc":"SALINAS","pa":299.0,"meses":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","suc":"SALINAS","pa":288.28,"meses":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","suc":"SALINAS","pa":278.42,"meses":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","suc":"SALINAS","pa":255.85,"meses":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","suc":"SALINAS","pa":295.67,"meses":4,"avg":4.22,"e":"cumple","pct":"100%"}]},"Abril":{"avg":3.96,"nc":3,"c":2,"al":0,"cr":[{"n":"STL PROV SLN ADC 03","pm":14.38,"dt":3,"avg":4.79,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","pm":13.17,"dt":3,"avg":4.39,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","pm":7.5,"dt":2,"avg":3.75,"e":"bajo","pct":"93.8%"},{"n":"STL PROV SLN ADC 01","pm":11.17,"dt":3,"avg":3.72,"e":"bajo","pct":"93.0%"},{"n":"STL PROV SLN ADC 04","pm":6.33,"dt":2,"avg":3.16,"e":"bajo","pct":"79.0%"}],"ca":[{"n":"STL PROV SLN ADC 02","suc":"SALINAS","pa":299.0,"meses":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","suc":"SALINAS","pa":288.28,"meses":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","suc":"SALINAS","pa":278.42,"meses":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","suc":"SALINAS","pa":255.85,"meses":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","suc":"SALINAS","pa":295.67,"meses":4,"avg":4.22,"e":"cumple","pct":"100%"}]},"TODOS":{"avg":4.47,"nc":0,"c":5,"al":0,"cr":[{"n":"STL PROV SLN ADC 02","pm":299.0,"dt":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":288.28,"dt":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","pm":278.42,"dt":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","pm":255.85,"dt":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","pm":295.67,"dt":4,"avg":4.22,"e":"cumple","pct":"100%"}],"ca":[{"n":"STL PROV SLN ADC 02","suc":"SALINAS","pa":299.0,"meses":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","suc":"SALINAS","pa":288.28,"meses":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","suc":"SALINAS","pa":278.42,"meses":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","suc":"SALINAS","pa":255.85,"meses":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","suc":"SALINAS","pa":295.67,"meses":4,"avg":4.22,"e":"cumple","pct":"100%"}]}},"SANTO DOMINGO":{"Enero":{"avg":4.46,"nc":0,"c":3,"al":0,"cr":[{"n":"STO PROV STO ADC 01","pm":93.12,"dt":20,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","pm":128.76,"dt":29,"avg":4.44,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":85.51,"dt":20,"avg":4.28,"e":"cumple","pct":"100%"}],"ca":[{"n":"STO PROV STO ADC 03","suc":"SANTO DOMINGO","pa":341.91,"meses":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","suc":"SANTO DOMINGO","pa":301.09,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","suc":"SANTO DOMINGO","pa":285.11,"meses":4,"avg":4.41,"e":"cumple","pct":"100%"}]},"Febrero":{"avg":4.66,"nc":0,"c":3,"al":0,"cr":[{"n":"STO PROV STO ADC 01","pm":85.4,"dt":18,"avg":4.74,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":84.26,"dt":18,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","pm":100.36,"dt":22,"avg":4.56,"e":"cumple","pct":"100%"}],"ca":[{"n":"STO PROV STO ADC 03","suc":"SANTO DOMINGO","pa":341.91,"meses":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","suc":"SANTO DOMINGO","pa":301.09,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","suc":"SANTO DOMINGO","pa":285.11,"meses":4,"avg":4.41,"e":"cumple","pct":"100%"}]},"Marzo":{"avg":4.6,"nc":0,"c":3,"al":0,"cr":[{"n":"STO PROV STO ADC 02","pm":107.34,"dt":23,"avg":4.67,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","pm":100.81,"dt":22,"avg":4.58,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","pm":104.84,"dt":23,"avg":4.56,"e":"cumple","pct":"100%"}],"ca":[{"n":"STO PROV STO ADC 03","suc":"SANTO DOMINGO","pa":341.91,"meses":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","suc":"SANTO DOMINGO","pa":301.09,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","suc":"SANTO DOMINGO","pa":285.11,"meses":4,"avg":4.41,"e":"cumple","pct":"100%"}]},"Abril":{"avg":4.81,"nc":0,"c":2,"al":1,"cr":[{"n":"STO PROV STO ADC 03","pm":11.98,"dt":2,"avg":5.99,"e":"alerta","pct":"ALERTA"},{"n":"STO PROV STO ADC 01","pm":17.73,"dt":4,"avg":4.43,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":8.0,"dt":2,"avg":4.0,"e":"cumple","pct":"100%"}],"ca":[{"n":"STO PROV STO ADC 03","suc":"SANTO DOMINGO","pa":341.91,"meses":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","suc":"SANTO DOMINGO","pa":301.09,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","suc":"SANTO DOMINGO","pa":285.11,"meses":4,"avg":4.41,"e":"cumple","pct":"100%"}]},"TODOS":{"avg":4.63,"nc":0,"c":3,"al":0,"cr":[{"n":"STO PROV STO ADC 03","pm":341.91,"dt":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","pm":301.09,"dt":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":285.11,"dt":4,"avg":4.41,"e":"cumple","pct":"100%"}],"ca":[{"n":"STO PROV STO ADC 03","suc":"SANTO DOMINGO","pa":341.91,"meses":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","suc":"SANTO DOMINGO","pa":301.09,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","suc":"SANTO DOMINGO","pa":285.11,"meses":4,"avg":4.41,"e":"cumple","pct":"100%"}]}},"TODAS":{"Enero":{"avg":4.46,"nc":5,"c":35,"al":2,"cr":[{"n":"MNT PROV MNT ADC 01","pm":102.4,"dt":20,"avg":5.12,"e":"alerta","pct":"ALERTA"},{"n":"QVD PROV QVD ADC 03","pm":102.14,"dt":20,"avg":5.11,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 01","pm":99.07,"dt":20,"avg":4.95,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","pm":143.22,"dt":29,"avg":4.94,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","pm":93.71,"dt":19,"avg":4.93,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","pm":93.56,"dt":19,"avg":4.92,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","pm":97.7,"dt":20,"avg":4.88,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 03","pm":96.54,"dt":20,"avg":4.83,"e":"cumple","pct":"100%"},{"n":"MNT PROV PVO ADC 01","pm":91.16,"dt":19,"avg":4.8,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","pm":95.67,"dt":20,"avg":4.78,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":94.45,"dt":20,"avg":4.72,"e":"cumple","pct":"100%"},{"n":"LAG PROV LAG ADC 01","pm":93.67,"dt":20,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","pm":93.12,"dt":20,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","pm":92.65,"dt":20,"avg":4.63,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":92.55,"dt":20,"avg":4.63,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":92.31,"dt":20,"avg":4.62,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","pm":120.13,"dt":26,"avg":4.62,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":91.72,"dt":20,"avg":4.59,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":91.88,"dt":20,"avg":4.59,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","pm":91.71,"dt":20,"avg":4.59,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","pm":77.17,"dt":17,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","pm":121.77,"dt":27,"avg":4.51,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","pm":130.47,"dt":29,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","pm":128.76,"dt":29,"avg":4.44,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","pm":87.67,"dt":20,"avg":4.38,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","pm":100.29,"dt":23,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":64.94,"dt":15,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","pm":95.26,"dt":22,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":85.51,"dt":20,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":93.24,"dt":22,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","pm":114.38,"dt":27,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":96.69,"dt":23,"avg":4.2,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","pm":96.62,"dt":23,"avg":4.2,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":120.8,"dt":29,"avg":4.17,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":87.62,"dt":21,"avg":4.17,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":115.94,"dt":28,"avg":4.14,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":116.61,"dt":29,"avg":4.02,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","pm":79.35,"dt":20,"avg":3.97,"e":"bajo","pct":"99.2%"},{"n":"IBA PROV IBA ADC 02","pm":86.48,"dt":22,"avg":3.93,"e":"bajo","pct":"98.2%"},{"n":"MCH PROV MCH ADC 02","pm":82.45,"dt":21,"avg":3.93,"e":"bajo","pct":"98.2%"},{"n":"MIL PROV MIL ADC 03","pm":74.99,"dt":21,"avg":3.57,"e":"bajo","pct":"89.2%"},{"n":"COC PROV COC ADC 01","pm":78.14,"dt":24,"avg":3.26,"e":"bajo","pct":"81.5%"}],"ca":[{"n":"MNT PROV PVO ADC 01","suc":"MANTA","pa":287.79,"meses":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 01","suc":"IBARRA","pa":299.85,"meses":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","suc":"MANTA","pa":294.38,"meses":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","suc":"SANTO DOMINGO","pa":341.91,"meses":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","suc":"MANTA","pa":272.25,"meses":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","suc":"CUENCA","pa":278.74,"meses":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","suc":"MANTA","pa":244.35,"meses":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","suc":"SALINAS","pa":299.0,"meses":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","suc":"AMBATO","pa":423.48,"meses":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","suc":"SALINAS","pa":288.28,"meses":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","suc":"MANTA","pa":304.71,"meses":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","suc":"MANTA","pa":267.37,"meses":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","suc":"ESMERALDAS","pa":275.68,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","suc":"AMBATO","pa":263.64,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","suc":"SANTO DOMINGO","pa":301.09,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","suc":"RIOBAMBA","pa":278.61,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","suc":"ESMERALDAS","pa":274.13,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","suc":"QUEVEDO","pa":293.87,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","suc":"IBARRA","pa":283.95,"meses":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","suc":"MANTA","pa":268.68,"meses":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","suc":"AMBATO","pa":279.91,"meses":4,"avg":4.49,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","suc":"MILAGRO","pa":380.15,"meses":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","suc":"CUENCA","pa":197.15,"meses":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","suc":"MANTA","pa":197.93,"meses":4,"avg":4.43,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","suc":"SALINAS","pa":278.42,"meses":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","suc":"SANTO DOMINGO","pa":285.11,"meses":4,"avg":4.41,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","suc":"QUEVEDO","pa":342.83,"meses":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","suc":"MILAGRO","pa":263.41,"meses":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","suc":"LOJA","pa":386.81,"meses":4,"avg":4.34,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","suc":"ESMERALDAS","pa":354.93,"meses":4,"avg":4.31,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","suc":"SALINAS","pa":255.85,"meses":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","suc":"MILAGRO","pa":294.85,"meses":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","suc":"MACHALA","pa":271.45,"meses":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","suc":"MACHALA","pa":372.27,"meses":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","suc":"SALINAS","pa":295.67,"meses":4,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","suc":"QUEVEDO","pa":277.96,"meses":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","suc":"CUENCA","pa":276.57,"meses":4,"avg":4.14,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","suc":"QUEVEDO","pa":341.5,"meses":4,"avg":4.09,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","suc":"RIOBAMBA","pa":222.21,"meses":4,"avg":3.84,"e":"bajo","pct":"96.0%"},{"n":"COC PROV COC ADC 01","suc":"COCA","pa":265.11,"meses":4,"avg":3.76,"e":"bajo","pct":"94.0%"},{"n":"MCH PROV MCH ADC 001","suc":"MACHALA","pa":7.16,"meses":1,"avg":3.58,"e":"bajo","pct":"89.5%"},{"n":"MIL PROV MIL ADC 03","suc":"MILAGRO","pa":74.99,"meses":1,"avg":3.57,"e":"bajo","pct":"89.2%"},{"n":"LAG PROV LAG ADC 01","suc":"LAGO AGRIO","pa":250.7,"meses":4,"avg":3.4,"e":"bajo","pct":"85.0%"}]},"Febrero":{"avg":4.45,"nc":2,"c":38,"al":1,"cr":[{"n":"MNT PROV PVO ADC 01","pm":90.32,"dt":18,"avg":5.02,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 01","pm":89.54,"dt":18,"avg":4.97,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","pm":53.93,"dt":11,"avg":4.9,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 03","pm":68.23,"dt":14,"avg":4.87,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","pm":87.65,"dt":18,"avg":4.87,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","pm":86.87,"dt":18,"avg":4.83,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","pm":81.69,"dt":17,"avg":4.81,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","pm":85.55,"dt":18,"avg":4.75,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","pm":85.4,"dt":18,"avg":4.74,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","pm":85.11,"dt":18,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":84.53,"dt":18,"avg":4.7,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","pm":84.32,"dt":18,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":84.26,"dt":18,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","pm":79.41,"dt":17,"avg":4.67,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","pm":116.47,"dt":25,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":83.73,"dt":18,"avg":4.65,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","pm":114.57,"dt":25,"avg":4.58,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","pm":100.36,"dt":22,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":110.14,"dt":25,"avg":4.41,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","pm":87.9,"dt":20,"avg":4.4,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","pm":79.23,"dt":18,"avg":4.4,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":74.39,"dt":17,"avg":4.38,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":78.59,"dt":18,"avg":4.37,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":104.07,"dt":24,"avg":4.34,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","pm":78.01,"dt":18,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","pm":73.62,"dt":17,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":77.55,"dt":18,"avg":4.31,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":85.4,"dt":20,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":55.4,"dt":13,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":93.11,"dt":22,"avg":4.23,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","pm":71.73,"dt":17,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","pm":75.48,"dt":18,"avg":4.19,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":74.83,"dt":18,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","pm":78.97,"dt":19,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","pm":103.51,"dt":25,"avg":4.14,"e":"cumple","pct":"100%"},{"n":"LAG PROV LAG ADC 01","pm":70.06,"dt":17,"avg":4.12,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":77.83,"dt":19,"avg":4.1,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","pm":97.61,"dt":24,"avg":4.07,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","pm":77.13,"dt":19,"avg":4.06,"e":"cumple","pct":"100%"},{"n":"COC PROV COC ADC 01","pm":83.79,"dt":22,"avg":3.81,"e":"bajo","pct":"95.2%"},{"n":"MCH PROV MCH ADC 02","pm":68.78,"dt":19,"avg":3.62,"e":"bajo","pct":"90.5%"}],"ca":[{"n":"MNT PROV PVO ADC 01","suc":"MANTA","pa":287.79,"meses":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 01","suc":"IBARRA","pa":299.85,"meses":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","suc":"MANTA","pa":294.38,"meses":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","suc":"SANTO DOMINGO","pa":341.91,"meses":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","suc":"MANTA","pa":272.25,"meses":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","suc":"CUENCA","pa":278.74,"meses":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","suc":"MANTA","pa":244.35,"meses":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","suc":"SALINAS","pa":299.0,"meses":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","suc":"AMBATO","pa":423.48,"meses":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","suc":"SALINAS","pa":288.28,"meses":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","suc":"MANTA","pa":304.71,"meses":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","suc":"MANTA","pa":267.37,"meses":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","suc":"ESMERALDAS","pa":275.68,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","suc":"AMBATO","pa":263.64,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","suc":"SANTO DOMINGO","pa":301.09,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","suc":"RIOBAMBA","pa":278.61,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","suc":"ESMERALDAS","pa":274.13,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","suc":"QUEVEDO","pa":293.87,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","suc":"IBARRA","pa":283.95,"meses":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","suc":"MANTA","pa":268.68,"meses":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","suc":"AMBATO","pa":279.91,"meses":4,"avg":4.49,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","suc":"MILAGRO","pa":380.15,"meses":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","suc":"CUENCA","pa":197.15,"meses":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","suc":"MANTA","pa":197.93,"meses":4,"avg":4.43,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","suc":"SALINAS","pa":278.42,"meses":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","suc":"SANTO DOMINGO","pa":285.11,"meses":4,"avg":4.41,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","suc":"QUEVEDO","pa":342.83,"meses":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","suc":"MILAGRO","pa":263.41,"meses":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","suc":"LOJA","pa":386.81,"meses":4,"avg":4.34,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","suc":"ESMERALDAS","pa":354.93,"meses":4,"avg":4.31,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","suc":"SALINAS","pa":255.85,"meses":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","suc":"MILAGRO","pa":294.85,"meses":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","suc":"MACHALA","pa":271.45,"meses":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","suc":"MACHALA","pa":372.27,"meses":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","suc":"SALINAS","pa":295.67,"meses":4,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","suc":"QUEVEDO","pa":277.96,"meses":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","suc":"CUENCA","pa":276.57,"meses":4,"avg":4.14,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","suc":"QUEVEDO","pa":341.5,"meses":4,"avg":4.09,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","suc":"RIOBAMBA","pa":222.21,"meses":4,"avg":3.84,"e":"bajo","pct":"96.0%"},{"n":"COC PROV COC ADC 01","suc":"COCA","pa":265.11,"meses":4,"avg":3.76,"e":"bajo","pct":"94.0%"},{"n":"MCH PROV MCH ADC 001","suc":"MACHALA","pa":7.16,"meses":1,"avg":3.58,"e":"bajo","pct":"89.5%"},{"n":"MIL PROV MIL ADC 03","suc":"MILAGRO","pa":74.99,"meses":1,"avg":3.57,"e":"bajo","pct":"89.2%"},{"n":"LAG PROV LAG ADC 01","suc":"LAGO AGRIO","pa":250.7,"meses":4,"avg":3.4,"e":"bajo","pct":"85.0%"}]},"Marzo":{"avg":4.52,"nc":3,"c":36,"al":3,"cr":[{"n":"STL PROV SLN ADC 04","pm":95.99,"dt":18,"avg":5.33,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","pm":109.15,"dt":21,"avg":5.2,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 02","pm":10.05,"dt":2,"avg":5.03,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 05","pm":74.99,"dt":15,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","pm":19.73,"dt":4,"avg":4.93,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","pm":118.19,"dt":24,"avg":4.92,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":112.47,"dt":23,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","pm":102.51,"dt":21,"avg":4.88,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","pm":110.89,"dt":23,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":72.0,"dt":15,"avg":4.8,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":94.72,"dt":20,"avg":4.74,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","pm":99.6,"dt":21,"avg":4.74,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","pm":145.61,"dt":31,"avg":4.7,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","pm":98.66,"dt":21,"avg":4.7,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":107.34,"dt":23,"avg":4.67,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","pm":144.25,"dt":31,"avg":4.65,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":97.62,"dt":21,"avg":4.65,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":101.81,"dt":22,"avg":4.63,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","pm":143.16,"dt":31,"avg":4.62,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","pm":100.81,"dt":22,"avg":4.58,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","pm":95.8,"dt":21,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","pm":104.84,"dt":23,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","pm":99.67,"dt":22,"avg":4.53,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":94.96,"dt":21,"avg":4.52,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":135.23,"dt":30,"avg":4.51,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","pm":94.67,"dt":21,"avg":4.51,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","pm":94.43,"dt":21,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","pm":98.91,"dt":22,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"MNT PROV PVO ADC 01","pm":92.46,"dt":21,"avg":4.4,"e":"cumple","pct":"100%"},{"n":"COC PROV COC ADC 01","pm":95.98,"dt":22,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 01","pm":98.58,"dt":23,"avg":4.29,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","pm":98.49,"dt":23,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","pm":102.06,"dt":24,"avg":4.25,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":92.76,"dt":22,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","pm":88.1,"dt":21,"avg":4.2,"e":"cumple","pct":"100%"},{"n":"LAG PROV LAG ADC 01","pm":86.3,"dt":21,"avg":4.11,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":102.81,"dt":25,"avg":4.11,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":73.5,"dt":18,"avg":4.08,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":116.62,"dt":29,"avg":4.02,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":104.32,"dt":28,"avg":3.73,"e":"bajo","pct":"93.2%"},{"n":"MCH PROV MCH ADC 001","pm":7.16,"dt":2,"avg":3.58,"e":"bajo","pct":"89.5%"},{"n":"QVD PROV QVD ADC 01","pm":87.7,"dt":25,"avg":3.51,"e":"bajo","pct":"87.8%"}],"ca":[{"n":"MNT PROV PVO ADC 01","suc":"MANTA","pa":287.79,"meses":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 01","suc":"IBARRA","pa":299.85,"meses":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","suc":"MANTA","pa":294.38,"meses":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","suc":"SANTO DOMINGO","pa":341.91,"meses":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","suc":"MANTA","pa":272.25,"meses":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","suc":"CUENCA","pa":278.74,"meses":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","suc":"MANTA","pa":244.35,"meses":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","suc":"SALINAS","pa":299.0,"meses":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","suc":"AMBATO","pa":423.48,"meses":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","suc":"SALINAS","pa":288.28,"meses":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","suc":"MANTA","pa":304.71,"meses":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","suc":"MANTA","pa":267.37,"meses":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","suc":"ESMERALDAS","pa":275.68,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","suc":"AMBATO","pa":263.64,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","suc":"SANTO DOMINGO","pa":301.09,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","suc":"RIOBAMBA","pa":278.61,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","suc":"ESMERALDAS","pa":274.13,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","suc":"QUEVEDO","pa":293.87,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","suc":"IBARRA","pa":283.95,"meses":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","suc":"MANTA","pa":268.68,"meses":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","suc":"AMBATO","pa":279.91,"meses":4,"avg":4.49,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","suc":"MILAGRO","pa":380.15,"meses":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","suc":"CUENCA","pa":197.15,"meses":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","suc":"MANTA","pa":197.93,"meses":4,"avg":4.43,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","suc":"SALINAS","pa":278.42,"meses":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","suc":"SANTO DOMINGO","pa":285.11,"meses":4,"avg":4.41,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","suc":"QUEVEDO","pa":342.83,"meses":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","suc":"MILAGRO","pa":263.41,"meses":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","suc":"LOJA","pa":386.81,"meses":4,"avg":4.34,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","suc":"ESMERALDAS","pa":354.93,"meses":4,"avg":4.31,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","suc":"SALINAS","pa":255.85,"meses":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","suc":"MILAGRO","pa":294.85,"meses":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","suc":"MACHALA","pa":271.45,"meses":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","suc":"MACHALA","pa":372.27,"meses":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","suc":"SALINAS","pa":295.67,"meses":4,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","suc":"QUEVEDO","pa":277.96,"meses":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","suc":"CUENCA","pa":276.57,"meses":4,"avg":4.14,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","suc":"QUEVEDO","pa":341.5,"meses":4,"avg":4.09,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","suc":"RIOBAMBA","pa":222.21,"meses":4,"avg":3.84,"e":"bajo","pct":"96.0%"},{"n":"COC PROV COC ADC 01","suc":"COCA","pa":265.11,"meses":4,"avg":3.76,"e":"bajo","pct":"94.0%"},{"n":"MCH PROV MCH ADC 001","suc":"MACHALA","pa":7.16,"meses":1,"avg":3.58,"e":"bajo","pct":"89.5%"},{"n":"MIL PROV MIL ADC 03","suc":"MILAGRO","pa":74.99,"meses":1,"avg":3.57,"e":"bajo","pct":"89.2%"},{"n":"LAG PROV LAG ADC 01","suc":"LAGO AGRIO","pa":250.7,"meses":4,"avg":3.4,"e":"bajo","pct":"85.0%"}]},"Abril":{"avg":4.39,"nc":11,"c":21,"al":6,"cr":[{"n":"MNT PROV PVO ADC 01","pm":13.85,"dt":2,"avg":6.92,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 01","pm":12.66,"dt":2,"avg":6.33,"e":"alerta","pct":"ALERTA"},{"n":"STO PROV STO ADC 03","pm":11.98,"dt":2,"avg":5.99,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV CHO ADC 01","pm":11.16,"dt":2,"avg":5.58,"e":"alerta","pct":"ALERTA"},{"n":"QVD PROV QVD ADC 01","pm":21.15,"dt":4,"avg":5.29,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","pm":20.46,"dt":4,"avg":5.12,"e":"alerta","pct":"ALERTA"},{"n":"CUE PROV CUE ADC 03","pm":10.0,"dt":2,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","pm":10.0,"dt":2,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","pm":9.98,"dt":2,"avg":4.99,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":19.67,"dt":4,"avg":4.92,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":9.82,"dt":2,"avg":4.91,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","pm":14.57,"dt":3,"avg":4.86,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","pm":14.49,"dt":3,"avg":4.83,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":9.65,"dt":2,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":14.38,"dt":3,"avg":4.79,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","pm":9.33,"dt":2,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","pm":18.18,"dt":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","pm":18.16,"dt":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":13.4,"dt":3,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","pm":13.38,"dt":3,"avg":4.46,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","pm":17.73,"dt":4,"avg":4.43,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":8.83,"dt":2,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","pm":13.17,"dt":3,"avg":4.39,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":12.66,"dt":3,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":16.36,"dt":4,"avg":4.09,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":8.17,"dt":2,"avg":4.08,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":8.0,"dt":2,"avg":4.0,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":15.83,"dt":4,"avg":3.96,"e":"bajo","pct":"99.0%"},{"n":"STL PROV PLY ADC 01","pm":7.5,"dt":2,"avg":3.75,"e":"bajo","pct":"93.8%"},{"n":"STL PROV SLN ADC 01","pm":11.17,"dt":3,"avg":3.72,"e":"bajo","pct":"93.0%"},{"n":"LOJ PROV LOJ ADC 01","pm":7.31,"dt":2,"avg":3.66,"e":"bajo","pct":"91.5%"},{"n":"MNT PROV MNT ADC 02","pm":7.33,"dt":2,"avg":3.66,"e":"bajo","pct":"91.5%"},{"n":"COC PROV COC ADC 01","pm":7.2,"dt":2,"avg":3.6,"e":"bajo","pct":"90.0%"},{"n":"CUE PROV CUE ADC 02","pm":10.33,"dt":3,"avg":3.44,"e":"bajo","pct":"86.0%"},{"n":"STL PROV SLN ADC 04","pm":6.33,"dt":2,"avg":3.16,"e":"bajo","pct":"79.0%"},{"n":"QVD PROV QVD ADC 03","pm":5.67,"dt":2,"avg":2.84,"e":"bajo","pct":"71.0%"},{"n":"RIO PROV PTZ ADC 01","pm":5.69,"dt":2,"avg":2.84,"e":"bajo","pct":"71.0%"},{"n":"LAG PROV LAG ADC 01","pm":0.67,"dt":1,"avg":0.67,"e":"bajo","pct":"16.8%"}],"ca":[{"n":"MNT PROV PVO ADC 01","suc":"MANTA","pa":287.79,"meses":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 01","suc":"IBARRA","pa":299.85,"meses":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","suc":"MANTA","pa":294.38,"meses":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","suc":"SANTO DOMINGO","pa":341.91,"meses":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","suc":"MANTA","pa":272.25,"meses":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","suc":"CUENCA","pa":278.74,"meses":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","suc":"MANTA","pa":244.35,"meses":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","suc":"SALINAS","pa":299.0,"meses":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","suc":"AMBATO","pa":423.48,"meses":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","suc":"SALINAS","pa":288.28,"meses":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","suc":"MANTA","pa":304.71,"meses":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","suc":"MANTA","pa":267.37,"meses":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","suc":"ESMERALDAS","pa":275.68,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","suc":"AMBATO","pa":263.64,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","suc":"SANTO DOMINGO","pa":301.09,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","suc":"RIOBAMBA","pa":278.61,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","suc":"ESMERALDAS","pa":274.13,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","suc":"QUEVEDO","pa":293.87,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","suc":"IBARRA","pa":283.95,"meses":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","suc":"MANTA","pa":268.68,"meses":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","suc":"AMBATO","pa":279.91,"meses":4,"avg":4.49,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","suc":"MILAGRO","pa":380.15,"meses":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","suc":"CUENCA","pa":197.15,"meses":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","suc":"MANTA","pa":197.93,"meses":4,"avg":4.43,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","suc":"SALINAS","pa":278.42,"meses":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","suc":"SANTO DOMINGO","pa":285.11,"meses":4,"avg":4.41,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","suc":"QUEVEDO","pa":342.83,"meses":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","suc":"MILAGRO","pa":263.41,"meses":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","suc":"LOJA","pa":386.81,"meses":4,"avg":4.34,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","suc":"ESMERALDAS","pa":354.93,"meses":4,"avg":4.31,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","suc":"SALINAS","pa":255.85,"meses":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","suc":"MILAGRO","pa":294.85,"meses":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","suc":"MACHALA","pa":271.45,"meses":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","suc":"MACHALA","pa":372.27,"meses":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","suc":"SALINAS","pa":295.67,"meses":4,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","suc":"QUEVEDO","pa":277.96,"meses":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","suc":"CUENCA","pa":276.57,"meses":4,"avg":4.14,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","suc":"QUEVEDO","pa":341.5,"meses":4,"avg":4.09,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","suc":"RIOBAMBA","pa":222.21,"meses":4,"avg":3.84,"e":"bajo","pct":"96.0%"},{"n":"COC PROV COC ADC 01","suc":"COCA","pa":265.11,"meses":4,"avg":3.76,"e":"bajo","pct":"94.0%"},{"n":"MCH PROV MCH ADC 001","suc":"MACHALA","pa":7.16,"meses":1,"avg":3.58,"e":"bajo","pct":"89.5%"},{"n":"MIL PROV MIL ADC 03","suc":"MILAGRO","pa":74.99,"meses":1,"avg":3.57,"e":"bajo","pct":"89.2%"},{"n":"LAG PROV LAG ADC 01","suc":"LAGO AGRIO","pa":250.7,"meses":4,"avg":3.4,"e":"bajo","pct":"85.0%"}]},"TODOS":{"avg":4.46,"nc":5,"c":36,"al":2,"cr":[{"n":"MNT PROV PVO ADC 01","pm":13.85,"dt":2,"avg":6.92,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 01","pm":12.66,"dt":2,"avg":6.33,"e":"alerta","pct":"ALERTA"},{"n":"STO PROV STO ADC 03","pm":11.98,"dt":2,"avg":5.99,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV CHO ADC 01","pm":11.16,"dt":2,"avg":5.58,"e":"alerta","pct":"ALERTA"},{"n":"STL PROV SLN ADC 04","pm":95.99,"dt":18,"avg":5.33,"e":"alerta","pct":"ALERTA"},{"n":"QVD PROV QVD ADC 01","pm":21.15,"dt":4,"avg":5.29,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","pm":109.15,"dt":21,"avg":5.2,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 01","pm":102.4,"dt":20,"avg":5.12,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","pm":20.46,"dt":4,"avg":5.12,"e":"alerta","pct":"ALERTA"},{"n":"QVD PROV QVD ADC 03","pm":102.14,"dt":20,"avg":5.11,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 02","pm":10.05,"dt":2,"avg":5.03,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV PVO ADC 01","pm":90.32,"dt":18,"avg":5.02,"e":"alerta","pct":"ALERTA"},{"n":"CUE PROV CUE ADC 03","pm":10.0,"dt":2,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","pm":10.0,"dt":2,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","pm":74.99,"dt":15,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","pm":9.98,"dt":2,"avg":4.99,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 01","pm":89.54,"dt":18,"avg":4.97,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 01","pm":99.07,"dt":20,"avg":4.95,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","pm":143.22,"dt":29,"avg":4.94,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","pm":19.73,"dt":4,"avg":4.93,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","pm":93.71,"dt":19,"avg":4.93,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","pm":118.19,"dt":24,"avg":4.92,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":19.67,"dt":4,"avg":4.92,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","pm":93.56,"dt":19,"avg":4.92,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":9.82,"dt":2,"avg":4.91,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","pm":53.93,"dt":11,"avg":4.9,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":112.47,"dt":23,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","pm":97.7,"dt":20,"avg":4.88,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","pm":102.51,"dt":21,"avg":4.88,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 03","pm":68.23,"dt":14,"avg":4.87,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","pm":87.65,"dt":18,"avg":4.87,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","pm":14.57,"dt":3,"avg":4.86,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","pm":14.49,"dt":3,"avg":4.83,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","pm":86.87,"dt":18,"avg":4.83,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 03","pm":96.54,"dt":20,"avg":4.83,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","pm":110.89,"dt":23,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":9.65,"dt":2,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","pm":81.69,"dt":17,"avg":4.81,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":72.0,"dt":15,"avg":4.8,"e":"cumple","pct":"100%"},{"n":"MNT PROV PVO ADC 01","pm":91.16,"dt":19,"avg":4.8,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":14.38,"dt":3,"avg":4.79,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","pm":95.67,"dt":20,"avg":4.78,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","pm":85.55,"dt":18,"avg":4.75,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":94.72,"dt":20,"avg":4.74,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","pm":99.6,"dt":21,"avg":4.74,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","pm":85.4,"dt":18,"avg":4.74,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","pm":85.11,"dt":18,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":94.45,"dt":20,"avg":4.72,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","pm":145.61,"dt":31,"avg":4.7,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":84.53,"dt":18,"avg":4.7,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","pm":98.66,"dt":21,"avg":4.7,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","pm":84.32,"dt":18,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"LAG PROV LAG ADC 01","pm":93.67,"dt":20,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":84.26,"dt":18,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","pm":79.41,"dt":17,"avg":4.67,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":107.34,"dt":23,"avg":4.67,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","pm":116.47,"dt":25,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","pm":9.33,"dt":2,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","pm":93.12,"dt":20,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","pm":144.25,"dt":31,"avg":4.65,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":83.73,"dt":18,"avg":4.65,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":97.62,"dt":21,"avg":4.65,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":101.81,"dt":22,"avg":4.63,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","pm":92.65,"dt":20,"avg":4.63,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","pm":92.55,"dt":20,"avg":4.63,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":92.31,"dt":20,"avg":4.62,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","pm":143.16,"dt":31,"avg":4.62,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","pm":120.13,"dt":26,"avg":4.62,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":91.72,"dt":20,"avg":4.59,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":91.88,"dt":20,"avg":4.59,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","pm":91.71,"dt":20,"avg":4.59,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","pm":114.57,"dt":25,"avg":4.58,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","pm":100.81,"dt":22,"avg":4.58,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","pm":95.8,"dt":21,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","pm":104.84,"dt":23,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","pm":100.36,"dt":22,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","pm":18.18,"dt":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","pm":18.16,"dt":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","pm":77.17,"dt":17,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","pm":99.67,"dt":22,"avg":4.53,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":94.96,"dt":21,"avg":4.52,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","pm":121.77,"dt":27,"avg":4.51,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":135.23,"dt":30,"avg":4.51,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","pm":94.67,"dt":21,"avg":4.51,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","pm":94.43,"dt":21,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","pm":130.47,"dt":29,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","pm":98.91,"dt":22,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":13.4,"dt":3,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","pm":13.38,"dt":3,"avg":4.46,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","pm":128.76,"dt":29,"avg":4.44,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","pm":17.73,"dt":4,"avg":4.43,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":8.83,"dt":2,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":110.14,"dt":25,"avg":4.41,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","pm":87.9,"dt":20,"avg":4.4,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","pm":79.23,"dt":18,"avg":4.4,"e":"cumple","pct":"100%"},{"n":"MNT PROV PVO ADC 01","pm":92.46,"dt":21,"avg":4.4,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","pm":13.17,"dt":3,"avg":4.39,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":74.39,"dt":17,"avg":4.38,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","pm":87.67,"dt":20,"avg":4.38,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","pm":78.59,"dt":18,"avg":4.37,"e":"cumple","pct":"100%"},{"n":"COC PROV COC ADC 01","pm":95.98,"dt":22,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","pm":100.29,"dt":23,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":104.07,"dt":24,"avg":4.34,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":64.94,"dt":15,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","pm":95.26,"dt":22,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","pm":78.01,"dt":18,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","pm":73.62,"dt":17,"avg":4.33,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","pm":77.55,"dt":18,"avg":4.31,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 01","pm":98.58,"dt":23,"avg":4.29,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","pm":98.49,"dt":23,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":85.51,"dt":20,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":85.4,"dt":20,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":55.4,"dt":13,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","pm":102.06,"dt":24,"avg":4.25,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":93.24,"dt":22,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","pm":114.38,"dt":27,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":93.11,"dt":22,"avg":4.23,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","pm":12.66,"dt":3,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","pm":71.73,"dt":17,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","pm":92.76,"dt":22,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":96.69,"dt":23,"avg":4.2,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","pm":96.62,"dt":23,"avg":4.2,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","pm":88.1,"dt":21,"avg":4.2,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","pm":75.48,"dt":18,"avg":4.19,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","pm":120.8,"dt":29,"avg":4.17,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":87.62,"dt":21,"avg":4.17,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","pm":74.83,"dt":18,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","pm":78.97,"dt":19,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":115.94,"dt":28,"avg":4.14,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","pm":103.51,"dt":25,"avg":4.14,"e":"cumple","pct":"100%"},{"n":"LAG PROV LAG ADC 01","pm":70.06,"dt":17,"avg":4.12,"e":"cumple","pct":"100%"},{"n":"LAG PROV LAG ADC 01","pm":86.3,"dt":21,"avg":4.11,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","pm":102.81,"dt":25,"avg":4.11,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":77.83,"dt":19,"avg":4.1,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":16.36,"dt":4,"avg":4.09,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","pm":8.17,"dt":2,"avg":4.08,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","pm":73.5,"dt":18,"avg":4.08,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","pm":97.61,"dt":24,"avg":4.07,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","pm":77.13,"dt":19,"avg":4.06,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","pm":116.61,"dt":29,"avg":4.02,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","pm":116.62,"dt":29,"avg":4.02,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","pm":8.0,"dt":2,"avg":4.0,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","pm":79.35,"dt":20,"avg":3.97,"e":"bajo","pct":"99.2%"},{"n":"QVD PROV BBY ADC 01","pm":15.83,"dt":4,"avg":3.96,"e":"bajo","pct":"99.0%"},{"n":"IBA PROV IBA ADC 02","pm":86.48,"dt":22,"avg":3.93,"e":"bajo","pct":"98.2%"},{"n":"MCH PROV MCH ADC 02","pm":82.45,"dt":21,"avg":3.93,"e":"bajo","pct":"98.2%"},{"n":"COC PROV COC ADC 01","pm":83.79,"dt":22,"avg":3.81,"e":"bajo","pct":"95.2%"},{"n":"STL PROV PLY ADC 01","pm":7.5,"dt":2,"avg":3.75,"e":"bajo","pct":"93.8%"},{"n":"ESM PROV ESM ADC 02","pm":104.32,"dt":28,"avg":3.73,"e":"bajo","pct":"93.2%"},{"n":"STL PROV SLN ADC 01","pm":11.17,"dt":3,"avg":3.72,"e":"bajo","pct":"93.0%"},{"n":"LOJ PROV LOJ ADC 01","pm":7.31,"dt":2,"avg":3.66,"e":"bajo","pct":"91.5%"},{"n":"MNT PROV MNT ADC 02","pm":7.33,"dt":2,"avg":3.66,"e":"bajo","pct":"91.5%"},{"n":"MCH PROV MCH ADC 02","pm":68.78,"dt":19,"avg":3.62,"e":"bajo","pct":"90.5%"},{"n":"COC PROV COC ADC 01","pm":7.2,"dt":2,"avg":3.6,"e":"bajo","pct":"90.0%"},{"n":"MCH PROV MCH ADC 001","pm":7.16,"dt":2,"avg":3.58,"e":"bajo","pct":"89.5%"},{"n":"MIL PROV MIL ADC 03","pm":74.99,"dt":21,"avg":3.57,"e":"bajo","pct":"89.2%"},{"n":"QVD PROV QVD ADC 01","pm":87.7,"dt":25,"avg":3.51,"e":"bajo","pct":"87.8%"},{"n":"CUE PROV CUE ADC 02","pm":10.33,"dt":3,"avg":3.44,"e":"bajo","pct":"86.0%"},{"n":"COC PROV COC ADC 01","pm":78.14,"dt":24,"avg":3.26,"e":"bajo","pct":"81.5%"},{"n":"STL PROV SLN ADC 04","pm":6.33,"dt":2,"avg":3.16,"e":"bajo","pct":"79.0%"},{"n":"QVD PROV QVD ADC 03","pm":5.67,"dt":2,"avg":2.84,"e":"bajo","pct":"71.0%"},{"n":"RIO PROV PTZ ADC 01","pm":5.69,"dt":2,"avg":2.84,"e":"bajo","pct":"71.0%"},{"n":"LAG PROV LAG ADC 01","pm":0.67,"dt":1,"avg":0.67,"e":"bajo","pct":"16.8%"}],"ca":[{"n":"MNT PROV PVO ADC 01","suc":"MANTA","pa":287.79,"meses":4,"avg":5.28,"e":"alerta","pct":"ALERTA"},{"n":"IBA PROV IBA ADC 01","suc":"IBARRA","pa":299.85,"meses":4,"avg":5.14,"e":"alerta","pct":"ALERTA"},{"n":"MNT PROV MNT ADC 03","suc":"MANTA","pa":294.38,"meses":4,"avg":5.0,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 03","suc":"SANTO DOMINGO","pa":341.91,"meses":4,"avg":4.89,"e":"cumple","pct":"100%"},{"n":"MNT PROV CHO ADC 01","suc":"MANTA","pa":272.25,"meses":4,"avg":4.82,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 03","suc":"CUENCA","pa":278.74,"meses":4,"avg":4.76,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 05","suc":"MANTA","pa":244.35,"meses":3,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 02","suc":"SALINAS","pa":299.0,"meses":4,"avg":4.73,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 02","suc":"AMBATO","pa":423.48,"meses":4,"avg":4.71,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 03","suc":"SALINAS","pa":288.28,"meses":4,"avg":4.68,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 01","suc":"MANTA","pa":304.71,"meses":4,"avg":4.66,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 06","suc":"MANTA","pa":267.37,"meses":3,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 03","suc":"ESMERALDAS","pa":275.68,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 03","suc":"AMBATO","pa":263.64,"meses":4,"avg":4.61,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 01","suc":"SANTO DOMINGO","pa":301.09,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"RIO PROV RIO ADC 01","suc":"RIOBAMBA","pa":278.61,"meses":4,"avg":4.6,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 01","suc":"ESMERALDAS","pa":274.13,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 02","suc":"QUEVEDO","pa":293.87,"meses":4,"avg":4.56,"e":"cumple","pct":"100%"},{"n":"IBA PROV IBA ADC 02","suc":"IBARRA","pa":283.95,"meses":4,"avg":4.54,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 04","suc":"MANTA","pa":268.68,"meses":4,"avg":4.5,"e":"cumple","pct":"100%"},{"n":"AMB PROV AMB ADC 01","suc":"AMBATO","pa":279.91,"meses":4,"avg":4.49,"e":"cumple","pct":"100%"},{"n":"MIL PROV DAU ADC 01","suc":"MILAGRO","pa":380.15,"meses":4,"avg":4.47,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 01","suc":"CUENCA","pa":197.15,"meses":3,"avg":4.45,"e":"cumple","pct":"100%"},{"n":"MNT PROV MNT ADC 02","suc":"MANTA","pa":197.93,"meses":4,"avg":4.43,"e":"cumple","pct":"100%"},{"n":"STL PROV PLY ADC 01","suc":"SALINAS","pa":278.42,"meses":4,"avg":4.42,"e":"cumple","pct":"100%"},{"n":"STO PROV STO ADC 02","suc":"SANTO DOMINGO","pa":285.11,"meses":4,"avg":4.41,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 01","suc":"QUEVEDO","pa":342.83,"meses":4,"avg":4.36,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 02","suc":"MILAGRO","pa":263.41,"meses":4,"avg":4.35,"e":"cumple","pct":"100%"},{"n":"LOJ PROV LOJ ADC 01","suc":"LOJA","pa":386.81,"meses":4,"avg":4.34,"e":"cumple","pct":"100%"},{"n":"ESM PROV ESM ADC 02","suc":"ESMERALDAS","pa":354.93,"meses":4,"avg":4.31,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 01","suc":"SALINAS","pa":255.85,"meses":4,"avg":4.28,"e":"cumple","pct":"100%"},{"n":"MIL PROV MIL ADC 01","suc":"MILAGRO","pa":294.85,"meses":4,"avg":4.27,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 02","suc":"MACHALA","pa":271.45,"meses":4,"avg":4.26,"e":"cumple","pct":"100%"},{"n":"MCH PROV MCH ADC 01","suc":"MACHALA","pa":372.27,"meses":4,"avg":4.24,"e":"cumple","pct":"100%"},{"n":"STL PROV SLN ADC 04","suc":"SALINAS","pa":295.67,"meses":4,"avg":4.22,"e":"cumple","pct":"100%"},{"n":"QVD PROV QVD ADC 03","suc":"QUEVEDO","pa":277.96,"meses":4,"avg":4.16,"e":"cumple","pct":"100%"},{"n":"CUE PROV CUE ADC 02","suc":"CUENCA","pa":276.57,"meses":4,"avg":4.14,"e":"cumple","pct":"100%"},{"n":"QVD PROV BBY ADC 01","suc":"QUEVEDO","pa":341.5,"meses":4,"avg":4.09,"e":"cumple","pct":"100%"},{"n":"RIO PROV PTZ ADC 01","suc":"RIOBAMBA","pa":222.21,"meses":4,"avg":3.84,"e":"bajo","pct":"96.0%"},{"n":"COC PROV COC ADC 01","suc":"COCA","pa":265.11,"meses":4,"avg":3.76,"e":"bajo","pct":"94.0%"},{"n":"MCH PROV MCH ADC 001","suc":"MACHALA","pa":7.16,"meses":1,"avg":3.58,"e":"bajo","pct":"89.5%"},{"n":"MIL PROV MIL ADC 03","suc":"MILAGRO","pa":74.99,"meses":1,"avg":3.57,"e":"bajo","pct":"89.2%"},{"n":"LAG PROV LAG ADC 01","suc":"LAGO AGRIO","pa":250.7,"meses":4,"avg":3.4,"e":"bajo","pct":"85.0%"}]}}};
+var tabRend = 'ko';
+var chRend = null;
+
+function getRendData(){
+  var block = REND[curSuc] || REND['TODAS'];
+  return block[curMes] || block['TODOS'];
+}
+
+function rendColor(pct){
+  if(pct >= 110) return '#16A34A';
+  if(pct >= 100) return '#22C55E';
+  if(pct >= 80) return '#D97706';
+  if(pct >= 60) return '#F97316';
+  return '#E63312';
+}
+function rendLabel(pct){
+  if(pct >= 110) return 'Excelente';
+  if(pct >= 100) return 'Cumple';
+  if(pct >= 80) return 'Bajo';
+  if(pct >= 60) return 'Crítico';
+  return 'Muy crítico';
+}
+function rendPill(pct){
+  if(pct >= 100) return 'pill-g';
+  if(pct >= 80) return 'pill-a';
+  return 'pill-r';
+}
+
+function renderRendimiento(){
+  if(chRend){chRend.destroy();chRend=null;}
+  if(window.chRendDonut){window.chRendDonut.destroy();window.chRendDonut=null;}
+
+  // For annual section: always use the full-year data for the current sucursal
+  var rdAnual = (REND[curSuc]||REND['TODAS'])['TODOS'] || {};
+  var ca = rdAnual.ca || [];
+
+  // For monthly detail: only show when a specific month is selected
+  var showMonthly = (curMes !== 'TODOS');
+  var rd = showMonthly ? ((REND[curSuc]||REND['TODAS'])[curMes]||{}) : {};
+  var cr = showMonthly ? (rd.cr||[]) : [];
+
+  // KPI counts from ANNUAL data (unique cuadrillas, always correct)
+  var rdKpi = (REND[curSuc]||REND['TODAS'])['TODOS'] || {};
+  var nc=rdKpi.nc||0, c_=rdKpi.c||0, al=rdKpi.al||0, tot=nc+c_+al;
+  var avg = rdKpi.avg||0;
+
+  function eClr(e){return e==='cumple'?'#16A34A':e==='alerta'?'#D97706':'#E63312';}
+  function eLbl(e){return e==='cumple'?'Cumple (4–5)':e==='alerta'?'⚠ Alerta (>5)':'✗ Bajo (<4)';}
+  function ePll(e){return e==='cumple'?'pill-g':e==='alerta'?'pill-a':'pill-r';}
+
+  // ---- DONUT ----
+  document.getElementById('donut-total-n').textContent = tot;
+  document.getElementById('rend-donut-legend').innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:8px">'+
+    '<div style="display:flex;align-items:center;gap:8px">'+
+      '<div style="width:12px;height:12px;border-radius:3px;background:#16A34A;flex-shrink:0"></div>'+
+      '<span style="font-size:12px;color:var(--tc-gray6)">Cumple (4–5 pts)</span>'+
+      '<span style="font-size:13px;font-weight:700;font-family:Nunito,sans-serif;margin-left:auto">'+c_+'</span></div>'+
+    '<div style="display:flex;align-items:center;gap:8px">'+
+      '<div style="width:12px;height:12px;border-radius:3px;background:#E63312;flex-shrink:0"></div>'+
+      '<span style="font-size:12px;color:var(--tc-gray6)">Bajo (&lt;4 pts)</span>'+
+      '<span style="font-size:13px;font-weight:700;font-family:Nunito,sans-serif;margin-left:auto">'+nc+'</span></div>'+
+    '<div style="display:flex;align-items:center;gap:8px">'+
+      '<div style="width:12px;height:12px;border-radius:3px;background:#D97706;flex-shrink:0"></div>'+
+      '<span style="font-size:12px;color:var(--tc-gray6)">Alerta (&gt;5 pts)</span>'+
+      '<span style="font-size:13px;font-weight:700;font-family:Nunito,sans-serif;margin-left:auto">'+al+'</span></div>'+
+    '</div>';
+
+  window.chRendDonut = new Chart(document.getElementById('ch-rend-donut'),{
+    type:'doughnut',
+    data:{labels:['Cumple (4–5)','Bajo (<4)','Alerta (>5)'],
+      datasets:[{data:[c_,nc,al],backgroundColor:['#16A34A','#E63312','#D97706'],borderWidth:3,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.label+': '+ctx.parsed+' cuadrillas';}}}}}
+  });
+
+  // ---- KPI header ----
+  var avgClr=avg>=4&&avg<=5?'good':avg>5?'warn':'danger';
+  document.getElementById('rend-kpis-header').innerHTML=
+    '<div class="rend-kpi '+avgClr+'"><div class="rend-kpi-val">'+avg+'</div><div class="rend-kpi-lbl">Pts/día prom.</div></div>'+
+    '<div class="rend-kpi good"><div class="rend-kpi-val">'+c_+'</div><div class="rend-kpi-lbl">Cumplen</div></div>'+
+    '<div class="rend-kpi danger"><div class="rend-kpi-val">'+nc+'</div><div class="rend-kpi-lbl">Bajo (&lt;4)</div></div>'+
+    '<div class="rend-kpi warn"><div class="rend-kpi-val">'+al+'</div><div class="rend-kpi-lbl">Alerta (&gt;5)</div></div>';
+
+  // ---- KPI cards ----
+  var topR=cr[0]||null, botR=cr.length?[...cr].sort(function(a,b){return a.avg-b.avg;})[0]:null;
+  document.getElementById('rend-metrics').innerHTML=
+    '<div class="mc mc-accent-green"><div class="mc-lbl">Mayor promedio mensual</div>'+
+      '<div class="mc-val" style="font-size:12px;line-height:1.4">'+(topR?topR.n:'—')+'</div>'+
+      '<span class="mc-sub up">'+(topR?topR.avg+' pts/día':'')+'</span></div>'+
+    '<div class="mc mc-accent-red"><div class="mc-lbl">Menor promedio mensual</div>'+
+      '<div class="mc-val" style="font-size:12px;line-height:1.4">'+(botR?botR.n:'—')+'</div>'+
+      '<span class="mc-sub dn">'+(botR?botR.avg+' pts/día':'')+'</span></div>';
+
+  // ---- Barras MENSUAL ----
+  var maxAv=Math.max.apply(null,cr.map(function(c){return c.avg;}))||6;
+  document.getElementById('rend-mensual-bars').innerHTML = showMonthly
+    ? cr.map(function(c){
+        var clr=eClr(c.e), w=Math.min(Math.round(c.avg/Math.max(maxAv,6)*100),100);
+        return '<div class="rend-bar-row">'+
+          '<div class="rend-bar-name" title="'+c.n+'">'+c.n+'</div>'+
+          '<div class="rend-bar-track"><div class="rend-bar-fill" style="width:'+w+'%;background:'+clr+'"></div></div>'+
+          '<div class="rend-bar-pct" style="color:'+clr+'">'+c.avg+' pts</div>'+
+          '<div class="rend-bar-badge"><span class="pill '+ePll(c.e)+'">'+eLbl(c.e)+'</span></div>'+
+        '</div>';
+      }).join('')||'<div style="color:var(--tc-gray4);font-size:12px;padding:16px;text-align:center">Sin datos</div>'
+    : '<div style="display:flex;align-items:center;justify-content:center;height:80px;color:var(--tc-gray4);font-size:13px;gap:8px">'+
+        '<span style="font-size:20px">📅</span> Por favor selecciona un mes específico para ver el detalle mensual'+
+      '</div>';
+
+  // ---- Barras ANUAL (siempre datos completos) ----
+  var maxAva=Math.max.apply(null,ca.map(function(c){return c.avg;}))||6;
+  document.getElementById('rend-anual-bars').innerHTML=ca.map(function(c){
+    var clr=eClr(c.e), w=Math.min(Math.round(c.avg/Math.max(maxAva,6)*100),100);
+    return '<div class="rend-bar-row">'+
+      '<div class="rend-bar-name" title="'+c.n+'">'+c.n+'</div>'+
+      '<div class="rend-bar-track"><div class="rend-bar-fill" style="width:'+w+'%;background:'+clr+'"></div></div>'+
+      '<div class="rend-bar-pct" style="color:'+clr+'">'+c.avg+' pts</div>'+
+      '<div class="rend-bar-badge"><span class="pill '+ePll(c.e)+'">'+eLbl(c.e)+'</span></div>'+
+    '</div>';
+  }).join('');
+
+  // ---- Chart evolución ----
+  var meses_disp=window._meses||['Enero','Febrero','Marzo','Abril'];
+  var mc_labels=meses_disp.map(function(m){return m.substring(0,3);});
+  var colors=['#003087','#E63312','#F26522','#16A34A','#0047AB','#D97706','#1A5FC8'];
+  var sucursalesChart=curSuc==='TODAS'
+    ?['MANTA','QUEVEDO','SALINAS','MILAGRO','SANTO DOMINGO','AMBATO','CUENCA']:[curSuc];
+  var datasets=sucursalesChart.map(function(s,idx){
+    var data=meses_disp.map(function(m){
+      var blk=REND[s]&&REND[s][m]?REND[s][m]:null;
+      return blk?blk.avg:null;
+    });
+    return {label:s,data:data,borderColor:colors[idx%colors.length],backgroundColor:'transparent',
+      borderWidth:2,pointRadius:4,pointBackgroundColor:colors[idx%colors.length],tension:0.3,spanGaps:true};
+  });
+  chRend=new Chart(document.getElementById('ch-rend'),{
+    type:'line',data:{labels:mc_labels,datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:curSuc==='TODAS',position:'bottom',labels:{font:{size:10},boxWidth:12,padding:8}}},
+      scales:{
+        x:{ticks:{color:'#64748B',font:{size:11}},grid:{display:false}},
+        y:{ticks:{color:'#64748B',font:{size:10}},grid:{color:'rgba(226,232,240,.8)'},
+          suggestedMin:0,suggestedMax:6,title:{display:true,text:'Pts/día prom.',color:'#94A3B8',font:{size:10}}}
+      }}
+  });
+  document.getElementById('leg-rend').innerHTML=
+    '<span><span class="ld" style="background:#16A34A"></span>Cumple 4–5</span>'+
+    '<span><span class="ld" style="background:#E63312"></span>Bajo &lt;4</span>'+
+    '<span><span class="ld" style="background:#D97706"></span>Alerta &gt;5</span>';
+
+  // ---- Tabla mensual ----
+  renderTblRendMes(cr, showMonthly);
+  // ---- Tabla anual ----
+  renderTblRendAnual(ca);
+}
+
+function setTabRend(f,el){
+  tabRend=f;
+  el.closest('.tabs').querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  var showM=(curMes!=='TODOS');
+  var rd=showM?((REND[curSuc]||REND['TODAS'])[curMes]||{}):{}
+  renderTblRendMes(showM?(rd.cr||[]):[], showM);
+}
+
+function renderTblRendMes(cr, showMonthly){
+  if(showMonthly === false || showMonthly === undefined && curMes==='TODOS'){
+    document.getElementById('tbl-rend-mes').innerHTML=
+      '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--tc-gray4)">'+
+      '<span style="font-size:18px">📅</span><br>Selecciona un mes específico para ver el detalle mensual por cuadrilla</td></tr>';
+    return;
+  }
+  var rows=(cr||[]).slice();
+  if(tabRend==='ko')      rows=rows.filter(function(c){return c.e==='bajo';});
+  else if(tabRend==='ok') rows=rows.filter(function(c){return c.e==='cumple';});
+  else if(tabRend==='al') rows=rows.filter(function(c){return c.e==='alerta';});
+  rows.sort(function(a,b){return a.avg-b.avg;});
+  function clr(e){return e==='cumple'?'#16A34A':e==='alerta'?'#D97706':'#E63312';}
+  function lbl(e){return e==='cumple'?'✓ Cumple':e==='alerta'?'⚠ Alerta (>5)':'✗ Bajo (<4)';}
+  function pll(e){return e==='cumple'?'rend-status-ok':e==='alerta'?'rend-status-al':'rend-status-ko';}
+  document.getElementById('tbl-rend-mes').innerHTML=rows.map(function(c,i){
+    var pctDisp=c.e==='alerta'?'<span class="rend-status-al">⚠ Alerta</span>':
+                c.e==='cumple'?'<span class="rend-status-ok">100%</span>':
+                '<span class="rend-status-ko">'+c.pct+'</span>';
+    return '<tr>'+
+      '<td><span class="rk">'+(i+1)+'</span></td>'+
+      '<td><div class="cuad-nm-full">'+c.n+'</div></td>'+
+      '<td style="font-size:10px;color:var(--tc-gray4)">'+c.n.split(' ')[0]+'</td>'+
+      '<td style="font-weight:700;font-size:14px;color:'+clr(c.e)+'">'+c.avg+'</td>'+
+      '<td style="font-weight:600">'+c.pm+'</td>'+
+      '<td style="font-weight:600;text-align:center">'+c.dt+'</td>'+
+      '<td style="text-align:center">'+pctDisp+'</td>'+
+      '<td><span class="'+pll(c.e)+'">'+lbl(c.e)+'</span></td>'+
+    '</tr>';
+  }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--tc-gray4);padding:16px">Sin cuadrillas en este filtro</td></tr>';
+}
+
+function renderTblRendAnual(ca){
+  var rows=(ca||[]).slice().sort(function(a,b){return b.avg-a.avg;});
+  function clr(e){return e==='cumple'?'#16A34A':e==='alerta'?'#D97706':'#E63312';}
+  function lbl(e){return e==='cumple'?'✓ Cumple':e==='alerta'?'⚠ Alerta (>5)':'✗ Bajo (<4)';}
+  function pll(e){return e==='cumple'?'rend-status-ok':e==='alerta'?'rend-status-al':'rend-status-ko';}
+  document.getElementById('tbl-rend-anual').innerHTML=rows.map(function(c,i){
+    var w=Math.min(Math.round(c.avg/6*100),100);
+    var pctDisp=c.e==='alerta'?'<span class="rend-status-al">⚠ Alerta</span>':
+                c.e==='cumple'?'<span class="rend-status-ok">100%</span>':
+                '<span class="rend-status-ko">'+c.pct+'</span>';
+    var mesesVal = c.meses !== undefined ? c.meses : (c.da||'—');
+    return '<tr>'+
+      '<td><span class="rk">'+(i+1)+'</span></td>'+
+      '<td><div class="cuad-nm-full">'+c.n+'</div></td>'+
+      '<td style="font-size:10px;color:var(--tc-gray4)">'+c.suc+'</td>'+
+      '<td style="font-weight:700;font-size:14px;color:'+clr(c.e)+'">'+c.avg+'</td>'+
+      '<td style="font-weight:600">'+c.pa+'</td>'+
+      '<td style="font-weight:600;text-align:center">'+mesesVal+'</td>'+
+      '<td style="text-align:center">'+pctDisp+'</td>'+
+      '<td><div class="bbar"><div class="bbg"><div style="height:100%;border-radius:99px;background:'+clr(c.e)+';width:'+w+'%"></div></div></div></td>'+
+      '<td><span class="'+pll(c.e)+'">'+lbl(c.e)+'</span></td>'+
+    '</tr>';
+  }).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--tc-gray4);padding:16px">Sin datos</td></tr>';
+}
+
+</script>
+</body>
+</html>
