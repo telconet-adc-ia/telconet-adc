@@ -682,9 +682,9 @@ tbody tr:hover td{background:var(--tc-blue4)}
 // ============================================================
 // CONFIGURACIÓN — PEGAR TU URL DE APPS SCRIPT AQUÍ
 // ============================================================
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMO0hcDLC8ZlQHv0pavRlCGcoQzpu4pHqnz0ZDx5XBxUrTSY_UmaIyj3epDQsdSZ5O-Q/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxyzoWJetooEFZ3SOh_Sp0_D0KiDGUyq6D45egxED4s3x2oVqcJRT7Hue5WnNA9d0v_SA/exec';
 // Precargar en localStorage para persistencia
-localStorage.setItem('adc_url', 'https://script.google.com/macros/s/AKfycbzMO0hcDLC8ZlQHv0pavRlCGcoQzpu4pHqnz0ZDx5XBxUrTSY_UmaIyj3epDQsdSZ5O-Q/exec');
+localStorage.setItem('adc_url', 'https://script.google.com/macros/s/AKfycbxyzoWJetooEFZ3SOh_Sp0_D0KiDGUyq6D45egxED4s3x2oVqcJRT7Hue5WnNA9d0v_SA/exec');
 // Ejemplo: 'https://script.google.com/macros/s/XXXX.../exec'
 // ============================================================
 
@@ -1070,33 +1070,57 @@ function enviarMensaje(){
   document.getElementById('ai-send').disabled=true;
   agregarMsgUser(txt);mostrarTyping();
 
-  var sistema='Eres el Asistente IA del Dashboard de Trabajos ADC de Telconet Ecuador. Responde en español de forma concisa, clara y profesional. '+contextoActual();
-  var msgs=aiMsgs.slice(-10).map(function(m){return{role:m.role,content:m.content};});
+  // Contexto compacto — solo filtros activos (Supabase hace el resto)
+  var ctx = JSON.stringify({
+    mesFiltro: curMes !== 'TODOS' ? curMes : '',
+    anioFiltro: new Date().getFullYear(),
+    sucursal: curSuc !== 'TODAS' ? curSuc : 'TODAS'
+  });
 
-  // Llamar al proxy del Apps Script en lugar de la API directamente
-  fetch(APPS_SCRIPT_URL+'?action=ai',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({system:sistema,messages:msgs})
-  })
-  .then(function(r){return r.json();})
-  .then(function(data){
-    quitarTyping();aiCargando=false;document.getElementById('ai-send').disabled=false;
-    if(data.ok&&data.respuesta){
+  // Usar JSONP para evitar CORS (igual que ADC Cuenca)
+  var cb = 'nac_cb_' + Date.now();
+  var script = document.createElement('script');
+  var timer = setTimeout(function(){
+    if(script.parentNode) script.parentNode.removeChild(script);
+    delete window[cb];
+    quitarTyping(); aiCargando=false;
+    document.getElementById('ai-send').disabled=false;
+    setAIError('⚠ El agente tardó demasiado. Intenta de nuevo.');
+  }, 90000);
+
+  window[cb] = function(data){
+    clearTimeout(timer);
+    delete window[cb];
+    if(script.parentNode) script.parentNode.removeChild(script);
+    quitarTyping(); aiCargando=false;
+    document.getElementById('ai-send').disabled=false;
+    if(data.ok && data.respuesta){
       agregarMsgBot(data.respuesta);
-    }else{
-      var errMsg=data.error||'Error desconocido';
-      if(errMsg.indexOf('ANTHROPIC_KEY')<0&&errMsg.indexOf('null')<0){
-        agregarMsgBot('No pude obtener respuesta: '+errMsg);
-      }else{
-        setAIError('⚠ El asistente necesita configuración adicional. Ejecuta la función <strong>configurarAPIKey()</strong> en Apps Script.');
+    } else {
+      var errMsg = data.error || 'Error desconocido';
+      if(errMsg.indexOf('ANTHROPIC_KEY') >= 0){
+        setAIError('⚠ Ejecuta la función <strong>configurarAPIKey()</strong> en Apps Script.');
+      } else {
+        agregarMsgBot('No pude obtener respuesta: ' + errMsg);
       }
     }
-  })
-  .catch(function(e){
-    quitarTyping();aiCargando=false;document.getElementById('ai-send').disabled=false;
-    setAIError('⚠ Error de red al contactar al asistente. Verifica tu conexión.');
-  });
+  };
+
+  script.onerror = function(){
+    clearTimeout(timer);
+    delete window[cb];
+    if(script.parentNode) script.parentNode.removeChild(script);
+    quitarTyping(); aiCargando=false;
+    document.getElementById('ai-send').disabled=false;
+    setAIError('⚠ Error contactando al agente. Verifica tu conexión.');
+  };
+
+  script.src = APPS_SCRIPT_URL
+    + '?action=chat'
+    + '&q=' + encodeURIComponent(txt)
+    + '&ctx=' + encodeURIComponent(ctx)
+    + '&callback=' + cb;
+  document.head.appendChild(script);
 }
 
 // INIT
