@@ -682,9 +682,9 @@ tbody tr:hover td{background:var(--tc-blue4)}
 // ============================================================
 // CONFIGURACIÓN — PEGAR TU URL DE APPS SCRIPT AQUÍ
 // ============================================================
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxyzoWJetooEFZ3SOh_Sp0_D0KiDGUyq6D45egxED4s3x2oVqcJRT7Hue5WnNA9d0v_SA/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyh5TCwyIu0buLa3usf2I-KmZadMwYW7bXnWXNNrwvNOIJP4tGjNtpasYTQvpuFTFISTg/exec';
 // Precargar en localStorage para persistencia
-localStorage.setItem('adc_url', 'https://script.google.com/macros/s/AKfycbxyzoWJetooEFZ3SOh_Sp0_D0KiDGUyq6D45egxED4s3x2oVqcJRT7Hue5WnNA9d0v_SA/exec');
+localStorage.setItem('adc_url', 'https://script.google.com/macros/s/AKfycbyh5TCwyIu0buLa3usf2I-KmZadMwYW7bXnWXNNrwvNOIJP4tGjNtpasYTQvpuFTFISTg/exec');
 // Ejemplo: 'https://script.google.com/macros/s/XXXX.../exec'
 // ============================================================
 
@@ -1070,14 +1070,11 @@ function enviarMensaje(){
   document.getElementById('ai-send').disabled=true;
   agregarMsgUser(txt);mostrarTyping();
 
-  // Contexto compacto — solo filtros activos (Supabase hace el resto)
-  var ctx = JSON.stringify({
-    mesFiltro: curMes !== 'TODOS' ? curMes : '',
-    anioFiltro: new Date().getFullYear(),
-    sucursal: curSuc !== 'TODAS' ? curSuc : 'TODAS'
-  });
+  // Ctx mínimo — Supabase tiene todos los datos
+  var mesNum = curMes !== 'TODOS' ? curMes : '';
+  var ctx = encodeURIComponent(JSON.stringify({m:mesNum,s:curSuc!=='TODAS'?curSuc:'',a:new Date().getFullYear()}));
 
-  // Usar JSONP para evitar CORS (igual que ADC Cuenca)
+  // JSONP para evitar CORS
   var cb = 'nac_cb_' + Date.now();
   var script = document.createElement('script');
   var timer = setTimeout(function(){
@@ -1115,10 +1112,14 @@ function enviarMensaje(){
     setAIError('⚠ Error contactando al agente. Verifica tu conexión.');
   };
 
+  // Contexto mínimo — Supabase tiene todos los datos
+  var mesNum = curMes !== 'TODOS' ? curMes : '';
+  var ctx = encodeURIComponent(JSON.stringify({m:mesNum,s:curSuc!=='TODAS'?curSuc:'',a:new Date().getFullYear()}));
+
   script.src = APPS_SCRIPT_URL
     + '?action=chat'
     + '&q=' + encodeURIComponent(txt)
-    + '&ctx=' + encodeURIComponent(ctx)
+    + '&ctx=' + ctx
     + '&callback=' + cb;
   document.head.appendChild(script);
 }
