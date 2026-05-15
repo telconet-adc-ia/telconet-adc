@@ -60,6 +60,8 @@ header{padding:0 0 0;height:90px;display:flex;align-items:center;justify-content
 .card-interurbanas{--card-color:rgba(251,146,60,0.5);--card-rgb:251,146,60;--card-gradient:linear-gradient(135deg,rgba(251,146,60,0.06) 0%,transparent 60%);}
 .card-electricos{--card-color:rgba(250,204,21,0.5);--card-rgb:250,204,21;--card-gradient:linear-gradient(135deg,rgba(250,204,21,0.06) 0%,transparent 60%);}
 .card-retiros{--card-color:rgba(192,132,252,0.5);--card-rgb:192,132,252;--card-gradient:linear-gradient(135deg,rgba(192,132,252,0.06) 0%,transparent 60%);}
+.card-movilizacion{--card-color:rgba(20,184,166,0.5);--card-rgb:20,184,166;--card-gradient:linear-gradient(135deg,rgba(20,184,166,0.06) 0%,transparent 60%);}
+.card-analitica{--card-color:rgba(99,102,241,0.5);--card-rgb:99,102,241;--card-gradient:linear-gradient(135deg,rgba(99,102,241,0.06) 0%,transparent 60%);}
 .card-glow{position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,var(--card-color) 0%,transparent 70%);opacity:.15;transition:opacity .3s;filter:blur(20px);}
 .area-card:hover .card-glow{opacity:.35}
 .card-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:20px;border:1px solid currentColor;}
@@ -121,8 +123,8 @@ footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid r
   </div>
 
   <div class="stats-bar animate d4">
-    <div class="stat-item"><div class="stat-val">5</div><div class="stat-lbl">&Aacute;reas operativas</div></div>
-    <div class="stat-item"><div class="stat-val">1</div><div class="stat-lbl">En producci&oacute;n</div></div>
+    <div class="stat-item"><div class="stat-val">7</div><div class="stat-lbl">&Aacute;reas operativas</div></div>
+    <div class="stat-item"><div class="stat-val">2</div><div class="stat-lbl">En producci&oacute;n</div></div>
     <div class="stat-item"><div class="stat-val blue">ADC</div><div class="stat-lbl">Activo ahora</div></div>
   </div>
 
@@ -198,6 +200,36 @@ footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid r
       <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
       <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
     </div>
+
+    <div class="area-card card-movilizacion coming animate d9" style="animation-delay:.72s">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#128652;</span>
+      <div class="card-name">Movilizaci&oacute;n</div>
+      <div class="card-desc">Control de rutas, desplazamientos de cuadrillas, registro de movilizaciones y gesti&oacute;n de flota vehicular en campo.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(20,184,166,0.4)">&mdash;</div><div class="cs-lbl">Rutas</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(20,184,166,0.4)">&mdash;</div><div class="cs-lbl">Veh&iacute;culos</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <a href="./analitica.html" class="area-card card-analitica animate d9" style="animation-delay:.76s">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-live"><div class="badge-dot"></div>En producci&oacute;n</div>
+      <span class="card-icon">&#128200;</span>
+      <div class="card-name">Anal&iacute;tica</div>
+      <div class="card-desc">Dashboard nacional con an&aacute;lisis de productividad, comparativos entre sucursales, tendencias y reportes ejecutivos a nivel pa&iacute;s.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(99,102,241,0.9)">14</div><div class="cs-lbl">Sucursales</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(99,102,241,0.9)">IA</div><div class="cs-lbl">Agente</div></div>
+      </div>
+      <div class="card-cta">
+        <span class="cta-text">Abrir anal&iacute;tica</span>
+        <div class="cta-arrow">&#8594;</div>
+      </div>
+    </a>
 
   </div>
 
