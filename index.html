@@ -55,13 +55,13 @@ header{padding:0 0 0;height:90px;display:flex;align-items:center;justify-content
 .area-card::before{content:'';position:absolute;inset:0;background:var(--card-gradient);opacity:0;transition:opacity .3s;}
 .area-card:hover{transform:translateY(-6px) scale(1.01);border-color:var(--card-color);box-shadow:0 24px 48px rgba(0,0,0,.08),0 0 0 1px var(--card-color);}
 .area-card:hover::before{opacity:1}
-.card-adc{--card-color:rgba(235,97,0,0.5);--card-rgb:235,97,0;--card-gradient:linear-gradient(135deg,rgba(235,97,0,0.06) 0%,transparent 60%);border:2px solid rgba(235,97,0,0.55) !important;box-shadow:0 6px 32px rgba(235,97,0,0.18),0 0 0 4px rgba(235,97,0,0.07) !important;}
+.card-adc{--card-color:rgba(235,97,0,0.5);--card-rgb:235,97,0;--card-gradient:linear-gradient(135deg,rgba(235,97,0,0.08) 0%,transparent 60%);border:2px solid rgba(235,97,0,0.55) !important;box-shadow:0 6px 32px rgba(235,97,0,0.18),0 0 0 4px rgba(235,97,0,0.07) !important;}
 .card-soporte{--card-color:rgba(74,222,128,0.5);--card-rgb:74,222,128;--card-gradient:linear-gradient(135deg,rgba(74,222,128,0.06) 0%,transparent 60%);}
-.card-interurbanas{--card-color:rgba(251,146,60,0.5);--card-rgb:251,146,60;--card-gradient:linear-gradient(135deg,rgba(251,146,60,0.06) 0%,transparent 60%);}
+.card-interurbanas{--card-color:rgba(16,168,199,0.5);--card-rgb:16,168,199;--card-gradient:linear-gradient(135deg,rgba(16,168,199,0.08) 0%,transparent 60%);border:2px solid rgba(16,168,199,0.45) !important;box-shadow:0 6px 32px rgba(16,168,199,0.15),0 0 0 4px rgba(16,168,199,0.06) !important;}
 .card-electricos{--card-color:rgba(250,204,21,0.5);--card-rgb:250,204,21;--card-gradient:linear-gradient(135deg,rgba(250,204,21,0.06) 0%,transparent 60%);}
 .card-retiros{--card-color:rgba(192,132,252,0.5);--card-rgb:192,132,252;--card-gradient:linear-gradient(135deg,rgba(192,132,252,0.06) 0%,transparent 60%);}
 .card-movilizacion{--card-color:rgba(20,184,166,0.5);--card-rgb:20,184,166;--card-gradient:linear-gradient(135deg,rgba(20,184,166,0.06) 0%,transparent 60%);}
-.card-analitica{--card-color:rgba(99,102,241,0.5);--card-rgb:99,102,241;--card-gradient:linear-gradient(135deg,rgba(99,102,241,0.06) 0%,transparent 60%);}
+.card-analitica{--card-color:rgba(14,66,156,0.5);--card-rgb:14,66,156;--card-gradient:linear-gradient(135deg,rgba(14,66,156,0.08) 0%,transparent 60%);border:2px solid rgba(14,66,156,0.45) !important;box-shadow:0 6px 32px rgba(14,66,156,0.15),0 0 0 4px rgba(14,66,156,0.06) !important;}
 .card-glow{position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,var(--card-color) 0%,transparent 70%);opacity:.15;transition:opacity .3s;filter:blur(20px);}
 .area-card:hover .card-glow{opacity:.35}
 .card-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:20px;border:1px solid currentColor;}
@@ -124,13 +124,108 @@ footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid r
 
   <div class="stats-bar animate d4">
     <div class="stat-item"><div class="stat-val">7</div><div class="stat-lbl">&Aacute;reas operativas</div></div>
-    <div class="stat-item"><div class="stat-val">2</div><div class="stat-lbl">En producci&oacute;n</div></div>
+    <div class="stat-item"><div class="stat-val">3</div><div class="stat-lbl">En producci&oacute;n</div></div>
     <div class="stat-item"><div class="stat-val blue">ADC</div><div class="stat-lbl">Activo ahora</div></div>
   </div>
 
   <p class="areas-title animate d5">&mdash; Seleccionar &aacute;rea &mdash;</p>
 
   <div class="areas-grid">
+
+    <!-- ══ EN PRODUCCIÓN ══ -->
+    <a href="./adc.html" class="area-card card-adc animate d5">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-live"><div class="badge-dot"></div>En producci&oacute;n</div>
+      <span class="card-icon">&#128268;</span>
+      <div class="card-name">ADC</div>
+      <div class="card-desc">Red pasiva &middot; Planta externa &middot; Fibra &oacute;ptica. Monitoreo de trabajos, incidencias, cajas reincidentes y migraciones.</div>
+      <div class="card-cta"><span class="cta-text">Abrir dashboard</span><div class="cta-arrow">&#8594;</div></div>
+    </a>
+
+    <a href="./analitica.html" class="area-card card-analitica animate d6">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-live"><div class="badge-dot"></div>En producci&oacute;n</div>
+      <span class="card-icon">&#128200;</span>
+      <div class="card-name">Anal&iacute;tica</div>
+      <div class="card-desc">Dashboard nacional con an&aacute;lisis de productividad, comparativos entre sucursales, tendencias y reportes ejecutivos a nivel pa&iacute;s.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:#0E429C">14</div><div class="cs-lbl">Sucursales</div></div>
+        <div class="cs"><div class="cs-val" style="color:#0E429C">IA</div><div class="cs-lbl">Agente</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">Abrir anal&iacute;tica</span><div class="cta-arrow">&#8594;</div></div>
+    </a>
+
+    <a href="./interurbanas.html" class="area-card card-interurbanas animate d7">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-live"><div class="badge-dot"></div>En producci&oacute;n</div>
+      <span class="card-icon">&#128739;</span>
+      <div class="card-name">Interurbanas</div>
+      <div class="card-desc">Control de rutas interurbanas, cortes de fibra, productividad TTG y estado de infraestructura en carretera.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:#10A8C7">41</div><div class="cs-lbl">Rutas FO</div></div>
+        <div class="cs"><div class="cs-val" style="color:#10A8C7">12</div><div class="cs-lbl">Cuadrillas</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">Abrir dashboard</span><div class="cta-arrow">&#8594;</div></div>
+    </a>
+
+    <!-- ══ PRÓXIMAMENTE ══ -->
+    <div class="area-card card-soporte coming animate d7" style="animation-delay:.52s">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#128296;</span>
+      <div class="card-name">Soporte</div>
+      <div class="card-desc">Gesti&oacute;n de tickets de soporte t&eacute;cnico, tiempos de respuesta, SLA y seguimiento de incidencias al cliente.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(74,222,128,0.4)">&mdash;</div><div class="cs-lbl">Tickets</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(74,222,128,0.4)">&mdash;</div><div class="cs-lbl">SLA activos</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <div class="area-card card-electricos coming animate d8">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#9889;</span>
+      <div class="card-name">El&eacute;ctricos</div>
+      <div class="card-desc">Supervisi&oacute;n de trabajos el&eacute;ctricos, instalaciones, mantenimientos preventivos y correctivos de infraestructura energ&eacute;tica.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(250,204,21,0.4)">&mdash;</div><div class="cs-lbl">&Oacute;rdenes</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(250,204,21,0.4)">&mdash;</div><div class="cs-lbl">Pendientes</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <div class="area-card card-retiros coming animate d8" style="animation-delay:.62s">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#128230;</span>
+      <div class="card-name">Retiros</div>
+      <div class="card-desc">Control de retiro de equipos, gesti&oacute;n de devoluciones, inventario de material recuperado y trazabilidad de activos.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(192,132,252,0.4)">&mdash;</div><div class="cs-lbl">Retiros</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(192,132,252,0.4)">&mdash;</div><div class="cs-lbl">Equipos</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <div class="area-card card-movilizacion coming animate d9">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#128652;</span>
+      <div class="card-name">Movilizaci&oacute;n</div>
+      <div class="card-desc">Control de rutas, desplazamientos de cuadrillas, registro de movilizaciones y gesti&oacute;n de flota vehicular en campo.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(20,184,166,0.4)">&mdash;</div><div class="cs-lbl">Rutas</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(20,184,166,0.4)">&mdash;</div><div class="cs-lbl">Veh&iacute;culos</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+  </div><div class="areas-grid">
 
     <!-- ══ EN PRODUCCIÓN ══ -->
     <a href="./adc.html" class="area-card card-adc animate d5">
@@ -176,19 +271,18 @@ footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid r
       <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
     </div>
 
-    <div class="area-card card-interurbanas coming animate d7" style="animation-delay:.52s">
+    <a href="./interurbanas.html" class="area-card card-interurbanas animate d7" style="animation-delay:.52s">
       <div class="card-glow"></div>
-      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <div class="card-badge badge-live"><div class="badge-dot"></div>En producci&oacute;n</div>
       <span class="card-icon">&#128739;</span>
       <div class="card-name">Interurbanas</div>
-      <div class="card-desc">Control de rutas interurbanas, cambio de poster&iacute;a, inspecciones regulatorias y obras de infraestructura en carretera.</div>
+      <div class="card-desc">Control de rutas interurbanas, cortes de fibra, productividad TTG y estado de infraestructura en carretera.</div>
       <div class="card-stats">
-        <div class="cs"><div class="cs-val" style="color:rgba(251,146,60,0.4)">&mdash;</div><div class="cs-lbl">Rutas</div></div>
-        <div class="cs"><div class="cs-val" style="color:rgba(251,146,60,0.4)">&mdash;</div><div class="cs-lbl">Obras activas</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(251,146,60,0.9)">41</div><div class="cs-lbl">Rutas FO</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(251,146,60,0.9)">12</div><div class="cs-lbl">Cuadrillas</div></div>
       </div>
-      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
-      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
-    </div>
+      <div class="card-cta"><span class="cta-text">Abrir dashboard</span><div class="cta-arrow">&#8594;</div></div>
+    </a>
 
     <div class="area-card card-electricos coming animate d8">
       <div class="card-glow"></div>
