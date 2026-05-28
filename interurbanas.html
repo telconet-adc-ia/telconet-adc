@@ -56,6 +56,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .chip{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--txt2);cursor:pointer;transition:.12s}
 .chip:hover{border-color:var(--border2);color:var(--txt)}
 .chip.active{border-color:var(--tn-blue);background:rgba(14,66,156,.10);color:var(--tn-blue)}
+select#sel-mes:focus{border-color:var(--tn-blue)}
+select#sel-mes option{background:#fff;color:var(--txt)}
 
 /* ── MAIN ── */
 .main{flex:1;overflow-y:auto;padding:20px}
@@ -142,13 +144,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 
     <div class="filter-section">
       <span class="filter-label">Mes</span>
-      <div class="filter-chips" id="chips-mes">
-        <div class="chip active" onclick="setMes('all',this)">Todos</div>
-        <div class="chip" onclick="setMes(1,this)">Ene</div>
-        <div class="chip" onclick="setMes(2,this)">Feb</div>
-        <div class="chip" onclick="setMes(3,this)">Mar</div>
-        <div class="chip" onclick="setMes(4,this)">Abr</div>
-      </div>
+      <select id="sel-mes" onchange="setMesSelect(this)" style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;outline:none">
+        <option value="all">Todos los meses</option>
+      </select>
     </div>
 
     <div class="filter-section">
@@ -304,11 +302,33 @@ var mapInst=null, mapInit=false;
 var loaded={tareas:false,cortes:false,ttg:false,rutas:false};
 
 // ── FILTROS ─────────────────────────────────────────────────
-function setMes(v,el){
-  fMes=v;
-  document.querySelectorAll('#chips-mes .chip').forEach(function(c){c.classList.remove('active')});
-  el.classList.add('active');
+function setMesSelect(sel){
+  fMes = sel.value === 'all' ? 'all' : parseInt(sel.value);
   render();
+}
+
+// Construir opciones del select desde los datos reales
+function buildMesSelect(){
+  var MN_FULL={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+               7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  var mesesSet={};
+  allTareas.forEach(function(r){ if(r.mes) mesesSet[r.mes]=1; });
+  allCortes.forEach(function(r){ if(r.mes) mesesSet[r.mes]=1; });
+  allTTG.forEach(function(r){    if(r.mes) mesesSet[r.mes]=1; });
+  var meses=Object.keys(mesesSet).map(Number).sort(function(a,b){return a-b});
+  var sel=document.getElementById('sel-mes');
+  var curVal=sel.value;
+  sel.innerHTML='<option value="all">Todos los meses</option>';
+  meses.forEach(function(m){
+    var opt=document.createElement('option');
+    opt.value=m;
+    opt.textContent=MN_FULL[m]||('Mes '+m);
+    sel.appendChild(opt);
+  });
+  // Restaurar selección si sigue siendo válida
+  if(curVal&&sel.querySelector('option[value="'+curVal+'"]')){
+    sel.value=curVal;
+  }
 }
 function setCuad(v,el){
   fCuad=v;
@@ -401,7 +421,8 @@ function renderTareas(){
   mkChart('ch-area',{type:'doughnut',data:{labels:areaL,datasets:[{data:areaN,backgroundColor:areaL.map(function(a){return AREA_COLORS[a]||'#8B949E'}),borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#8B949E',font:{size:10},boxWidth:10}},tooltip:{backgroundColor:'#161B22',titleColor:'#E6EDF3',bodyColor:'#8B949E'}}}});
 
   // Tendencia mensual
-  var meses=[1,2,3,4];
+  var mesesDisp=[...new Set(allTareas.map(function(r){return r.mes}))].filter(Boolean).sort(function(a,b){return a-b});
+  var meses=mesesDisp.length?mesesDisp:[1,2,3,4,5];
   var dsT=cuads.filter(function(c){return rows.some(function(r){return r.cuadrilla===c})}).map(function(c){
     return{label:c,data:meses.map(function(m){return rows.filter(function(r){return r.cuadrilla===c&&r.mes===m}).length}),borderColor:CUAD_COLORS[c],backgroundColor:'transparent',borderWidth:2,pointRadius:3,tension:.3};
   });
@@ -488,7 +509,8 @@ function renderTTG(){
   mkChart('ch-ttg-avg',{type:'bar',data:{labels:cuadsAct,datasets:[{data:avgs,backgroundColor:barColors,borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#161B22',titleColor:'#E6EDF3',bodyColor:'#8B949E',callbacks:{label:function(c){return ' '+c.raw+' pts/día'}}}},scales:{x:{grid:{display:false},ticks:TX,border:{display:false}},y:{grid:{color:GRID},ticks:TY,border:{display:false},min:0}}}});
 
   // Tendencia mensual por cuadrilla
-  var meses=[1,2,3,4];
+  var mesesTTG=[...new Set(allTTG.map(function(r){return r.mes}))].filter(Boolean).sort(function(a,b){return a-b});
+  var meses=mesesTTG.length?mesesTTG:[1,2,3,4,5];
   var dsTTG=cuadsAct.map(function(c){
     return{label:c,data:meses.map(function(m){
       var v=rows.filter(function(r){return r.cuadrilla===c&&r.mes===m}).map(function(r){return r.valor});
@@ -573,7 +595,7 @@ function init(){
     if(pending===0){
       document.getElementById('loading').style.display='none';
       document.getElementById('sec-tareas').classList.add('active');
-      buildCuadChips();
+      buildMesYCuadFiltros();
       updateCounts();
       render();
       document.getElementById('sdot').className='sync-dot ok';
@@ -609,6 +631,11 @@ function init(){
     }
     done();
   });
+}
+
+function buildMesYCuadFiltros(){
+  buildMesSelect();
+  buildCuadChips();
 }
 
 function buildCuadChips(){
