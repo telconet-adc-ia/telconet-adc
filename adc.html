@@ -1010,7 +1010,7 @@ function buildChartCuad(rFilt){
 
 // ── MODAL DETALLE CUADRILLA ──────────────────────────────────
 function abrirDetalleCuad(cuad, rFilt){
-  cerrarModal();
+  cerrarModalCuad();
   const trabajos=rFilt.filter(r=>
     (r['CUADRILLA']||'').trim()===cuad &&
     (r['ESTADO']||'').trim().toUpperCase()==='REALIZADO'
@@ -1087,19 +1087,19 @@ function abrirDetalleCuad(cuad, rFilt){
   document.querySelector('.content-area').style.pointerEvents='none';
 
   // Cerrar con botón
-  document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModal);
+  document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModalCuad);
 
   // Cerrar al hacer clic fuera del panel
   overlay.addEventListener('click', function(e){
-    if(!document.getElementById('modal-cuad-inner').contains(e.target)) cerrarModal();
+    if(!document.getElementById('modal-cuad-inner').contains(e.target)) cerrarModalCuad();
   });
 
   // Cerrar con Escape
-  document._modalEsc = function(e){ if(e.key==='Escape') cerrarModal(); };
+  document._modalEsc = function(e){ if(e.key==='Escape') cerrarModalCuad(); };
   document.addEventListener('keydown', document._modalEsc);
 }
 
-function cerrarModal(){
+function cerrarModalCuad(){
   const m=document.getElementById('modal-cuad');
   if(m) m.remove();
   const ca=document.querySelector('.content-area');
