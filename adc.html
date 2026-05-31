@@ -970,7 +970,7 @@ function grp(arr,campo,n){
 
 function buildChartCuad(rFilt){
   if(chartCuad){chartCuad.destroy();chartCuad=null;}
-  document.getElementById('wrap-cuad').innerHTML='<canvas id="ch-cuad"></canvas>';
+  document.getElementById('wrap-cuad').innerHTML='<canvas id="ch-cuad" style="cursor:pointer"></canvas>';
   const d=grp(rFilt.filter(r=>(r['ESTADO']||'').trim().toUpperCase()==='REALIZADO'),'CUADRILLA',8)
     .filter(([k])=>k&&k.trim()!=='');
   if(!d.length){document.getElementById('wrap-cuad').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px 0;text-align:center">Sin trabajos realizados para el periodo</p>';return;}
@@ -984,9 +984,15 @@ function buildChartCuad(rFilt){
     },
     options:{
       responsive:true,maintainAspectRatio:false,
+      onClick:(evt,els)=>{
+        if(!els.length)return;
+        const idx=els[0].index;
+        const cuadNombre=d[idx][0];
+        abrirDetalleCuad(cuadNombre,rFilt);
+      },
       plugins:{
         legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y+' trabajos'}},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y+' trabajos · clic para ver detalle'}},
         datalabels:{
           anchor:'end',align:'end',offset:2,
           color:'#003087',font:{size:11,weight:'bold'},
@@ -1000,6 +1006,94 @@ function buildChartCuad(rFilt){
       layout:{padding:{top:20}}
     }
   });
+}
+
+// ── MODAL DETALLE CUADRILLA ──────────────────────────────────
+function abrirDetalleCuad(cuad, rFilt){
+  const trabajos=rFilt.filter(r=>
+    (r['CUADRILLA']||'').trim()===cuad &&
+    (r['ESTADO']||'').trim().toUpperCase()==='REALIZADO'
+  );
+  const total=trabajos.length;
+  // Agrupar por tipo
+  const porTipo={};
+  trabajos.forEach(r=>{
+    const t=(r['TIPO TAREA']||r['TIPO DE TAREA']||'Sin tipo').trim();
+    porTipo[t]=(porTipo[t]||0)+1;
+  });
+  const tipoRows=Object.entries(porTipo).sort((a,b)=>b[1]-a[1])
+    .map(([t,n])=>`<tr><td style="padding:6px 10px;color:var(--text)">${t}</td><td style="padding:6px 10px;text-align:center;font-weight:600;color:var(--blue)">${n}</td><td style="padding:6px 10px;text-align:center;color:var(--text3)">${Math.round(n/total*100)}%</td></tr>`).join('');
+
+  // Últimos 10 trabajos
+  const ultRows=trabajos.slice(-10).reverse().map(r=>`<tr>
+    <td style="padding:5px 10px;font-size:11px;color:var(--text3)">${r['FECHA']||r['MES']||'—'}</td>
+    <td style="padding:5px 10px;font-size:11px;color:var(--text)">${(r['NODO']||'—').slice(0,25)}</td>
+    <td style="padding:5px 10px;font-size:11px;color:var(--text2)">${(r['TIPO TAREA']||r['TIPO DE TAREA']||'—').slice(0,30)}</td>
+    <td style="padding:5px 10px;font-size:11px;color:var(--text2)">${(r['PROCEDENCIA']||'—').slice(0,20)}</td>
+  </tr>`).join('');
+
+  const html=`
+  <div id="modal-cuad" onclick="if(event.target===this)cerrarModal()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+      <!-- Header -->
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text)">&#128202; ${cuad}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">${total} trabajos realizados en el periodo</div>
+        </div>
+        <button onclick="cerrarModal()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">&#10005; Cerrar</button>
+      </div>
+      <!-- Contenido con scroll -->
+      <div style="overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px">
+        <!-- KPIs rápidos -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:var(--blue)">${total}</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Total realizados</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:#0e9f6e">${Object.keys(porTipo).length}</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Tipos de tarea</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:#f59e0b">${new Set(trabajos.map(r=>r['NODO']).filter(Boolean)).size}</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Nodos atendidos</div>
+          </div>
+        </div>
+        <!-- Por tipo de tarea -->
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Desglose por tipo de tarea</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)">Tipo</th>
+              <th style="padding:6px 10px;text-align:center;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)">Cantidad</th>
+              <th style="padding:6px 10px;text-align:center;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)">%</th>
+            </tr></thead>
+            <tbody>${tipoRows}</tbody>
+          </table>
+        </div>
+        <!-- Últimos trabajos -->
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Últimos 10 trabajos</div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="padding:5px 10px;text-align:left;color:var(--text3);font-weight:600">Fecha</th>
+              <th style="padding:5px 10px;text-align:left;color:var(--text3);font-weight:600">Nodo</th>
+              <th style="padding:5px 10px;text-align:left;color:var(--text3);font-weight:600">Tipo tarea</th>
+              <th style="padding:5px 10px;text-align:left;color:var(--text3);font-weight:600">Procedencia</th>
+            </tr></thead>
+            <tbody>${ultRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+
+function cerrarModal(){
+  const m=document.getElementById('modal-cuad');
+  if(m)m.remove();
 }
 
 function buildChartTipo(rFilt){
