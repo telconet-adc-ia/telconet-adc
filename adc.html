@@ -1084,6 +1084,7 @@ function abrirDetalleCuad(cuad, rFilt){
     </div>`;
 
   document.body.appendChild(overlay);
+  document.querySelector('.content-area').style.pointerEvents='none';
 
   // Cerrar con botón
   document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModal);
@@ -1101,6 +1102,8 @@ function abrirDetalleCuad(cuad, rFilt){
 function cerrarModal(){
   const m=document.getElementById('modal-cuad');
   if(m) m.remove();
+  const ca=document.querySelector('.content-area');
+  if(ca) ca.style.pointerEvents='';
   if(document._modalEsc){
     document.removeEventListener('keydown', document._modalEsc);
     delete document._modalEsc;
