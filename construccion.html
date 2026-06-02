@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
 :root{
   --tn-blue:#0E429C;--tn-orange:#EB6100;--tn-cyan:#10A8C7;
@@ -102,7 +103,7 @@ select.f-select:focus{border-color:var(--tn-blue)}
 
     <div class="filter-section">
       <span class="filter-label">A&ntilde;o</span>
-      <select class="f-select" id="sel-anio" onchange="render()">
+      <select class="f-select" id="sel-anio" onchange="updateCiudades();render()">
         <option value="all">Todos</option>
         <option value="2025">2025</option>
         <option value="2026">2026</option>
@@ -111,7 +112,7 @@ select.f-select:focus{border-color:var(--tn-blue)}
 
     <div class="filter-section">
       <span class="filter-label">Mes</span>
-      <select class="f-select" id="sel-mes" onchange="render()">
+      <select class="f-select" id="sel-mes" onchange="updateCiudades();render()">
         <option value="all">Todos los meses</option>
       </select>
     </div>
@@ -234,7 +235,13 @@ function filt(){
 function mkChart(id,cfg){
   if(charts[id])charts[id].destroy();
   var ctx=document.getElementById(id);
-  if(ctx)charts[id]=new Chart(ctx,cfg);
+  if(!ctx)return;
+  if(id==='ch-tipo'){
+    cfg.plugins=cfg.plugins||[];
+    charts[id]=new Chart(ctx,{...cfg,plugins:[ChartDataLabels]});
+  } else {
+    charts[id]=new Chart(ctx,cfg);
+  }
 }
 
 function render(){
@@ -260,16 +267,44 @@ function render(){
   // Mapa
   renderMapa(rows);
 
-  // Por ciudad
-  var ciudades=Object.keys(CIUDAD_COLORS).filter(function(c){return rows.some(function(r){return r.ciudad===c})});
-  var ciudN=ciudades.map(function(c){return rows.filter(function(r){return r.ciudad===c}).length});
-  mkChart('ch-ciudad',{type:'bar',data:{labels:ciudades,datasets:[{data:ciudN,backgroundColor:ciudades.map(function(c){return (CIUDAD_COLORS[c]||'#888')+'CC'}),borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TT},scales:{x:{grid:{display:false},ticks:TX,border:{display:false}},y:{grid:{color:GRID},ticks:TY,border:{display:false}}}}});
+  // Por ciudad — contar registros (cajas individuales)
+  var ciudadesAll=[...new Set(rows.map(function(r){return r.ciudad}))].filter(Boolean);
+  var ciudN=ciudadesAll.map(function(c){return rows.filter(function(r){return r.ciudad===c}).length});
+  // Ordenar de mayor a menor
+  var ciudSorted=ciudadesAll.map(function(c,i){return[c,ciudN[i]]}).sort(function(a,b){return b[1]-a[1]});
+  mkChart('ch-ciudad',{type:'bar',data:{
+    labels:ciudSorted.map(function(x){return x[0]}),
+    datasets:[{
+      data:ciudSorted.map(function(x){return x[1]}),
+      backgroundColor:ciudSorted.map(function(x){return (CIUDAD_COLORS[x[0]]||'#888')+'CC'}),
+      borderRadius:4,borderSkipped:false
+    }]
+  },options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return ' '+c.raw+' cajas'}}}},
+    scales:{x:{grid:{display:false},ticks:TX,border:{display:false}},y:{grid:{color:GRID},ticks:TY,border:{display:false}}}}});
 
-  // Por tipo (dona)
-  var tipos=Object.keys(TIPO_COLORS);
-  var tipoN=tipos.map(function(t){return rows.filter(function(r){return r.tipo===t}).length}).filter(function(v,i){return tipos[i]&&rows.some(function(r){return r.tipo===tipos[i]})});
-  var tiposAct=tipos.filter(function(t){return rows.some(function(r){return r.tipo===t})});
-  mkChart('ch-tipo',{type:'doughnut',data:{labels:tiposAct.map(function(t){return t.length>20?t.slice(0,18)+'…':t}),datasets:[{data:tiposAct.map(function(t){return rows.filter(function(r){return r.tipo===t}).length}),backgroundColor:tiposAct.map(function(t){return TIPO_COLORS[t]||'#888'}),borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{color:'#3A5080',font:{size:10},boxWidth:10}},tooltip:TT}}});
+  // Por tipo (dona) — con labels visibles siempre
+  var tiposAct=Object.keys(TIPO_COLORS).filter(function(t){return rows.some(function(r){return r.tipo===t})});
+  var tipoVals=tiposAct.map(function(t){return rows.filter(function(r){return r.tipo===t}).length});
+  var totalTipo=tipoVals.reduce(function(a,b){return a+b},0);
+  mkChart('ch-tipo',{type:'doughnut',data:{
+    labels:tiposAct.map(function(t){return t==='NUEVA COBERTURA'?'NUEVA':t==='PARA ELIMINAR SATURACION'?'ELIM. SAT.':t}),
+    datasets:[{
+      data:tipoVals,
+      backgroundColor:tiposAct.map(function(t){return TIPO_COLORS[t]||'#888'}),
+      borderWidth:2,borderColor:'#fff',hoverOffset:6
+    }]
+  },options:{responsive:true,maintainAspectRatio:false,cutout:'52%',
+    plugins:{
+      legend:{position:'right',labels:{color:'#3A5080',font:{size:10},boxWidth:10,padding:8}},
+      tooltip:{...TT,callbacks:{label:function(c){return ' '+c.raw+' cajas ('+Math.round(c.raw/totalTipo*100)+'%)'}}},
+      datalabels:{
+        display:function(ctx){return ctx.dataset.data[ctx.dataIndex]/totalTipo>=0.05;},
+        color:'#fff',font:{size:11,weight:'bold'},
+        formatter:function(v){return v;}
+      }
+    }
+  }});
 
   // Tendencia mensual
   var mesesOrd=MESES_ORDER.filter(function(m){return rows.some(function(r){return r.mes===m})});
@@ -330,18 +365,37 @@ function renderMapa(rows){
 }
 
 function buildSelects(){
-  // Meses
+  // Meses — solo los que existen en los datos
   var meses=MESES_ORDER.filter(function(m){return allData.some(function(r){return r.mes===m})});
   var selM=document.getElementById('sel-mes');
+  selM.innerHTML='<option value="all">Todos los meses</option>';
   meses.forEach(function(m){
     var o=document.createElement('option');o.value=m;o.textContent=m.charAt(0)+m.slice(1).toLowerCase();selM.appendChild(o);
   });
-  // Ciudades
-  var ciuds=[...new Set(allData.map(function(r){return r.ciudad}))].filter(Boolean).sort();
-  var selC=document.getElementById('sel-ciudad');
-  ciuds.forEach(function(c){
-    var o=document.createElement('option');o.value=c;o.textContent=c.charAt(0)+c.slice(1).toLowerCase();selC.appendChild(o);
+  updateCiudades();
+}
+
+function updateCiudades(){
+  // Ciudades — solo las que existen en el filtro actual de año/mes
+  var anio=document.getElementById('sel-anio').value;
+  var mes=document.getElementById('sel-mes').value;
+  var base=allData.filter(function(r){
+    return (anio==='all'||String(r.anio)===anio)&&
+           (mes==='all'||r.mes===mes);
   });
+  var ciuds=[...new Set(base.map(function(r){return r.ciudad}))].filter(Boolean).sort();
+  var selC=document.getElementById('sel-ciudad');
+  var curVal=selC.value;
+  selC.innerHTML='<option value="all">Todas</option>';
+  ciuds.forEach(function(c){
+    var o=document.createElement('option');
+    o.value=c;
+    o.textContent=c.charAt(0)+c.slice(1).toLowerCase();
+    selC.appendChild(o);
+  });
+  // Restaurar selección si sigue disponible
+  if(selC.querySelector('option[value="'+curVal+'"]')) selC.value=curVal;
+  else selC.value='all';
 }
 
 function init(){
