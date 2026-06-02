@@ -272,7 +272,7 @@ function render(){
   var mesLabel=mes==='all'?'Todos los meses':(mes.charAt(0)+mes.slice(1).toLowerCase());
   var anioLabel=anio==='all'?'':' '+anio;
   document.getElementById('resumen-periodo').textContent=mesLabel+anioLabel;
-  document.getElementById('resumen-num').textContent=sumCajas.toLocaleString();
+  document.getElementById('resumen-num').textContent=rows.length.toLocaleString();
   resBox.style.display='block';
 
   // Mapa
