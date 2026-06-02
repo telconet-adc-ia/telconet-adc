@@ -128,12 +128,19 @@ select.f-select:focus{border-color:var(--tn-blue)}
 
     <div class="filter-section">
       <span class="filter-label">Tipo</span>
-      <div class="chip-wrap" id="chips-tipo">
-        <div class="chip active" onclick="setTipo('all',this)">Todos</div>
-        <div class="chip" onclick="setTipo('NUEVA COBERTURA',this)">Nueva</div>
-        <div class="chip" onclick="setTipo('SATURACION',this)">Saturaci&oacute;n</div>
-        <div class="chip" onclick="setTipo('REGENERACION',this)">Regeneraci&oacute;n</div>
-        <div class="chip" onclick="setTipo('PARA ELIMINAR SATURACION',this)">Elim. Sat.</div>
+      <select class="f-select" id="sel-tipo" onchange="updateCiudades();render()">
+        <option value="all">Todos los tipos</option>
+      </select>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <!-- RESUMEN TOTAL CAJAS -->
+    <div class="filter-section">
+      <div id="resumen-cajas" style="background:rgba(14,66,156,.06);border:1px solid rgba(14,66,156,.15);border-radius:10px;padding:12px;text-align:center;display:none">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:6px" id="resumen-periodo">—</div>
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--tn-blue);line-height:1" id="resumen-num">—</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:3px">cajas construidas</div>
       </div>
     </div>
   </div>
@@ -217,18 +224,18 @@ var TX={color:'#6B7FA8',font:{size:10},maxRotation:35,minRotation:20};
 var TY={color:'#6B7FA8',font:{size:10}};
 var TT={backgroundColor:'#fff',titleColor:'#0D1F3C',bodyColor:'#3A5080',borderColor:'#D0D9EC',borderWidth:1};
 
-function setTipo(v,el){
-  fTipo=v;
-  document.querySelectorAll('#chips-tipo .chip').forEach(function(c){c.classList.remove('active')});
-  el.classList.add('active');render();
-}
+
 
 function filt(){
+  var anio=document.getElementById('sel-anio').value;
+  var mes=document.getElementById('sel-mes').value;
+  var ciud=document.getElementById('sel-ciudad').value;
+  var tipo=document.getElementById('sel-tipo').value;
   return allData.filter(function(r){
-    return (fAnio==='all'||String(r.anio)===fAnio)&&
-           (fMes==='all'||r.mes===fMes)&&
-           (fCiud==='all'||r.ciudad===fCiud)&&
-           (fTipo==='all'||r.tipo===fTipo);
+    return (anio==='all'||String(r.anio)===anio)&&
+           (mes==='all'||r.mes===mes)&&
+           (ciud==='all'||r.ciudad===ciud)&&
+           (tipo==='all'||r.tipo===tipo);
   });
 }
 
@@ -236,8 +243,7 @@ function mkChart(id,cfg){
   if(charts[id])charts[id].destroy();
   var ctx=document.getElementById(id);
   if(!ctx)return;
-  if(id==='ch-tipo'){
-    cfg.plugins=cfg.plugins||[];
+  if(id==='ch-tipo'||id==='ch-ciudad'){
     charts[id]=new Chart(ctx,{...cfg,plugins:[ChartDataLabels]});
   } else {
     charts[id]=new Chart(ctx,cfg);
@@ -245,10 +251,9 @@ function mkChart(id,cfg){
 }
 
 function render(){
-  fAnio=document.getElementById('sel-anio').value;
-  fMes=document.getElementById('sel-mes').value;
-  fCiud=document.getElementById('sel-ciudad').value;
   var rows=filt();
+  var anio=document.getElementById('sel-anio').value;
+  var mes=document.getElementById('sel-mes').value;
 
   // KPIs — usar filas resumen (totalCajas > 0)
   var res=rows.filter(function(r){return r.totalCajas>0});
@@ -258,11 +263,19 @@ function render(){
   var sumVacias=res.reduce(function(s,r){return s+r.cajasVacias},0);
   var sumSat=res.reduce(function(s,r){return s+r.cajasSat},0);
 
-  document.getElementById('kpi-cajas').textContent=sumCajas.toLocaleString();
+  document.getElementById('kpi-cajas').textContent=rows.length.toLocaleString();
   document.getElementById('kpi-clientes').textContent=sumCli.toLocaleString();
   document.getElementById('kpi-puertos').textContent=sumPuertos.toLocaleString();
   document.getElementById('kpi-vacias').textContent=sumVacias.toLocaleString();
   document.getElementById('kpi-saturadas').textContent=sumSat.toLocaleString();
+
+  // Resumen sidebar
+  var resBox=document.getElementById('resumen-cajas');
+  var mesLabel=mes==='all'?'Todos los meses':(mes.charAt(0)+mes.slice(1).toLowerCase());
+  var anioLabel=anio==='all'?'':' '+anio;
+  document.getElementById('resumen-periodo').textContent=mesLabel+anioLabel;
+  document.getElementById('resumen-num').textContent=rows.length.toLocaleString();
+  resBox.style.display='block';
 
   // Mapa
   renderMapa(rows);
@@ -365,7 +378,6 @@ function renderMapa(rows){
 }
 
 function buildSelects(){
-  // Meses — solo los que existen en los datos
   var meses=MESES_ORDER.filter(function(m){return allData.some(function(r){return r.mes===m})});
   var selM=document.getElementById('sel-mes');
   selM.innerHTML='<option value="all">Todos los meses</option>';
@@ -376,26 +388,36 @@ function buildSelects(){
 }
 
 function updateCiudades(){
-  // Ciudades — solo las que existen en el filtro actual de año/mes
   var anio=document.getElementById('sel-anio').value;
   var mes=document.getElementById('sel-mes').value;
   var base=allData.filter(function(r){
     return (anio==='all'||String(r.anio)===anio)&&
            (mes==='all'||r.mes===mes);
   });
+
+  // Ciudades dinámicas
   var ciuds=[...new Set(base.map(function(r){return r.ciudad}))].filter(Boolean).sort();
   var selC=document.getElementById('sel-ciudad');
-  var curVal=selC.value;
+  var curC=selC.value;
   selC.innerHTML='<option value="all">Todas</option>';
   ciuds.forEach(function(c){
     var o=document.createElement('option');
-    o.value=c;
-    o.textContent=c.charAt(0)+c.slice(1).toLowerCase();
-    selC.appendChild(o);
+    o.value=c;o.textContent=c.charAt(0)+c.slice(1).toLowerCase();selC.appendChild(o);
   });
-  // Restaurar selección si sigue disponible
-  if(selC.querySelector('option[value="'+curVal+'"]')) selC.value=curVal;
-  else selC.value='all';
+  if(selC.querySelector('option[value="'+curC+'"]'))selC.value=curC;else selC.value='all';
+
+  // Tipos dinámicos
+  var tipos=[...new Set(base.map(function(r){return r.tipo}))].filter(Boolean).sort();
+  var selT=document.getElementById('sel-tipo');
+  var curT=selT.value;
+  selT.innerHTML='<option value="all">Todos los tipos</option>';
+  tipos.forEach(function(t){
+    var o=document.createElement('option');
+    o.value=t;
+    var lbl=t==='NUEVA COBERTURA'?'Nueva cobertura':t==='PARA ELIMINAR SATURACION'?'Elim. saturación':t.charAt(0)+t.slice(1).toLowerCase();
+    o.textContent=lbl;selT.appendChild(o);
+  });
+  if(selT.querySelector('option[value="'+curT+'"]'))selT.value=curT;else selT.value='all';
 }
 
 function init(){
