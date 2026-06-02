@@ -61,6 +61,7 @@ header{padding:0 0 0;height:90px;display:flex;align-items:center;justify-content
 .card-electricos{--card-color:rgba(250,204,21,0.5);--card-rgb:250,204,21;--card-gradient:linear-gradient(135deg,rgba(250,204,21,0.06) 0%,transparent 60%);}
 .card-retiros{--card-color:rgba(192,132,252,0.5);--card-rgb:192,132,252;--card-gradient:linear-gradient(135deg,rgba(192,132,252,0.06) 0%,transparent 60%);}
 .card-movilizacion{--card-color:rgba(20,184,166,0.5);--card-rgb:20,184,166;--card-gradient:linear-gradient(135deg,rgba(20,184,166,0.06) 0%,transparent 60%);}
+.card-construccion{--card-color:rgba(234,88,12,0.5);--card-rgb:234,88,12;--card-gradient:linear-gradient(135deg,rgba(234,88,12,0.06) 0%,transparent 60%);}
 .card-analitica{--card-color:rgba(14,66,156,0.5);--card-rgb:14,66,156;--card-gradient:linear-gradient(135deg,rgba(14,66,156,0.08) 0%,transparent 60%);border:2px solid rgba(14,66,156,0.45) !important;box-shadow:0 6px 32px rgba(14,66,156,0.15),0 0 0 4px rgba(14,66,156,0.06) !important;}
 .card-glow{position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,var(--card-color) 0%,transparent 70%);opacity:.15;transition:opacity .3s;filter:blur(20px);}
 .area-card:hover .card-glow{opacity:.35}
@@ -118,12 +119,12 @@ footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid r
   </header>
 
   <div class="hero">
-    <h1 class="hero-title animate d3">Dashboard T&eacute;cnicas <span class="hl">Sucursales</span></h1>
+    <h1 class="hero-title animate d3">Dashboard T&eacute;cnica Sucursal <span class="hl">Cuenca</span></h1>
     <p class="hero-sub animate d4">Plataforma centralizada de monitoreo y an&aacute;lisis operativo. Selecciona el &aacute;rea que deseas gestionar.</p>
   </div>
 
   <div class="stats-bar animate d4">
-    <div class="stat-item"><div class="stat-val">7</div><div class="stat-lbl">&Aacute;reas operativas</div></div>
+    <div class="stat-item"><div class="stat-val">8</div><div class="stat-lbl">&Aacute;reas operativas</div></div>
     <div class="stat-item"><div class="stat-val">3</div><div class="stat-lbl">En producci&oacute;n</div></div>
     <div class="stat-item"><div class="stat-val blue" style="font-size:13px;letter-spacing:.5px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 2s ease-in-out infinite;flex-shrink:0"></span>IA Activa</div><div class="stat-lbl">Asistente operativo</div></div>
   </div>
@@ -137,6 +138,101 @@ footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid r
   <p class="areas-title animate d5">&mdash; Seleccionar &aacute;rea &mdash;</p>
 
   <div class="areas-grid">
+
+    <!-- ══ EN PRODUCCIÓN ══ -->
+    <a href="./interurbanas.html" class="area-card card-interurbanas animate d5">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-live"><div class="badge-dot"></div>En producci&oacute;n</div>
+      <span class="card-icon">&#128739;</span>
+      <div class="card-name">Interurbanas</div>
+      <div class="card-desc">Control de rutas interurbanas, cortes de fibra, productividad TTG y estado de infraestructura en carretera.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:#10A8C7">41</div><div class="cs-lbl">Rutas FO</div></div>
+        <div class="cs"><div class="cs-val" style="color:#10A8C7">12</div><div class="cs-lbl">Cuadrillas</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">Abrir dashboard</span><div class="cta-arrow">&#8594;</div></div>
+    </a>
+
+    <div class="area-card card-soporte coming animate d6">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#128296;</span>
+      <div class="card-name">Soporte</div>
+      <div class="card-desc">Gesti&oacute;n de tickets de soporte t&eacute;cnico, tiempos de respuesta, SLA y seguimiento de incidencias al cliente.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(74,222,128,0.4)">&mdash;</div><div class="cs-lbl">Tickets</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(74,222,128,0.4)">&mdash;</div><div class="cs-lbl">SLA activos</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <a href="./adc.html" class="area-card card-adc animate d7">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-live"><div class="badge-dot"></div>En producci&oacute;n</div>
+      <span class="card-icon">&#128268;</span>
+      <div class="card-name">ADC</div>
+      <div class="card-desc">Red pasiva &middot; Planta externa &middot; Fibra &oacute;ptica. Monitoreo de trabajos, incidencias, cajas reincidentes y migraciones.</div>
+      <div class="card-cta"><span class="cta-text">Abrir dashboard</span><div class="cta-arrow">&#8594;</div></div>
+    </a>
+
+    <div class="area-card card-construccion coming animate d7" style="animation-delay:.48s">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#127959;</span>
+      <div class="card-name">Construcci&oacute;n</div>
+      <div class="card-desc">Seguimiento de proyectos de construcci&oacute;n de infraestructura, avance de obras y gesti&oacute;n de recursos en campo.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(234,88,12,0.4)">&mdash;</div><div class="cs-lbl">Proyectos</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(234,88,12,0.4)">&mdash;</div><div class="cs-lbl">En obra</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <div class="area-card card-electricos coming animate d8">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#9889;</span>
+      <div class="card-name">El&eacute;ctricos</div>
+      <div class="card-desc">Supervisi&oacute;n de trabajos el&eacute;ctricos, instalaciones, mantenimientos preventivos y correctivos de infraestructura energ&eacute;tica.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(250,204,21,0.4)">&mdash;</div><div class="cs-lbl">&Oacute;rdenes</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(250,204,21,0.4)">&mdash;</div><div class="cs-lbl">Pendientes</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <div class="area-card card-retiros coming animate d8" style="animation-delay:.62s">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#128230;</span>
+      <div class="card-name">Retiros</div>
+      <div class="card-desc">Control de retiro de equipos, gesti&oacute;n de devoluciones, inventario de material recuperado y trazabilidad de activos.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(192,132,252,0.4)">&mdash;</div><div class="cs-lbl">Retiros</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(192,132,252,0.4)">&mdash;</div><div class="cs-lbl">Equipos</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+    <div class="area-card card-movilizacion coming animate d9">
+      <div class="card-glow"></div>
+      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <span class="card-icon">&#128652;</span>
+      <div class="card-name">Movilizaci&oacute;n</div>
+      <div class="card-desc">Control de rutas, desplazamientos de cuadrillas, registro de movilizaciones y gesti&oacute;n de flota vehicular en campo.</div>
+      <div class="card-stats">
+        <div class="cs"><div class="cs-val" style="color:rgba(20,184,166,0.4)">&mdash;</div><div class="cs-lbl">Rutas</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(20,184,166,0.4)">&mdash;</div><div class="cs-lbl">Veh&iacute;culos</div></div>
+      </div>
+      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
+      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
+    </div>
+
+  </div><div class="areas-grid">
 
     <!-- ══ EN PRODUCCIÓN ══ -->
     <a href="./adc.html" class="area-card card-adc animate d5">
@@ -320,6 +416,8 @@ var convPortal=[], chatOpenPortal=false, aiCargandoPortal=false;
 var PROXY_URL='https://script.google.com/macros/s/AKfycbwXgtarrN0wdcyA7JJH8LOvIor60pGsD4BBg9qroskrxVVsLbpgmjiCKCEiH-mLSq3bvw/exec';
 var PORTAL_CTX={
   dashboards:[
+    {n:'Interurbanas',e:'En producción',d:'Control de rutas interurbanas, cortes de fibra, TTG y estado de 41 rutas de infraestructura.',u:'./interurbanas.html'},
+    {n:'Soporte',e:'Próximamente',d:'Gestión de tickets, SLA y seguimiento de incidencias.'},
     {n:'ADC',e:'En producción',d:'Monitoreo de trabajos de red pasiva, fibra óptica, cajas reincidentes y migraciones. Incluye mapa y agente IA.',u:'./adc.html'},
     {n:'Analítica',e:'En producción',d:'Dashboard nacional con productividad de las 14 sucursales, ranking de cuadrillas, rendimiento pts/día y agente IA.',u:'./analitica.html'},
     {n:'Interurbanas',e:'En producción',d:'Control de rutas interurbanas, cortes de fibra, TTG y estado de 41 rutas de infraestructura.',u:'./interurbanas.html'},
