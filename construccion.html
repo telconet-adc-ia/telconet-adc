@@ -261,7 +261,7 @@ function render(){
   var sumVacias=res.reduce(function(s,r){return s+r.cajasVacias},0);
   var sumSat=res.reduce(function(s,r){return s+r.cajasSat},0);
 
-  document.getElementById('kpi-cajas').textContent=rows.length.toLocaleString();
+  document.getElementById('kpi-cajas').textContent=sumCajas.toLocaleString();
   document.getElementById('kpi-clientes').textContent=sumCli.toLocaleString();
   document.getElementById('kpi-puertos').textContent=sumPuertos.toLocaleString();
   document.getElementById('kpi-vacias').textContent=sumVacias.toLocaleString();
@@ -272,7 +272,7 @@ function render(){
   var mesLabel=mes==='all'?'Todos los meses':(mes.charAt(0)+mes.slice(1).toLowerCase());
   var anioLabel=anio==='all'?'':' '+anio;
   document.getElementById('resumen-periodo').textContent=mesLabel+anioLabel;
-  document.getElementById('resumen-num').textContent=rows.length.toLocaleString();
+  document.getElementById('resumen-num').textContent=sumCajas.toLocaleString();
   resBox.style.display='block';
 
   // Mapa
