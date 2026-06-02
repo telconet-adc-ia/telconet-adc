@@ -61,7 +61,7 @@ header{padding:0 0 0;height:90px;display:flex;align-items:center;justify-content
 .card-electricos{--card-color:rgba(250,204,21,0.5);--card-rgb:250,204,21;--card-gradient:linear-gradient(135deg,rgba(250,204,21,0.06) 0%,transparent 60%);}
 .card-retiros{--card-color:rgba(192,132,252,0.5);--card-rgb:192,132,252;--card-gradient:linear-gradient(135deg,rgba(192,132,252,0.06) 0%,transparent 60%);}
 .card-movilizacion{--card-color:rgba(20,184,166,0.5);--card-rgb:20,184,166;--card-gradient:linear-gradient(135deg,rgba(20,184,166,0.06) 0%,transparent 60%);}
-.card-construccion{--card-color:rgba(234,88,12,0.5);--card-rgb:234,88,12;--card-gradient:linear-gradient(135deg,rgba(234,88,12,0.06) 0%,transparent 60%);}
+.card-construccion{--card-color:rgba(234,88,12,0.5);--card-rgb:234,88,12;--card-gradient:linear-gradient(135deg,rgba(234,88,12,0.08) 0%,transparent 60%);border:2px solid rgba(234,88,12,0.45) !important;box-shadow:0 6px 32px rgba(234,88,12,0.15),0 0 0 4px rgba(234,88,12,0.06) !important;}
 .card-analitica{--card-color:rgba(14,66,156,0.5);--card-rgb:14,66,156;--card-gradient:linear-gradient(135deg,rgba(14,66,156,0.08) 0%,transparent 60%);border:2px solid rgba(14,66,156,0.45) !important;box-shadow:0 6px 32px rgba(14,66,156,0.15),0 0 0 4px rgba(14,66,156,0.06) !important;}
 .card-glow{position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,var(--card-color) 0%,transparent 70%);opacity:.15;transition:opacity .3s;filter:blur(20px);}
 .area-card:hover .card-glow{opacity:.35}
@@ -125,7 +125,7 @@ footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid r
 
   <div class="stats-bar animate d4">
     <div class="stat-item"><div class="stat-val">8</div><div class="stat-lbl">&Aacute;reas operativas</div></div>
-    <div class="stat-item"><div class="stat-val">3</div><div class="stat-lbl">En producci&oacute;n</div></div>
+    <div class="stat-item"><div class="stat-val">4</div><div class="stat-lbl">En producci&oacute;n</div></div>
     <div class="stat-item"><div class="stat-val blue" style="font-size:13px;letter-spacing:.5px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 2s ease-in-out infinite;flex-shrink:0"></span>IA Activa</div><div class="stat-lbl">Asistente operativo</div></div>
   </div>
 
@@ -176,19 +176,18 @@ footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid r
       <div class="card-cta"><span class="cta-text">Abrir dashboard</span><div class="cta-arrow">&#8594;</div></div>
     </a>
 
-    <div class="area-card card-construccion coming animate d7" style="animation-delay:.48s">
+    <a href="./construccion.html" class="area-card card-construccion animate d7" style="animation-delay:.48s">
       <div class="card-glow"></div>
-      <div class="card-badge badge-dev"><div class="badge-dot"></div>Pr&oacute;ximamente</div>
+      <div class="card-badge badge-live"><div class="badge-dot"></div>En producci&oacute;n</div>
       <span class="card-icon">&#127959;</span>
       <div class="card-name">Construcci&oacute;n</div>
-      <div class="card-desc">Seguimiento de proyectos de construcci&oacute;n de infraestructura, avance de obras y gesti&oacute;n de recursos en campo.</div>
+      <div class="card-desc">Cobertura de red pasiva, cajas construidas, clientes, puertos disponibles y saturaci&oacute;n por ciudad.</div>
       <div class="card-stats">
-        <div class="cs"><div class="cs-val" style="color:rgba(234,88,12,0.4)">&mdash;</div><div class="cs-lbl">Proyectos</div></div>
-        <div class="cs"><div class="cs-val" style="color:rgba(234,88,12,0.4)">&mdash;</div><div class="cs-lbl">En obra</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(234,88,12,0.9)">912</div><div class="cs-lbl">Registros</div></div>
+        <div class="cs"><div class="cs-val" style="color:rgba(234,88,12,0.9)">8</div><div class="cs-lbl">Ciudades</div></div>
       </div>
-      <div class="card-cta"><span class="cta-text">En desarrollo</span><div class="cta-arrow" style="opacity:.3">&#8594;</div></div>
-      <div class="coming-overlay"><div class="coming-badge">&#128274; Pr&oacute;ximamente</div></div>
-    </div>
+      <div class="card-cta"><span class="cta-text">Abrir dashboard</span><div class="cta-arrow">&#8594;</div></div>
+    </a>
 
     <div class="area-card card-electricos coming animate d8">
       <div class="card-glow"></div>
