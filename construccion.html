@@ -88,6 +88,7 @@ select.f-select:focus{border-color:var(--tn-blue)}
 <div class="topbar">
   <div class="tb-left">
     <a href="./index.html" class="btn-portal">&#8592; Portal</a>
+    <a href="https://telconet-adc-ia.github.io/resumen_mensual_ts_Cuenca/resumen_mensual.html" class="btn-portal" style="background:rgba(235,97,0,0.25);border-color:rgba(235,97,0,0.5)">&#128196; Resumen Jefatura</a>
     <div class="tb-divider"></div>
     <div class="tb-brand">TELCONET <span>·</span> Construcci&oacute;n</div>
   </div>
@@ -184,10 +185,7 @@ select.f-select:focus{border-color:var(--tn-blue)}
           <div class="card-title"><div class="dot" style="background:var(--purple)"></div>Evoluci&oacute;n mensual de registros</div>
           <div class="chart-wrap"><canvas id="ch-tend"></canvas></div>
         </div>
-        <div class="card">
-          <div class="card-title"><div class="dot" style="background:var(--green)"></div>Clientes por ciudad</div>
-          <div class="chart-wrap"><canvas id="ch-clientes"></canvas></div>
-        </div>
+
       </div>
 
       <!-- Tabla detalle -->
@@ -323,12 +321,7 @@ function render(){
   var mesesOrd=MESES_ORDER.filter(function(m){return rows.some(function(r){return r.mes===m})});
   mkChart('ch-tend',{type:'line',data:{labels:mesesOrd,datasets:[{label:'Registros',data:mesesOrd.map(function(m){return rows.filter(function(r){return r.mes===m}).length}),borderColor:'#0E429C',backgroundColor:'rgba(14,66,156,0.06)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#0E429C',tension:.3,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TT},scales:{x:{grid:{display:false},ticks:TX,border:{display:false}},y:{grid:{color:GRID},ticks:TY,border:{display:false}}}}});
 
-  // Clientes por ciudad (barras horizontales)
-  var resC=res.filter(function(r){return r.clientes>0});
-  var ciudC=[...new Set(resC.map(function(r){return r.ciudad}))];
-  var cliN=ciudC.map(function(c){return resC.filter(function(r){return r.ciudad===c}).reduce(function(s,r){return s+r.clientes},0)});
-  var sorted=ciudC.map(function(c,i){return[c,cliN[i]]}).sort(function(a,b){return b[1]-a[1]});
-  mkChart('ch-clientes',{type:'bar',data:{labels:sorted.map(function(x){return x[0]}),datasets:[{data:sorted.map(function(x){return x[1]}),backgroundColor:sorted.map(function(x){return (CIUDAD_COLORS[x[0]]||'#888')+'CC'}),borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return ' '+c.raw.toLocaleString()+' clientes'}}}},scales:{x:{grid:{color:GRID},ticks:TY,border:{display:false}},y:{grid:{display:false},ticks:{color:'#6B7FA8',font:{size:10}},border:{display:false}}}}});
+
 
   // Tabla
   var tbody=document.getElementById('tbody-cajas');
