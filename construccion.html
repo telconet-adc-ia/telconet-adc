@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Construcción | Telconet</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --tn-blue:#0E429C;--tn-orange:#EB6100;--tn-cyan:#10A8C7;
+  --bg:#EEF2F8;--bg2:#FFFFFF;--bg3:#F0F4FA;
+  --border:#D0D9EC;--border2:#B8C4DC;
+  --txt:#0D1F3C;--txt2:#3A5080;--txt3:#6B7FA8;
+  --green:#16A34A;--yellow:#D97706;--red:#DC2626;--purple:#7C3AED;
+  --radius:12px;--radius-sm:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--tn-blue);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:1000;box-shadow:0 2px 12px rgba(14,66,156,.2)}
+.tb-left{display:flex;align-items:center;gap:12px}
+.btn-portal{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:5px 12px;color:#fff;font-size:12px;font-weight:500;cursor:pointer;text-decoration:none;transition:.15s;white-space:nowrap}
+.btn-portal:hover{background:rgba(255,255,255,.22)}
+.tb-divider{width:1px;height:22px;background:rgba(255,255,255,.2)}
+.tb-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;letter-spacing:.5px;color:#fff}
+.tb-brand span{color:var(--tn-cyan)}
+.sync-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,.8);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4)}
+.sync-dot.ok{background:#4ade80;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* LAYOUT */
+.layout{display:flex;height:calc(100vh - 54px)}
+.sidebar{width:220px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);overflow-y:auto;padding:16px 0;box-shadow:2px 0 8px rgba(14,66,156,.05)}
+.sb-section{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt3);padding:12px 16px 6px}
+.sb-divider{height:1px;background:var(--border);margin:10px 16px}
+.filter-section{padding:0 12px 12px}
+.filter-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);padding:8px 4px 5px;display:block}
+select.f-select{width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;outline:none}
+select.f-select:focus{border-color:var(--tn-blue)}
+.chip-wrap{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--txt2);cursor:pointer;transition:.12s}
+.chip:hover{border-color:var(--border2);color:var(--txt)}
+.chip.active{border-color:var(--tn-blue);background:rgba(14,66,156,.10);color:var(--tn-blue)}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;padding:20px}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--txt2)}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--tn-blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* KPI BAR */
+.kpi-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:0 2px 8px rgba(14,66,156,.05)}
+.kpi-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;line-height:1;margin-bottom:4px}
+.kpi-lbl{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-full{margin-bottom:16px}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:0 2px 12px rgba(14,66,156,.05)}
+.card-title{font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--txt3);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title .dot{width:6px;height:6px;border-radius:50%}
+.chart-wrap{position:relative;height:240px}
+#map{height:420px;border-radius:var(--radius-sm);overflow:hidden}
+
+/* TABLA */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
+.tbl td{padding:8px 10px;border-bottom:1px solid rgba(14,66,156,.06);color:var(--txt2)}
+.tbl tr:hover td{background:rgba(14,66,156,.02)}
+.badge-tipo{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px}
+.badge-NUEVA{background:rgba(14,66,156,.1);color:var(--tn-blue);border:1px solid rgba(14,66,156,.2)}
+.badge-SAT{background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)}
+.badge-REGEN{background:rgba(124,58,237,.1);color:var(--purple);border:1px solid rgba(124,58,237,.2)}
+.badge-ELIM{background:rgba(22,163,74,.1);color:var(--green);border:1px solid rgba(22,163,74,.2)}
+.pct-bar{height:4px;background:var(--bg3);border-radius:2px;margin-top:3px;min-width:60px}
+.pct-fill{height:100%;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tb-left">
+    <a href="./index.html" class="btn-portal">&#8592; Portal</a>
+    <div class="tb-divider"></div>
+    <div class="tb-brand">TELCONET <span>·</span> Construcci&oacute;n</div>
+  </div>
+  <div class="sync-badge">
+    <div class="sync-dot" id="sdot"></div>
+    <span id="slbl">Cargando...</span>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-section">Filtros</div>
+
+    <div class="filter-section">
+      <span class="filter-label">A&ntilde;o</span>
+      <select class="f-select" id="sel-anio" onchange="render()">
+        <option value="all">Todos</option>
+        <option value="2025">2025</option>
+        <option value="2026">2026</option>
+      </select>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Mes</span>
+      <select class="f-select" id="sel-mes" onchange="render()">
+        <option value="all">Todos los meses</option>
+      </select>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Ciudad</span>
+      <select class="f-select" id="sel-ciudad" onchange="render()">
+        <option value="all">Todas</option>
+      </select>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <div class="filter-section">
+      <span class="filter-label">Tipo</span>
+      <div class="chip-wrap" id="chips-tipo">
+        <div class="chip active" onclick="setTipo('all',this)">Todos</div>
+        <div class="chip" onclick="setTipo('NUEVA COBERTURA',this)">Nueva</div>
+        <div class="chip" onclick="setTipo('SATURACION',this)">Saturaci&oacute;n</div>
+        <div class="chip" onclick="setTipo('REGENERACION',this)">Regeneraci&oacute;n</div>
+        <div class="chip" onclick="setTipo('PARA ELIMINAR SATURACION',this)">Elim. Sat.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main" id="main">
+    <div class="loading-screen" id="loading">
+      <div class="spinner"></div>
+      <div>Cargando datos de construcci&oacute;n...</div>
+    </div>
+
+    <div id="dashboard" style="display:none">
+      <!-- KPIs -->
+      <div class="kpi-bar">
+        <div class="kpi"><div class="kpi-val" style="color:var(--tn-blue)" id="kpi-cajas">—</div><div class="kpi-lbl">Total cajas</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:var(--tn-orange)" id="kpi-clientes">—</div><div class="kpi-lbl">Clientes</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:var(--tn-cyan)" id="kpi-puertos">—</div><div class="kpi-lbl">Puertos dispon.</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:var(--green)" id="kpi-vacias">—</div><div class="kpi-lbl">Cajas vac&iacute;as</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:var(--red)" id="kpi-saturadas">—</div><div class="kpi-lbl">Cajas saturadas</div></div>
+      </div>
+
+      <!-- Mapa -->
+      <div class="grid-full card">
+        <div class="card-title"><div class="dot" style="background:var(--tn-blue)"></div>Mapa de cobertura de construcci&oacute;n</div>
+        <div id="map"></div>
+      </div>
+
+      <!-- Gráficas -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><div class="dot" style="background:var(--tn-orange)"></div>Registros por ciudad</div>
+          <div class="chart-wrap"><canvas id="ch-ciudad"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="dot" style="background:var(--tn-cyan)"></div>Distribuci&oacute;n por tipo</div>
+          <div class="chart-wrap"><canvas id="ch-tipo"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><div class="dot" style="background:var(--purple)"></div>Evoluci&oacute;n mensual de registros</div>
+          <div class="chart-wrap"><canvas id="ch-tend"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="dot" style="background:var(--green)"></div>Clientes por ciudad</div>
+          <div class="chart-wrap"><canvas id="ch-clientes"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Tabla detalle -->
+      <div class="grid-full card">
+        <div class="card-title"><div class="dot" style="background:var(--tn-blue)"></div>Detalle de cajas por ruta</div>
+        <div style="overflow-x:auto;max-height:340px;overflow-y:auto">
+          <table class="tbl" id="tbl-cajas">
+            <thead><tr>
+              <th>Caja / Ruta</th>
+              <th>Ciudad</th>
+              <th>Tipo</th>
+              <th>Mes</th>
+              <th>A&ntilde;o</th>
+            </tr></thead>
+            <tbody id="tbody-cajas"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var APPS_URL = 'https://script.google.com/macros/s/AKfycbz8htzlgcRXt5aD8XfuZmE2LQX0wk9sJ5Rfwvm0HqgdY6ewrC4iXx-egz-jREsc3b0nTA/exec';
+var allData = [];
+var fAnio='all', fMes='all', fCiud='all', fTipo='all';
+var charts={}, mapInst=null, mapInit=false, markerLayer=null;
+
+var MESES_ORDER=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+var TIPO_COLORS={'NUEVA COBERTURA':'#0E429C','SATURACION':'#DC2626','REGENERACION':'#7C3AED','PARA ELIMINAR SATURACION':'#16A34A'};
+var CIUDAD_COLORS={'CUENCA':'#0E429C','BIBLIAN':'#10A8C7','MACAS':'#EB6100','SIGSIG':'#7C3AED','SEVILLA DE ORO':'#16A34A','GUALACEO':'#D97706','TAMBO':'#EC4899','SANTA ISABEL':'#14B8A6','AZOGUES':'#6366F1','PAUTE':'#F97316'};
+var GRID='rgba(14,66,156,0.07)';
+var TX={color:'#6B7FA8',font:{size:10},maxRotation:35,minRotation:20};
+var TY={color:'#6B7FA8',font:{size:10}};
+var TT={backgroundColor:'#fff',titleColor:'#0D1F3C',bodyColor:'#3A5080',borderColor:'#D0D9EC',borderWidth:1};
+
+function setTipo(v,el){
+  fTipo=v;
+  document.querySelectorAll('#chips-tipo .chip').forEach(function(c){c.classList.remove('active')});
+  el.classList.add('active');render();
+}
+
+function filt(){
+  return allData.filter(function(r){
+    return (fAnio==='all'||String(r.anio)===fAnio)&&
+           (fMes==='all'||r.mes===fMes)&&
+           (fCiud==='all'||r.ciudad===fCiud)&&
+           (fTipo==='all'||r.tipo===fTipo);
+  });
+}
+
+function mkChart(id,cfg){
+  if(charts[id])charts[id].destroy();
+  var ctx=document.getElementById(id);
+  if(ctx)charts[id]=new Chart(ctx,cfg);
+}
+
+function render(){
+  fAnio=document.getElementById('sel-anio').value;
+  fMes=document.getElementById('sel-mes').value;
+  fCiud=document.getElementById('sel-ciudad').value;
+  var rows=filt();
+
+  // KPIs — usar filas resumen (totalCajas > 0)
+  var res=rows.filter(function(r){return r.totalCajas>0});
+  var sumCajas=res.reduce(function(s,r){return s+r.totalCajas},0);
+  var sumCli=res.reduce(function(s,r){return s+r.clientes},0);
+  var sumPuertos=res.reduce(function(s,r){return s+r.puertos},0);
+  var sumVacias=res.reduce(function(s,r){return s+r.cajasVacias},0);
+  var sumSat=res.reduce(function(s,r){return s+r.cajasSat},0);
+
+  document.getElementById('kpi-cajas').textContent=sumCajas.toLocaleString();
+  document.getElementById('kpi-clientes').textContent=sumCli.toLocaleString();
+  document.getElementById('kpi-puertos').textContent=sumPuertos.toLocaleString();
+  document.getElementById('kpi-vacias').textContent=sumVacias.toLocaleString();
+  document.getElementById('kpi-saturadas').textContent=sumSat.toLocaleString();
+
+  // Mapa
+  renderMapa(rows);
+
+  // Por ciudad
+  var ciudades=Object.keys(CIUDAD_COLORS).filter(function(c){return rows.some(function(r){return r.ciudad===c})});
+  var ciudN=ciudades.map(function(c){return rows.filter(function(r){return r.ciudad===c}).length});
+  mkChart('ch-ciudad',{type:'bar',data:{labels:ciudades,datasets:[{data:ciudN,backgroundColor:ciudades.map(function(c){return (CIUDAD_COLORS[c]||'#888')+'CC'}),borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TT},scales:{x:{grid:{display:false},ticks:TX,border:{display:false}},y:{grid:{color:GRID},ticks:TY,border:{display:false}}}}});
+
+  // Por tipo (dona)
+  var tipos=Object.keys(TIPO_COLORS);
+  var tipoN=tipos.map(function(t){return rows.filter(function(r){return r.tipo===t}).length}).filter(function(v,i){return tipos[i]&&rows.some(function(r){return r.tipo===tipos[i]})});
+  var tiposAct=tipos.filter(function(t){return rows.some(function(r){return r.tipo===t})});
+  mkChart('ch-tipo',{type:'doughnut',data:{labels:tiposAct.map(function(t){return t.length>20?t.slice(0,18)+'…':t}),datasets:[{data:tiposAct.map(function(t){return rows.filter(function(r){return r.tipo===t}).length}),backgroundColor:tiposAct.map(function(t){return TIPO_COLORS[t]||'#888'}),borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{color:'#3A5080',font:{size:10},boxWidth:10}},tooltip:TT}}});
+
+  // Tendencia mensual
+  var mesesOrd=MESES_ORDER.filter(function(m){return rows.some(function(r){return r.mes===m})});
+  mkChart('ch-tend',{type:'line',data:{labels:mesesOrd,datasets:[{label:'Registros',data:mesesOrd.map(function(m){return rows.filter(function(r){return r.mes===m}).length}),borderColor:'#0E429C',backgroundColor:'rgba(14,66,156,0.06)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#0E429C',tension:.3,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TT},scales:{x:{grid:{display:false},ticks:TX,border:{display:false}},y:{grid:{color:GRID},ticks:TY,border:{display:false}}}}});
+
+  // Clientes por ciudad (barras horizontales)
+  var resC=res.filter(function(r){return r.clientes>0});
+  var ciudC=[...new Set(resC.map(function(r){return r.ciudad}))];
+  var cliN=ciudC.map(function(c){return resC.filter(function(r){return r.ciudad===c}).reduce(function(s,r){return s+r.clientes},0)});
+  var sorted=ciudC.map(function(c,i){return[c,cliN[i]]}).sort(function(a,b){return b[1]-a[1]});
+  mkChart('ch-clientes',{type:'bar',data:{labels:sorted.map(function(x){return x[0]}),datasets:[{data:sorted.map(function(x){return x[1]}),backgroundColor:sorted.map(function(x){return (CIUDAD_COLORS[x[0]]||'#888')+'CC'}),borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return ' '+c.raw.toLocaleString()+' clientes'}}}},scales:{x:{grid:{color:GRID},ticks:TY,border:{display:false}},y:{grid:{display:false},ticks:{color:'#6B7FA8',font:{size:10}},border:{display:false}}}}});
+
+  // Tabla
+  var tbody=document.getElementById('tbody-cajas');
+  tbody.innerHTML='';
+  rows.slice(0,100).forEach(function(r){
+    var tipo=r.tipo.replace('NUEVA COBERTURA','NUEVA').replace('PARA ELIMINAR SATURACION','ELIM').replace('REGENERACION','REGEN');
+    var badgeCls=r.tipo==='NUEVA COBERTURA'?'badge-NUEVA':r.tipo==='SATURACION'?'badge-SAT':r.tipo==='REGENERACION'?'badge-REGEN':'badge-ELIM';
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td style="color:var(--txt);font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+r.caja+'">'+r.caja+'</td>'+
+      '<td><span style="font-size:10px;background:'+(CIUDAD_COLORS[r.ciudad]||'#888')+'18;color:'+(CIUDAD_COLORS[r.ciudad]||'#888')+';padding:2px 7px;border-radius:8px;font-weight:600">'+r.ciudad+'</span></td>'+
+      '<td><span class="badge-tipo '+badgeCls+'">'+tipo+'</span></td>'+
+      '<td style="font-size:11px;color:var(--txt2)">'+r.mes+'</td>'+
+      '<td style="font-size:11px;color:var(--txt3)">'+r.anio+'</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function renderMapa(rows){
+  if(!mapInit){
+    mapInst=L.map('map',{zoomControl:true}).setView([-2.9,-78.9],10);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',subdomains:'abcd',maxZoom:19}).addTo(mapInst);
+    markerLayer=L.layerGroup().addTo(mapInst);
+    mapInit=true;
+  }
+  markerLayer.clearLayers();
+  rows.filter(function(r){return r.lat&&r.lng}).forEach(function(r){
+    var color=TIPO_COLORS[r.tipo]||'#0E429C';
+    var esResumen=r.totalCajas>0;
+    L.circleMarker([r.lat,r.lng],{
+      radius:esResumen?9:5,
+      fillColor:color,
+      color:'#fff',
+      weight:esResumen?2:1,
+      fillOpacity:esResumen?.9:.5
+    }).bindPopup(
+      '<div style="font-size:12px;min-width:180px">'+
+      '<strong style="color:'+color+'">'+r.ciudad+'</strong><br>'+
+      '<span style="color:#555;font-size:11px">'+r.caja.slice(0,50)+'</span><br>'+
+      '<hr style="border:none;border-top:1px solid #eee;margin:6px 0">'+
+      '<b>Tipo:</b> '+r.tipo+'<br>'+
+      '<b>Mes:</b> '+r.mes+' '+r.anio+
+      (r.totalCajas?'<br><b>Cajas:</b> '+r.totalCajas.toLocaleString():'')+
+      (r.clientes?'<br><b>Clientes:</b> '+r.clientes.toLocaleString():'')+
+      '</div>'
+    ).addTo(markerLayer);
+  });
+}
+
+function buildSelects(){
+  // Meses
+  var meses=MESES_ORDER.filter(function(m){return allData.some(function(r){return r.mes===m})});
+  var selM=document.getElementById('sel-mes');
+  meses.forEach(function(m){
+    var o=document.createElement('option');o.value=m;o.textContent=m.charAt(0)+m.slice(1).toLowerCase();selM.appendChild(o);
+  });
+  // Ciudades
+  var ciuds=[...new Set(allData.map(function(r){return r.ciudad}))].filter(Boolean).sort();
+  var selC=document.getElementById('sel-ciudad');
+  ciuds.forEach(function(c){
+    var o=document.createElement('option');o.value=c;o.textContent=c.charAt(0)+c.slice(1).toLowerCase();selC.appendChild(o);
+  });
+}
+
+function init(){
+  var cb='cob_cb_'+Date.now();
+  var sc=document.createElement('script');
+  var timer=setTimeout(function(){
+    delete window[cb];if(sc.parentNode)sc.parentNode.removeChild(sc);
+    document.getElementById('loading').innerHTML='<div style="color:#DC2626">⚠ No se pudo conectar. Verifica la URL del Apps Script.</div>';
+  },30000);
+  window[cb]=function(data){
+    clearTimeout(timer);delete window[cb];if(sc.parentNode)sc.parentNode.removeChild(sc);
+    document.getElementById('loading').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    if(data.ok&&data.filas){
+      allData=data.filas;
+      document.getElementById('sdot').className='sync-dot ok';
+      document.getElementById('slbl').textContent='Sincronizado · '+data.total+' registros';
+      buildSelects();
+      render();
+    }
+  };
+  sc.onerror=function(){
+    clearTimeout(timer);delete window[cb];
+    document.getElementById('loading').innerHTML='<div style="color:#DC2626">⚠ Error de conexión con el Apps Script.</div>';
+  };
+  sc.src=APPS_URL+'?action=data&callback='+cb;
+  document.head.appendChild(sc);
+}
+
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
