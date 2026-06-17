@@ -745,7 +745,7 @@ const PROY_BACKLOG = [
 
 // Trabajo regular diario: promedio real últimos 3 meses (Mar-Abr-May 2026) ÷ 22 días hábiles/mes
 const PROY_REGULAR = [
-  {nombre:'Atenuación UM (índice óptico)', capDia:4, promDia:1.70},
+  {nombre:'Atenuación UM (índice óptico)', capDia:8, promDia:1.70},
   {nombre:'Caja atenuada', capDia:4, promDia:1.32},
   {nombre:'Mantenimiento caja MPLS', capDia:2, promDia:0.74},
   {nombre:'Caja sin potencia', capDia:4, promDia:0.29},
@@ -810,7 +810,7 @@ function renderProyeccion(){
     </div>
   `;
 
-  // Gráfica backlog (barras horizontales por puntos)
+  // Ordenar una sola vez — usado tanto en gráfica como en tabla
   const sorted=[...backlogConPeso].sort((a,b)=>b.puntos-a.puntos);
   if(window._chProyBacklog)window._chProyBacklog.destroy();
   window._chProyBacklog=new Chart(document.getElementById('ch-proy-backlog'),{
