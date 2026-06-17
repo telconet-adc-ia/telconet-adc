@@ -351,6 +351,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <span class="nav-label">Rutas nuevas</span>
     </div>
 
+    <div class="sidebar-section">Planificaci&oacute;n</div>
+    <div class="nav-item" onclick="navTo('proyeccion')" id="nav-proyeccion">
+      <span class="nav-icon">&#9203;</span>
+      <span class="nav-label">Proyecci&oacute;n tiempo de trabajo</span>
+    </div>
+
     <div class="sidebar-section">Asistente</div>
     <div class="nav-item" onclick="toggleChat()" id="nav-chat">
       <span class="nav-icon">&#129302;</span>
@@ -522,6 +528,66 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
     </div>
 
+    <!-- ══ SECCION: PROYECCION TIEMPO DE TRABAJO ══ -->
+    <div id="sec-proyeccion" style="display:none">
+      <div class="sec-header">
+        <div class="sec-title">&#9203; Proyecci&oacute;n de tiempo de trabajo</div>
+        <div class="sec-sub">Estimaci&oacute;n de tiempo para completar el backlog de migraciones seg&uacute;n cuadrillas disponibles</div>
+      </div>
+
+      <!-- Simulador -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <span style="font-size:13px;font-weight:600;color:var(--text)">&#128119; Cuadrillas disponibles:</span>
+            <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:6px 8px">
+              <button onclick="cambiarCuadrillas(-1)" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer;color:var(--blue);font-weight:700">&minus;</button>
+              <span id="proy-num-cuad" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--blue);min-width:36px;text-align:center">2</span>
+              <button onclick="cambiarCuadrillas(1)" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer;color:var(--blue);font-weight:700">+</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text3)">
+            <span>Meta: <strong style="color:var(--text)">4.5 pts/d&iacute;a/cuadrilla</strong></span>
+            <span>&middot;</span>
+            <span>5 d&iacute;as/semana</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs principales -->
+      <div class="kpi-grid" id="proy-kpis"></div>
+
+      <!-- Resultado destacado -->
+      <div id="proy-resultado" style="margin:20px 0"></div>
+
+      <div class="charts-grid" style="margin-bottom:20px">
+        <div class="chart-card">
+          <div class="chart-title">&#128202; Distribuci&oacute;n del backlog (puntos)</div>
+          <div class="chart-sub">Peso en puntos de cada actividad pendiente</div>
+          <div class="chart-wrap" id="wrap-proy-backlog"><canvas id="ch-proy-backlog"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">&#9881; Consumo diario de capacidad</div>
+          <div class="chart-sub">Trabajo regular vs disponible para backlog</div>
+          <div class="chart-wrap" id="wrap-proy-consumo"><canvas id="ch-proy-consumo"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Tabla detalle backlog -->
+      <div style="margin-top:4px;margin-bottom:24px">
+        <div style="font-size:13px;font-weight:600;color:var(--tnblue);margin-bottom:4px">&#128203; Detalle del backlog pendiente</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px">Actividades de migraci&oacute;n/construcci&oacute;n con peso en puntos calculado</div>
+        <div id="tb-proy-backlog"></div>
+      </div>
+
+      <!-- Tabla trabajo regular -->
+      <div style="margin-top:4px">
+        <div style="font-size:13px;font-weight:600;color:var(--tnblue);margin-bottom:4px">&#128260; Trabajo regular diario (no es backlog)</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px">Incidencias y mantenimiento que las cuadrillas atienden a diario, calculado del promedio real de los &uacute;ltimos 3 meses</div>
+        <div id="tb-proy-regular"></div>
+      </div>
+    </div>
+
   </div><!-- end content-area -->
 </div><!-- end main-layout -->
 
@@ -632,7 +698,7 @@ function selectSuc(nombre,activo){
 }
 
 /* ── NAVEGACION ── */
-const SECTIONS=['adc','reincidencias','mapa','mpls','olt620','rutasnuevas'];
+const SECTIONS=['adc','reincidencias','mapa','mpls','olt620','rutasnuevas','proyeccion'];
 function navTo(sec){
   curSection=sec;
   SECTIONS.forEach(s=>{
@@ -657,6 +723,184 @@ function navTo(sec){
     if(rowsRN.length){ renderRutasNuevas(); }
     else{ loadRutasNuevas(); }
   }
+  if(sec==='proyeccion'){ renderProyeccion(); }
+}
+
+// ════════════════════════════════════════════════════════════
+// PROYECCIÓN DE TIEMPO DE TRABAJO
+// ════════════════════════════════════════════════════════════
+const META_PTS_DIA = 4.5;
+const DIAS_SEMANA = 5;
+
+// Backlog: pendientes con su capacidad diaria oficial (1 cuadrilla)
+const PROY_BACKLOG = [
+  {nombre:'Migrar UM a ruta preconectorizada', pend:4816, capDia:8},
+  {nombre:'Migrar cajas MPLS a preconectorizada', pend:1040, capDia:2},
+  {nombre:'Construir reflejos para migración a OLT 620', pend:220, capDia:2},
+  {nombre:'Inventariar/regularizar hilos en nodo para migrar a OLT 620', pend:51, capDia:0.125},
+  {nombre:'Cajas nuevas a construir', pend:459, capDia:5},
+  {nombre:'Mangas', pend:6, capDia:1},
+  {nombre:'ODF', pend:2, capDia:1},
+];
+
+// Trabajo regular diario: promedio real últimos 3 meses (Mar-Abr-May 2026) ÷ 22 días hábiles/mes
+const PROY_REGULAR = [
+  {nombre:'Atenuación UM (índice óptico)', capDia:4, promDia:1.70},
+  {nombre:'Caja atenuada', capDia:4, promDia:1.32},
+  {nombre:'Mantenimiento caja MPLS', capDia:2, promDia:0.74},
+  {nombre:'Caja sin potencia', capDia:4, promDia:0.29},
+  {nombre:'Ordenar hilos en caja', capDia:4, promDia:0.08},
+  {nombre:'Splitter priorizados', capDia:5, promDia:0.06},
+  {nombre:'Migración a postes nuevos', capDia:4, promDia:0.79},
+];
+
+let proyCuadrillas=2;
+function cambiarCuadrillas(delta){
+  proyCuadrillas=Math.max(1,Math.min(10,proyCuadrillas+delta));
+  document.getElementById('proy-num-cuad').textContent=proyCuadrillas;
+  renderProyeccion();
+}
+
+function renderProyeccion(){
+  // Pesos
+  const backlogConPeso=PROY_BACKLOG.map(b=>({...b,peso:META_PTS_DIA/b.capDia,puntos:b.pend*(META_PTS_DIA/b.capDia)}));
+  const regularConPeso=PROY_REGULAR.map(r=>({...r,peso:META_PTS_DIA/r.capDia,consumoDia:r.promDia*(META_PTS_DIA/r.capDia)}));
+
+  const totalPuntosBacklog=backlogConPeso.reduce((s,b)=>s+b.puntos,0);
+  const totalConsumoRegular=regularConPeso.reduce((s,r)=>s+r.consumoDia,0);
+
+  const capTotalDia=META_PTS_DIA*proyCuadrillas;
+  const capBacklogDia=Math.max(0.01,capTotalDia-totalConsumoRegular);
+
+  const diasHabiles=totalPuntosBacklog/capBacklogDia;
+  const semanas=diasHabiles/DIAS_SEMANA;
+  const meses=semanas/4.33;
+  const anios=meses/12;
+
+  // Fecha estimada
+  const hoy=new Date();
+  const diasCalendario=Math.ceil(diasHabiles*7/5);
+  const fechaFin=new Date(hoy.getTime()+diasCalendario*86400000);
+  const fechaFinStr=fechaFin.toLocaleDateString('es-EC',{day:'numeric',month:'long',year:'numeric'});
+
+  // KPIs
+  document.getElementById('proy-kpis').innerHTML=`
+    <div class="kpi-card"><div class="kpi-label">Total backlog</div><div class="kpi-val" style="color:var(--blue)">${totalPuntosBacklog.toFixed(0)}<span style="font-size:13px;color:var(--text3)"> pts</span></div></div>
+    <div class="kpi-card"><div class="kpi-label">Consumo diario regular</div><div class="kpi-val" style="color:#f59e0b">${totalConsumoRegular.toFixed(2)}<span style="font-size:13px;color:var(--text3)"> pts/d&iacute;a</span></div></div>
+    <div class="kpi-card"><div class="kpi-label">Disponible para backlog</div><div class="kpi-val" style="color:${capBacklogDia>2?'#0e9f6e':'#ef4444'}">${capBacklogDia.toFixed(2)}<span style="font-size:13px;color:var(--text3)"> pts/d&iacute;a</span></div></div>
+    <div class="kpi-card"><div class="kpi-label">D&iacute;as h&aacute;biles necesarios</div><div class="kpi-val" style="color:var(--text)">${Math.round(diasHabiles).toLocaleString()}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Tiempo estimado</div><div class="kpi-val" style="color:var(--orange);font-size:20px">${anios.toFixed(1)} a&ntilde;os</div></div>
+  `;
+
+  // Resultado destacado
+  const colorAlerta=anios>5?'#fef2f2':anios>2?'#fffbeb':'#f0fdf4';
+  const colorBorde=anios>5?'#fca5a5':anios>2?'#fcd34d':'#86efac';
+  const colorTexto=anios>5?'#dc2626':anios>2?'#d97706':'#16a34a';
+  document.getElementById('proy-resultado').innerHTML=`
+    <div style="background:${colorAlerta};border:1.5px solid ${colorBorde};border-radius:14px;padding:20px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <div style="font-size:38px">${anios>5?'&#9888;':anios>2?'&#9201;':'&#9989;'}</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:${colorTexto};margin-bottom:4px">
+          Con ${proyCuadrillas} cuadrilla${proyCuadrillas>1?'s':''}, el backlog actual se completar&iacute;a en aproximadamente <strong>${anios.toFixed(1)} a&ntilde;os</strong> (${Math.round(meses)} meses)
+        </div>
+        <div style="font-size:12px;color:var(--text2)">
+          Fecha estimada de finalizaci&oacute;n: <strong>${fechaFinStr}</strong> &middot; ${Math.round(diasHabiles).toLocaleString()} d&iacute;as h&aacute;biles &middot; ${semanas.toFixed(0)} semanas
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Gráfica backlog (barras horizontales por puntos)
+  const sorted=[...backlogConPeso].sort((a,b)=>b.puntos-a.puntos);
+  if(window._chProyBacklog)window._chProyBacklog.destroy();
+  window._chProyBacklog=new Chart(document.getElementById('ch-proy-backlog'),{
+    type:'bar',
+    plugins:[ChartDataLabels],
+    data:{
+      labels:sorted.map(b=>b.nombre.length>32?b.nombre.slice(0,30)+'…':b.nombre),
+      datasets:[{data:sorted.map(b=>+b.puntos.toFixed(0)),backgroundColor:sorted.map((_,i)=>`hsl(${210+i*15},65%,${42+i*3}%)`),borderRadius:5,borderSkipped:false}]
+    },
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>' '+c.raw.toLocaleString()+' pts'}},
+        datalabels:{anchor:'end',align:'end',offset:4,color:'#003087',font:{size:10,weight:'bold'},formatter:v=>v.toLocaleString()}
+      },
+      scales:{x:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}},
+      layout:{padding:{right:30}}
+    }
+  });
+
+  // Gráfica consumo diario (dona: regular vs disponible)
+  if(window._chProyConsumo)window._chProyConsumo.destroy();
+  window._chProyConsumo=new Chart(document.getElementById('ch-proy-consumo'),{
+    type:'doughnut',
+    plugins:[ChartDataLabels],
+    data:{
+      labels:['Trabajo regular diario','Disponible para backlog'],
+      datasets:[{data:[+totalConsumoRegular.toFixed(2),+capBacklogDia.toFixed(2)],backgroundColor:['#f59e0b','#0e9f6e'],borderWidth:0,hoverOffset:6}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:14}},
+        tooltip:{callbacks:{label:c=>' '+c.raw+' pts/día'}},
+        datalabels:{color:'#fff',font:{size:12,weight:'bold'},formatter:(v,ctx)=>{
+          const total=ctx.dataset.data.reduce((a,b)=>a+b,0);
+          return v.toFixed(1)+' pts\\n('+Math.round(v/total*100)+'%)';
+        }}
+      }
+    }
+  });
+
+  // Tabla backlog
+  document.getElementById('tb-proy-backlog').innerHTML=`
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="border-bottom:1px solid var(--border)">
+        <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Actividad</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Pendientes</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Capacidad/d&iacute;a</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Peso (pts/u)</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Total puntos</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">D&iacute;as solo (${proyCuadrillas} cuad.)</th>
+      </tr></thead>
+      <tbody>${sorted.map(b=>`
+        <tr style="border-bottom:1px solid rgba(0,0,0,0.04)">
+          <td style="padding:7px 10px;color:var(--text)">${b.nombre}</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:600;color:var(--blue)">${b.pend.toLocaleString()}</td>
+          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${b.capDia}</td>
+          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${b.peso.toFixed(4)}</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:600">${b.puntos.toFixed(0)}</td>
+          <td style="padding:7px 10px;text-align:center;color:var(--text3)">${(b.puntos/(META_PTS_DIA*proyCuadrillas)).toFixed(0)}</td>
+        </tr>
+      `).join('')}</tbody>
+    </table>
+  `;
+
+  // Tabla regular
+  document.getElementById('tb-proy-regular').innerHTML=`
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="border-bottom:1px solid var(--border)">
+        <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Actividad</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Capacidad/d&iacute;a</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Peso (pts/u)</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Prom. real/d&iacute;a</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Consumo pts/d&iacute;a</th>
+      </tr></thead>
+      <tbody>${regularConPeso.map(r=>`
+        <tr style="border-bottom:1px solid rgba(0,0,0,0.04)">
+          <td style="padding:7px 10px;color:var(--text)">${r.nombre}</td>
+          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${r.capDia}</td>
+          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${r.peso.toFixed(4)}</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:600;color:#f59e0b">${r.promDia.toFixed(2)}</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:600">${r.consumoDia.toFixed(3)}</td>
+        </tr>
+      `).join('')}
+      <tr style="background:rgba(245,158,11,0.06);font-weight:700">
+        <td style="padding:8px 10px;color:var(--text)" colspan="4">Total consumo diario por trabajo regular</td>
+        <td style="padding:8px 10px;text-align:center;color:#f59e0b">${totalConsumoRegular.toFixed(2)} pts</td>
+      </tr>
+      </tbody>
+    </table>
+    <div style="font-size:10px;color:var(--text3);margin-top:8px">* Promedio calculado del hist&oacute;rico real Marzo&ndash;Abril&ndash;Mayo 2026 (Supabase), dividido entre 22 d&iacute;as h&aacute;biles/mes.</div>
+  `;
 }
 
 /* ── DROPDOWNS ── */
