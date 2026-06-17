@@ -745,13 +745,13 @@ const PROY_BACKLOG = [
 
 // Trabajo regular diario: promedio real últimos 3 meses (Mar-Abr-May 2026) ÷ 22 días hábiles/mes
 const PROY_REGULAR = [
-  {nombre:'Atenuación UM (índice óptico)', capDia:8, promDia:1.70},
-  {nombre:'Caja atenuada', capDia:4, promDia:1.32},
-  {nombre:'Mantenimiento caja MPLS', capDia:2, promDia:0.74},
-  {nombre:'Caja sin potencia', capDia:4, promDia:0.29},
-  {nombre:'Ordenar hilos en caja', capDia:4, promDia:0.08},
-  {nombre:'Splitter priorizados', capDia:5, promDia:0.06},
-  {nombre:'Migración a postes nuevos', capDia:4, promDia:0.79},
+  {nombre:'Atenuación UM (índice óptico)', capDia:8, promDia:1.70, hist3m:112},
+  {nombre:'Caja atenuada', capDia:4, promDia:1.32, hist3m:87},
+  {nombre:'Mantenimiento caja MPLS', capDia:2, promDia:0.74, hist3m:49},
+  {nombre:'Caja sin potencia', capDia:4, promDia:0.29, hist3m:19},
+  {nombre:'Ordenar hilos en caja', capDia:4, promDia:0.08, hist3m:5},
+  {nombre:'Splitter priorizados', capDia:5, promDia:0.06, hist3m:4},
+  {nombre:'Migración a postes nuevos', capDia:4, promDia:0.79, hist3m:52},
 ];
 
 let proyCuadrillas=2;
@@ -889,6 +889,8 @@ function renderProyeccion(){
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="border-bottom:1px solid var(--border)">
         <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Actividad</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Hist&oacute;rico Mar&ndash;Abr&ndash;May</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Prom./mes</th>
         <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Capacidad/d&iacute;a</th>
         <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Peso (pts/u)</th>
         <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Prom. real/d&iacute;a</th>
@@ -897,6 +899,8 @@ function renderProyeccion(){
       <tbody>${regularConPeso.map(r=>`
         <tr style="border-bottom:1px solid rgba(0,0,0,0.04)">
           <td style="padding:7px 10px;color:var(--text)">${r.nombre}</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:600;color:var(--blue)">${r.hist3m}</td>
+          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${(r.hist3m/3).toFixed(1)}</td>
           <td style="padding:7px 10px;text-align:center;color:var(--text2)">${r.capDia}</td>
           <td style="padding:7px 10px;text-align:center;color:var(--text2)">${r.peso.toFixed(4)}</td>
           <td style="padding:7px 10px;text-align:center;font-weight:600;color:#f59e0b">${r.promDia.toFixed(2)}</td>
@@ -904,7 +908,7 @@ function renderProyeccion(){
         </tr>
       `).join('')}
       <tr style="background:rgba(245,158,11,0.06);font-weight:700">
-        <td style="padding:8px 10px;color:var(--text)" colspan="4">Total consumo diario por trabajo regular</td>
+        <td style="padding:8px 10px;color:var(--text)" colspan="6">Total consumo diario por trabajo regular</td>
         <td style="padding:8px 10px;text-align:center;color:#f59e0b">${totalConsumoRegular.toFixed(2)} pts</td>
       </tr>
       </tbody>
