@@ -737,7 +737,7 @@ const PROY_BACKLOG = [
   {nombre:'Migrar UM a ruta preconectorizada', pend:4816, capDia:8},
   {nombre:'Migrar cajas MPLS a preconectorizada', pend:1040, capDia:2},
   {nombre:'Construir reflejos para migración a OLT 620', pend:220, capDia:2},
-  {nombre:'Inventariar/regularizar hilos en nodo para migrar a OLT 620', pend:51, capDia:0.125},
+  {nombre:'Inventariar/regularizar hilos en nodo para migrar a OLT 620', pend:51, capDia:1/10},
   {nombre:'Cajas nuevas a construir', pend:459, capDia:5},
   {nombre:'Mangas', pend:6, capDia:1},
   {nombre:'ODF', pend:2, capDia:1},
@@ -871,16 +871,19 @@ function renderProyeccion(){
         <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Total puntos</th>
         <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">D&iacute;as solo (${proyCuadrillas} cuad.)</th>
       </tr></thead>
-      <tbody>${sorted.map(b=>`
+      <tbody>${sorted.map(b=>{
+        const esLento=b.capDia<1;
+        const capTexto=esLento?'1 cada '+Math.round(1/b.capDia)+' d&iacute;as':b.capDia;
+        return`
         <tr style="border-bottom:1px solid rgba(0,0,0,0.04)">
           <td style="padding:7px 10px;color:var(--text)">${b.nombre}</td>
           <td style="padding:7px 10px;text-align:center;font-weight:600;color:var(--blue)">${b.pend.toLocaleString()}</td>
-          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${b.capDia}</td>
-          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${b.peso.toFixed(4)}</td>
+          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${capTexto}</td>
+          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${parseFloat(b.peso.toFixed(4))}</td>
           <td style="padding:7px 10px;text-align:center;font-weight:600">${b.puntos.toFixed(0)}</td>
           <td style="padding:7px 10px;text-align:center;color:var(--text3)">${(b.puntos/(META_PTS_DIA*proyCuadrillas)).toFixed(0)}</td>
         </tr>
-      `).join('')}</tbody>
+      `;}).join('')}</tbody>
     </table>
   `;
 
@@ -902,7 +905,7 @@ function renderProyeccion(){
           <td style="padding:7px 10px;text-align:center;font-weight:600;color:var(--blue)">${r.hist3m}</td>
           <td style="padding:7px 10px;text-align:center;color:var(--text2)">${(r.hist3m/3).toFixed(1)}</td>
           <td style="padding:7px 10px;text-align:center;color:var(--text2)">${r.capDia}</td>
-          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${r.peso.toFixed(4)}</td>
+          <td style="padding:7px 10px;text-align:center;color:var(--text2)">${parseFloat(r.peso.toFixed(4))}</td>
           <td style="padding:7px 10px;text-align:center;font-weight:600;color:#f59e0b">${r.promDia.toFixed(2)}</td>
           <td style="padding:7px 10px;text-align:center;font-weight:600">${r.consumoDia.toFixed(3)}</td>
         </tr>
