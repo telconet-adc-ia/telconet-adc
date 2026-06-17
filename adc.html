@@ -562,7 +562,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
       <div class="charts-grid" style="margin-bottom:20px">
         <div class="chart-card">
-          <div class="chart-title">&#128202; Distribuci&oacute;n del backlog (puntos)</div>
+          <div class="chart-title">&#128202; Resumen pendientes</div>
           <div class="chart-sub">Peso en puntos de cada actividad pendiente</div>
           <div class="chart-wrap" id="wrap-proy-backlog"><canvas id="ch-proy-backlog"></canvas></div>
         </div>
@@ -832,20 +832,30 @@ function renderProyeccion(){
 
   // Gráfica consumo diario (dona: regular vs disponible)
   if(window._chProyConsumo)window._chProyConsumo.destroy();
+  const totalDona=totalConsumoRegular+capBacklogDia;
   window._chProyConsumo=new Chart(document.getElementById('ch-proy-consumo'),{
     type:'doughnut',
     plugins:[ChartDataLabels],
     data:{
       labels:['Trabajo regular diario','Disponible para backlog'],
-      datasets:[{data:[+totalConsumoRegular.toFixed(2),+capBacklogDia.toFixed(2)],backgroundColor:['#f59e0b','#0e9f6e'],borderWidth:0,hoverOffset:6}]
+      datasets:[{data:[+totalConsumoRegular.toFixed(2),+capBacklogDia.toFixed(2)],backgroundColor:['#f59e0b','#0e9f6e'],borderWidth:2,borderColor:'#fff',hoverOffset:6}]
     },
-    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
+      layout:{padding:24},
       plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:14}},
         tooltip:{callbacks:{label:c=>' '+c.raw+' pts/día'}},
-        datalabels:{color:'#fff',font:{size:12,weight:'bold'},formatter:(v,ctx)=>{
-          const total=ctx.dataset.data.reduce((a,b)=>a+b,0);
-          return v.toFixed(1)+' pts\\n('+Math.round(v/total*100)+'%)';
-        }}
+        datalabels:{
+          color:function(ctx){return ctx.dataset.backgroundColor[ctx.dataIndex];},
+          backgroundColor:'#fff',
+          borderColor:function(ctx){return ctx.dataset.backgroundColor[ctx.dataIndex];},
+          borderWidth:1.5,borderRadius:6,padding:{top:3,bottom:3,left:6,right:6},
+          anchor:'end',align:'end',offset:8,
+          font:{size:11,weight:'bold'},
+          formatter:(v)=>{
+            const pct=Math.round(v/totalDona*100);
+            return v.toFixed(2)+' pts ('+pct+'%)';
+          }
+        }
       }
     }
   });
@@ -899,7 +909,10 @@ function renderProyeccion(){
       </tr>
       </tbody>
     </table>
-    <div style="font-size:10px;color:var(--text3);margin-top:8px">* Promedio calculado del hist&oacute;rico real Marzo&ndash;Abril&ndash;Mayo 2026 (Supabase), dividido entre 22 d&iacute;as h&aacute;biles/mes.</div>
+    <div style="margin-top:12px;background:rgba(14,66,156,0.06);border:1px solid rgba(14,66,156,0.18);border-left:4px solid var(--blue);border-radius:8px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px">
+      <span style="font-size:16px;flex-shrink:0">&#128202;</span>
+      <span style="font-size:11.5px;color:var(--text);line-height:1.5"><strong style="color:var(--blue)">Fuente del c&aacute;lculo:</strong> promedio real extra&iacute;do del hist&oacute;rico de <strong>Supabase</strong> correspondiente a <strong>Marzo&ndash;Abril&ndash;Mayo 2026</strong>, dividido entre <strong>22 d&iacute;as h&aacute;biles/mes</strong>. No es un valor estimado: refleja la carga de trabajo real que las cuadrillas atendieron en ese periodo.</span>
+    </div>
   `;
 }
 
