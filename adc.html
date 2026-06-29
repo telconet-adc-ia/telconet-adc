@@ -1181,6 +1181,8 @@ function ejecutarCorrelacion(){
   if(!rowsReg||!rowsReg.length){alert('No hay datos de cambio de postes cargados.');return;}
   if(!rows||!rows.length){alert('No hay datos de trabajos ADC cargados.');return;}
 
+  const MESES_N={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+
   correlacionActiva=true;
   const btn=document.getElementById('btn-correlacion');
   if(btn){btn.style.background='linear-gradient(135deg,#555,#888)';btn.innerHTML='&#128269; Analizando... (clic para cerrar)';}
@@ -1270,8 +1272,6 @@ function ejecutarCorrelacion(){
   _circulosCorrelacion.forEach(c=>{try{mapaLeaflet.removeLayer(c);}catch(e){}});
   _marcadoresCorrelacion.forEach(m=>{try{mapaLeaflet.removeLayer(m);}catch(e){}});
   _circulosCorrelacion=[];_marcadoresCorrelacion=[];
-
-  const MESES_N={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
 
   resultados.forEach(res=>{
     // Círculo del área de influencia
