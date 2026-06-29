@@ -1029,73 +1029,95 @@ async function loadRegInt(){
 
 function agregarCapaRegulatorio(){
   if(!mapaLeaflet || !rowsReg.length) return;
-  const colTarea=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
-  const colCoord=headersReg.find(h=>h.toUpperCase().includes('COORD')||h.toUpperCase().includes('LAT'))||headersReg[1];
-  const colLat=headersReg.find(h=>h.toUpperCase().includes('LAT')&&!h.toUpperCase().includes('COORD'));
-  const colLng=headersReg.find(h=>h.toUpperCase().includes('LON')||h.toUpperCase().includes('LONG'));
-  console.log('[REG] Headers:', headersReg, '| Primera fila:', JSON.stringify(rowsReg[0]));
+  const colTarea =headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
+  const colCoord =headersReg.find(h=>h.toUpperCase().includes('UBIC')||h.toUpperCase().includes('COORD'))||headersReg[1];
+  const colLat   =headersReg.find(h=>h.toUpperCase()==='LAT');
+  const colLng   =headersReg.find(h=>h.toUpperCase()==='LNG'||h.toUpperCase()==='LON');
+  const colAnio  =headersReg.find(h=>h.toUpperCase().includes('ANIO')||h.toUpperCase().includes('AÑO'));
+  const colMes   =headersReg.find(h=>h.toUpperCase()==='MES');
+  const colDia   =headersReg.find(h=>h.toUpperCase()==='DIA'||h.toUpperCase()==='DÍA');
 
+  // Meses disponibles para el selector
+  const mesesDisp=new Set();
+  rowsReg.forEach(r=>{if(colMes&&r[colMes])mesesDisp.add(r[colMes].trim());});
+
+  // Agregar selector de mes en leyenda si no existe
+  const leyenda=document.getElementById('mapa-leyenda');
+  if(leyenda && !document.getElementById('sel-reg-mes')){
+    const selWrap=document.createElement('div');
+    selWrap.id='reg-mes-wrap';
+    selWrap.style.cssText='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)';
+    selWrap.innerHTML='<span style="color:#ff6b00;font-weight:600">Postes:</span>'+
+      '<select id="sel-reg-mes" style="font-size:11px;padding:3px 7px;border-radius:6px;border:1px solid #ff6b00;background:var(--surface);color:var(--text);cursor:pointer" onchange="filtrarCapaRegulatorio()">'+
+      '<option value="all">Todos los meses</option>'+
+      [...mesesDisp].sort().map(m=>'<option value="'+m+'">'+m+'</option>').join('')+
+      '</select>';
+    const verTodos=leyenda.lastElementChild;
+    if(verTodos)leyenda.insertBefore(selWrap,verTodos);
+    else leyenda.appendChild(selWrap);
+  }
+
+  // Limpiar marcadores previos
+  if(window._regMarcadores){window._regMarcadores.forEach(m=>{try{mapaLeaflet.removeLayer(m);}catch(e){}});}
+  window._regMarcadores=[];
+
+  const mesFiltro=document.getElementById('sel-reg-mes')?document.getElementById('sel-reg-mes').value:'all';
   let regCount=0;
-  const regMarcadores=[];
-  rowsReg.forEach(r=>{
-    let lat=NaN, lng=NaN;
 
-    // Caso 1: columna COORDENADAS con "lat,lng" en una sola celda
-    if(colCoord && r[colCoord]){
-      const raw=(r[colCoord]||'').toString().trim();
-      const parts=raw.split(',');
-      if(parts.length>=2){
-        lat=parseFloat(parts[0].trim());
-        lng=parseFloat(parts[1].trim());
-      }
+  rowsReg.forEach(r=>{
+    if(mesFiltro!=='all'&&colMes&&(r[colMes]||'').trim()!==mesFiltro)return;
+    let lat=NaN,lng=NaN;
+    if(colCoord&&r[colCoord]){
+      const parts=(r[colCoord]||'').toString().trim().split(',');
+      if(parts.length>=2){lat=parseFloat(parts[0]);lng=parseFloat(parts[1]);}
     }
-    // Caso 2: columnas separadas LAT y LONGITUD
-    if((isNaN(lat)||isNaN(lng)) && colLat && colLng){
+    if((isNaN(lat)||isNaN(lng))&&colLat&&colLng){
       lat=parseFloat((r[colLat]||'').toString().replace(',','.'));
       lng=parseFloat((r[colLng]||'').toString().replace(',','.'));
     }
+    if(isNaN(lat)||isNaN(lng)||lat===0||lng===0)return;
 
-    if(isNaN(lat)||isNaN(lng)||lat===0||lng===0) return;
+    const tarea=r[colTarea]||'Sin número';
+    const mes=colMes?r[colMes]||'—':'—';
+    const dia=colDia?r[colDia]||'—':'—';
+    const anio=colAnio?r[colAnio]||'—':'—';
 
     const icon=L.divIcon({
       className:'',
       html:'<div style="width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:18px solid #ff6b00"></div>',
-      iconSize:[18,18],
-      iconAnchor:[9,18]
+      iconSize:[18,18],iconAnchor:[9,18]
     });
     const mk=L.marker([lat,lng],{icon}).addTo(mapaLeaflet);
     mk.bindPopup(
-      '<div style="font-size:12px;min-width:160px">'+
-      '<div style="background:#ff6b00;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9888; REGULATORIO INT</div>'+
-      '<div style="padding:6px 8px"><strong>Tarea:</strong> '+(r[colTarea]||'Sin número')+'<br>'+
-      '<span style="font-size:10px;color:#666">Cambio de postería — requiere revisión</span></div>'+
-      '</div>'
+      '<div style="font-size:12px;min-width:180px">'+
+      '<div style="background:#ff6b00;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#128268; CAMBIO POSTES NOTIFICADOS</div>'+
+      '<div style="padding:6px 8px">'+
+      '<strong>Tarea:</strong> '+tarea+'<br>'+
+      '<strong>Fecha:</strong> '+dia+' / '+mes+' / '+anio+
+      '</div></div>'
     );
-    regMarcadores.push(mk);
+    window._regMarcadores.push(mk);
     regCount++;
   });
 
-  console.log('[REG] Puntos agregados al mapa:', regCount);
-  if(regCount>0){
-    // Guardar marcadores para poder filtrarlos
-    window._regMarcadores=regMarcadores;
-    window._capasActivas=window._capasActivas||{};
-    window._capasActivas['REGULATORIO INT']=true;
-
-    const leyenda=document.getElementById('mapa-leyenda');
-    if(leyenda && !document.getElementById('ley-REGULATORIO_INT')){
-      const div=document.createElement('div');
-      div.id='ley-REGULATORIO_INT';
-      div.onclick=()=>toggleCapaMapa('REGULATORIO INT');
-      div.style.cssText='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);background:var(--surface);border:1.5px solid #ff6b00;padding:4px 10px;border-radius:20px;cursor:pointer;user-select:none;transition:.15s';
-      div.innerHTML='<div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid #ff6b00;flex-shrink:0"></div> Regulatorio Int. <span style="font-size:10px;color:var(--text3)">('+regCount+')</span>';
-      // Insertar antes del botón "Ver todos"
-      const verTodos=leyenda.lastElementChild;
-      if(verTodos) leyenda.insertBefore(div, verTodos);
-      else leyenda.appendChild(div);
-    }
+  // Leyenda item
+  if(!document.getElementById('ley-CAMBIO_POSTES')&&leyenda&&regCount>0){
+    const div=document.createElement('div');
+    div.id='ley-CAMBIO_POSTES';
+    div.onclick=()=>toggleCapaMapa('CAMBIO POSTES');
+    div.style.cssText='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);background:var(--surface);border:1.5px solid #ff6b00;padding:4px 10px;border-radius:20px;cursor:pointer;user-select:none;transition:.15s';
+    div.innerHTML='<div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid #ff6b00;flex-shrink:0"></div> Cambio postes notif. <span id="reg-count" style="font-size:10px;color:var(--text3)">('+regCount+')</span>';
+    const verTodos=leyenda.lastElementChild;
+    if(verTodos)leyenda.insertBefore(div,verTodos);
+    else leyenda.appendChild(div);
+  } else if(document.getElementById('reg-count')){
+    document.getElementById('reg-count').textContent='('+regCount+')';
   }
+  window._capasActivas=window._capasActivas||{};
+  window._capasActivas['CAMBIO POSTES']=true;
 }
+
+function filtrarCapaRegulatorio(){agregarCapaRegulatorio();}
 
 async function refresh(){
   document.getElementById('btn-ref').classList.add('spinning');
@@ -2044,7 +2066,7 @@ function toggleCapaMapa(proc){
     }
   }
   // También manejar capa de regulatorio
-  if(proc==='REGULATORIO INT'){
+  if(proc==='CAMBIO POSTES'){
     window._regMarcadores=window._regMarcadores||[];
     const vis=window._capasActivas[proc];
     window._regMarcadores.forEach(mk=>{
@@ -2064,7 +2086,7 @@ function resetCapasMapa(){
   });
   // Restaurar regulatorio
   (window._regMarcadores||[]).forEach(mk=>{ try{mapaLeaflet.addLayer(mk);}catch(e){} });
-  window._capasActivas['REGULATORIO INT']=true;
+  window._capasActivas['CAMBIO POSTES']=true;
   const btnReg=document.getElementById('ley-REGULATORIO_INT');
   if(btnReg){btnReg.style.opacity='1';btnReg.style.textDecoration='none';}
 }
