@@ -443,6 +443,22 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="chart-card full">
         <div id="mapa-wrap" style="height:500px;border-radius:8px;overflow:hidden;background:#e8eef8"></div>
         <div id="mapa-leyenda" style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap"></div>
+        <!-- BOTÓN ANÁLISIS CORRELACIÓN -->
+        <div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <button id="btn-correlacion" onclick="toggleCorrelacion()" style="display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#ff6b00,#ff9800);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 3px 12px rgba(255,107,0,.3);transition:.2s">
+            &#128269; Analizar correlación postes → incidencias
+          </button>
+          <span id="correlacion-hint" style="font-size:11px;color:var(--text3)">Detecta cajas con incidencias dentro del radio de 250m de cada poste cambiado en el mismo mes</span>
+        </div>
+        <!-- PANEL RESULTADO -->
+        <div id="correlacion-panel" style="display:none;margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">&#128269; Resultado del análisis de correlación</div>
+            <button onclick="cerrarCorrelacion()" style="background:none;border:none;font-size:16px;color:var(--text3);cursor:pointer">&#10005;</button>
+          </div>
+          <div id="correlacion-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px"></div>
+          <div id="correlacion-tabla"></div>
+        </div>
       </div>
     </div>
 
@@ -1120,6 +1136,190 @@ function agregarCapaRegulatorio(){
 }
 
 function filtrarCapaRegulatorio(){agregarCapaRegulatorio();}
+
+// ── ANÁLISIS DE CORRELACIÓN POSTES → INCIDENCIAS ─────────────
+let correlacionActiva=false;
+let _circulosCorrelacion=[], _marcadoresCorrelacion=[];
+
+function toggleCorrelacion(){
+  if(correlacionActiva){
+    cerrarCorrelacion();
+  } else {
+    ejecutarCorrelacion();
+  }
+}
+
+function cerrarCorrelacion(){
+  correlacionActiva=false;
+  // Limpiar capas del mapa
+  _circulosCorrelacion.forEach(c=>{try{mapaLeaflet.removeLayer(c);}catch(e){}});
+  _marcadoresCorrelacion.forEach(m=>{try{mapaLeaflet.removeLayer(m);}catch(e){}});
+  _circulosCorrelacion=[];_marcadoresCorrelacion=[];
+  document.getElementById('correlacion-panel').style.display='none';
+  const btn=document.getElementById('btn-correlacion');
+  if(btn){btn.style.background='linear-gradient(135deg,#ff6b00,#ff9800)';btn.innerHTML='&#128269; Analizar correlación postes → incidencias';}
+}
+
+// Distancia en metros entre dos coordenadas (Haversine)
+function distMetros(lat1,lng1,lat2,lng2){
+  const R=6371000;
+  const dLat=(lat2-lat1)*Math.PI/180;
+  const dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)*Math.sin(dLat/2)+
+    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+    Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function ejecutarCorrelacion(){
+  if(!mapaLeaflet){alert('Primero abre el mapa de trabajos.');return;}
+  if(!rowsReg||!rowsReg.length){alert('No hay datos de cambio de postes cargados.');return;}
+  if(!rows||!rows.length){alert('No hay datos de trabajos ADC cargados.');return;}
+
+  correlacionActiva=true;
+  const btn=document.getElementById('btn-correlacion');
+  if(btn){btn.style.background='linear-gradient(135deg,#555,#888)';btn.innerHTML='&#128269; Analizando... (clic para cerrar)';}
+
+  const RADIO=250; // metros
+  const PROCS_INCIDENCIA=['INCIDENCIA'];
+
+  // Columnas regulatorio
+  const colCoordR=headersReg.find(h=>h.toUpperCase().includes('UBIC')||h.toUpperCase().includes('COORD'))||headersReg[1];
+  const colMesR  =headersReg.find(h=>h.toUpperCase()==='MES');
+  const colTareaR=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
+
+  // Parsear postes con coordenadas válidas
+  const postes=[];
+  rowsReg.forEach(r=>{
+    const raw=(r[colCoordR]||'').toString().trim();
+    const parts=raw.split(',');
+    if(parts.length<2)return;
+    const lat=parseFloat(parts[0]),lng=parseFloat(parts[1]);
+    if(isNaN(lat)||isNaN(lng)||lat===0||lng===0)return;
+    postes.push({lat,lng,mes:colMesR?r[colMesR]:'',tarea:r[colTareaR]||'',raw:r});
+  });
+
+  if(!postes.length){
+    document.getElementById('correlacion-panel').style.display='block';
+    document.getElementById('correlacion-kpis').innerHTML='<div style="grid-column:1/-1;color:var(--text3);font-size:12px">No se encontraron coordenadas válidas en los datos de postes.</div>';
+    return;
+  }
+
+  // Incidencias del Sheet ADC con coordenadas
+  const incidencias=rows.filter(r=>{
+    const proc=(r['PROCEDENCIA']||'').trim().toUpperCase();
+    return PROCS_INCIDENCIA.includes(proc) &&
+      (r['ESTADO']||'').trim().toUpperCase()==='REALIZADO' &&
+      r['LAT'] && r['LNG'] &&
+      !isNaN(parseFloat(r['LAT'])) && !isNaN(parseFloat(r['LNG']));
+  }).map(r=>({
+    lat:parseFloat(r['LAT']),lng:parseFloat(r['LNG']),
+    mes:r['MES']||'',nodo:r['NODO']||'',
+    caja:r['CAJA']||'',tipo:r['TIPO TAREA']||r['TIPO DE TAREA']||''
+  }));
+
+  // Cruce: para cada poste buscar incidencias en mismo mes y dentro del radio
+  const resultados=[];
+  let totalAfectadas=0;
+  const cajasAfectadasSet=new Set();
+
+  postes.forEach(poste=>{
+    const dentroRadio=incidencias.filter(inc=>{
+      // Mismo mes
+      if(poste.mes && inc.mes && String(poste.mes).trim()!==String(inc.mes).trim()) return false;
+      // Dentro del radio
+      return distMetros(poste.lat,poste.lng,inc.lat,inc.lng)<=RADIO;
+    });
+    if(dentroRadio.length>0){
+      resultados.push({poste,incidencias:dentroRadio});
+      dentroRadio.forEach(i=>cajasAfectadasSet.add(i.caja||i.nodo));
+      totalAfectadas+=dentroRadio.length;
+    }
+  });
+
+  // Dibujar en el mapa
+  _circulosCorrelacion.forEach(c=>{try{mapaLeaflet.removeLayer(c);}catch(e){}});
+  _marcadoresCorrelacion.forEach(m=>{try{mapaLeaflet.removeLayer(m);}catch(e){}});
+  _circulosCorrelacion=[];_marcadoresCorrelacion=[];
+
+  const MESES_N={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+
+  resultados.forEach(res=>{
+    // Círculo del área de influencia
+    const circulo=L.circle([res.poste.lat,res.poste.lng],{
+      radius:RADIO,
+      color:'#ff6b00',fillColor:'#ff6b00',fillOpacity:.10,
+      weight:2,dashArray:'6,4'
+    }).addTo(mapaLeaflet);
+    circulo.bindTooltip('Poste: '+res.poste.tarea+' · '+res.incidencias.length+' incidencia(s) en zona',{sticky:true});
+    _circulosCorrelacion.push(circulo);
+
+    // Marcadores de incidencias dentro del radio
+    res.incidencias.forEach(inc=>{
+      const mk=L.circleMarker([inc.lat,inc.lng],{
+        radius:7,fillColor:'#dc2626',color:'#fff',weight:1.5,fillOpacity:.9
+      }).addTo(mapaLeaflet);
+      mk.bindPopup(
+        '<div style="font-size:12px;min-width:180px">'+
+        '<div style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9888; INCIDENCIA EN ZONA POSTE</div>'+
+        '<div style="padding:6px 8px">'+
+        '<strong>Caja:</strong> '+inc.caja+'<br>'+
+        '<strong>Tipo:</strong> '+inc.tipo+'<br>'+
+        '<strong>Mes:</strong> '+(MESES_N[parseInt(inc.mes)]||inc.mes)+'<br>'+
+        '<strong>Poste ref.:</strong> '+res.poste.tarea+
+        '</div></div>'
+      );
+      _marcadoresCorrelacion.push(mk);
+    });
+  });
+
+  // Mostrar panel de resultados
+  const panel=document.getElementById('correlacion-panel');
+  panel.style.display='block';
+
+  const pctCorrelacion=postes.length?Math.round(resultados.length/postes.length*100):0;
+  document.getElementById('correlacion-kpis').innerHTML=`
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:#ff6b00">${postes.length}</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px">Postes analizados</div>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:#dc2626">${totalAfectadas}</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px">Incidencias en zona (${cajasAfectadasSet.size} cajas)</div>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:${pctCorrelacion>50?'#dc2626':pctCorrelacion>25?'#f59e0b':'#16a34a'}">${pctCorrelacion}%</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px">Postes con incidencias cercanas</div>
+    </div>`;
+
+  // Tabla de resultados
+  if(!resultados.length){
+    document.getElementById('correlacion-tabla').innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px">No se encontraron incidencias dentro del radio de 250m en el mismo mes de los cambios de poste.</div>';
+  } else {
+    const filas=resultados.map(res=>`
+      <tr style="border-bottom:1px solid rgba(0,0,0,0.04)">
+        <td style="padding:7px 10px;font-size:11px;color:var(--text);font-weight:500">${res.poste.tarea}</td>
+        <td style="padding:7px 10px;font-size:11px;text-align:center;color:var(--text3)">${MESES_N[parseInt(res.poste.mes)]||res.poste.mes}</td>
+        <td style="padding:7px 10px;font-size:11px;text-align:center;font-weight:600;color:#dc2626">${res.incidencias.length}</td>
+        <td style="padding:7px 10px;font-size:11px;color:var(--text2)">${res.incidencias.map(i=>i.tipo).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}</td>
+        <td style="padding:7px 10px;font-size:11px;color:var(--text3)">${res.poste.lat.toFixed(5)}, ${res.poste.lng.toFixed(5)}</td>
+      </tr>`).join('');
+    document.getElementById('correlacion-tabla').innerHTML=`
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Postes con incidencias en su zona de influencia (250m, mismo mes)</div>
+      <div style="overflow-x:auto;max-height:260px;overflow-y:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Tarea poste</th>
+            <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Mes</th>
+            <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Incidencias</th>
+            <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Tipos</th>
+            <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Coordenadas</th>
+          </tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>`;
+  }
+}
 
 async function refresh(){
   document.getElementById('btn-ref').classList.add('spinning');
