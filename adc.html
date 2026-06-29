@@ -1408,15 +1408,6 @@ function abrirDetalleCuad(cuad, rFilt){
   document._modalEsc=e=>{if(e.key==='Escape')cerrarModalCuad();};
   document.addEventListener('keydown',document._modalEsc);
 }
-  const m=document.getElementById('modal-cuad');
-  if(m) m.remove();
-  const ca=document.querySelector('.content-area');
-  if(ca) ca.style.pointerEvents='';
-  if(document._modalEsc){
-    document.removeEventListener('keydown', document._modalEsc);
-    delete document._modalEsc;
-  }
-}
 
 function buildChartTipo(rFilt){
   if(chartTipo){chartTipo.destroy();chartTipo=null;}
