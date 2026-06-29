@@ -1037,9 +1037,10 @@ function agregarCapaRegulatorio(){
   const colMes   =headersReg.find(h=>h.toUpperCase()==='MES');
   const colDia   =headersReg.find(h=>h.toUpperCase()==='DIA'||h.toUpperCase()==='DÍA');
 
-  // Meses disponibles para el selector
+  const MESES_NOMBRES={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
   const mesesDisp=new Set();
   rowsReg.forEach(r=>{if(colMes&&r[colMes])mesesDisp.add(r[colMes].trim());});
+  const mesesOrdenados=[...mesesDisp].sort((a,b)=>parseInt(a)-parseInt(b));
 
   // Agregar selector de mes en leyenda si no existe
   const leyenda=document.getElementById('mapa-leyenda');
@@ -1050,7 +1051,7 @@ function agregarCapaRegulatorio(){
     selWrap.innerHTML='<span style="color:#ff6b00;font-weight:600">Postes:</span>'+
       '<select id="sel-reg-mes" style="font-size:11px;padding:3px 7px;border-radius:6px;border:1px solid #ff6b00;background:var(--surface);color:var(--text);cursor:pointer" onchange="filtrarCapaRegulatorio()">'+
       '<option value="all">Todos los meses</option>'+
-      [...mesesDisp].sort().map(m=>'<option value="'+m+'">'+m+'</option>').join('')+
+      mesesOrdenados.map(m=>'<option value="'+m+'">'+(MESES_NOMBRES[parseInt(m)]||m)+'</option>').join('')+
       '</select>';
     const verTodos=leyenda.lastElementChild;
     if(verTodos)leyenda.insertBefore(selWrap,verTodos);
@@ -1078,7 +1079,8 @@ function agregarCapaRegulatorio(){
     if(isNaN(lat)||isNaN(lng)||lat===0||lng===0)return;
 
     const tarea=r[colTarea]||'Sin número';
-    const mes=colMes?r[colMes]||'—':'—';
+    const mesNum=colMes?r[colMes]||'':'';
+    const mesNombre=MESES_NOMBRES[parseInt(mesNum)]||mesNum||'—';
     const dia=colDia?r[colDia]||'—':'—';
     const anio=colAnio?r[colAnio]||'—':'—';
 
@@ -1093,7 +1095,7 @@ function agregarCapaRegulatorio(){
       '<div style="background:#ff6b00;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#128268; CAMBIO POSTES NOTIFICADOS</div>'+
       '<div style="padding:6px 8px">'+
       '<strong>Tarea:</strong> '+tarea+'<br>'+
-      '<strong>Fecha:</strong> '+dia+' / '+mes+' / '+anio+
+      '<strong>Fecha:</strong> '+dia+' / '+mesNombre+' / '+anio+
       '</div></div>'
     );
     window._regMarcadores.push(mk);
@@ -2025,7 +2027,7 @@ function buildMapa(){
     </div>`).join('');
 
   // Botón "Ver todos"
-  leyendaEl.innerHTML+=`<div onclick="resetCapasMapa()" style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tnblue);background:var(--tnblue-light);border:1.5px solid var(--tnblue);padding:4px 10px;border-radius:20px;cursor:pointer;user-select:none">&#10003; Ver todos</div>`;
+  leyendaEl.innerHTML+=`<div id="btn-ver-todos" onclick="toggleTodasCapas()" style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tnblue);background:var(--tnblue-light);border:1.5px solid var(--tnblue);padding:4px 10px;border-radius:20px;cursor:pointer;user-select:none">&#10003; Ver todos</div>`;
 
   const allMk=[...Object.values(window._mapaCapas).flat()];
   if(allMk.length){
@@ -2076,19 +2078,47 @@ function toggleCapaMapa(proc){
   }
 }
 
+let _todasVisible=true;
+function toggleTodasCapas(){
+  _todasVisible=!_todasVisible;
+  const btn=document.getElementById('btn-ver-todos');
+  if(_todasVisible){
+    // Mostrar todo
+    if(window._mapaCapas&&mapaLeaflet){
+      Object.keys(window._mapaCapas).forEach(proc=>{
+        (window._mapaCapas[proc]||[]).forEach(mk=>mk.setStyle({fillOpacity:.88,opacity:1}));
+        window._capasActivas[proc]=true;
+        const b=document.getElementById('ley-'+proc.replace(/\s+/g,'_'));
+        if(b){b.style.opacity='1';b.style.textDecoration='none';}
+      });
+    }
+    (window._regMarcadores||[]).forEach(mk=>{try{mapaLeaflet.addLayer(mk);}catch(e){}});
+    window._capasActivas['CAMBIO POSTES']=true;
+    const bReg=document.getElementById('ley-CAMBIO_POSTES');
+    if(bReg){bReg.style.opacity='1';bReg.style.textDecoration='none';}
+    if(btn){btn.innerHTML='&#10003; Ver todos';btn.style.color='var(--tnblue)';}
+  } else {
+    // Ocultar todo
+    if(window._mapaCapas&&mapaLeaflet){
+      Object.keys(window._mapaCapas).forEach(proc=>{
+        (window._mapaCapas[proc]||[]).forEach(mk=>mk.setStyle({fillOpacity:0,opacity:0}));
+        window._capasActivas[proc]=false;
+        const b=document.getElementById('ley-'+proc.replace(/\s+/g,'_'));
+        if(b){b.style.opacity='.35';b.style.textDecoration='line-through';}
+      });
+    }
+    (window._regMarcadores||[]).forEach(mk=>{try{mapaLeaflet.removeLayer(mk);}catch(e){}});
+    window._capasActivas['CAMBIO POSTES']=false;
+    const bReg=document.getElementById('ley-CAMBIO_POSTES');
+    if(bReg){bReg.style.opacity='.35';bReg.style.textDecoration='line-through';}
+    if(btn){btn.innerHTML='&#9634; Mostrar todos';btn.style.color='var(--text3)';}
+  }
+}
+
 function resetCapasMapa(){
-  if(!window._mapaCapas||!mapaLeaflet) return;
-  Object.keys(window._mapaCapas).forEach(proc=>{
-    (window._mapaCapas[proc]||[]).forEach(mk=>mk.setStyle({fillOpacity:.88,opacity:1}));
-    window._capasActivas[proc]=true;
-    const btn=document.getElementById('ley-'+proc.replace(/\s+/g,'_'));
-    if(btn){btn.style.opacity='1';btn.style.textDecoration='none';}
-  });
-  // Restaurar regulatorio
-  (window._regMarcadores||[]).forEach(mk=>{ try{mapaLeaflet.addLayer(mk);}catch(e){} });
-  window._capasActivas['CAMBIO POSTES']=true;
-  const btnReg=document.getElementById('ley-REGULATORIO_INT');
-  if(btnReg){btnReg.style.opacity='1';btnReg.style.textDecoration='none';}
+  _todasVisible=true;
+  toggleTodasCapas();
+  _todasVisible=true; // forzar estado correcto
 }
 
 
