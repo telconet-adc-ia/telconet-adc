@@ -1217,6 +1217,7 @@ function renderDashboard(){
     <div class="kpi-card cyan"><span class="kpi-icon">&#128956;</span><div class="kpi-val">${new Set(rFilt.map(r=>r['NODO']).filter(Boolean)).size}</div><div class="kpi-lbl">Nodos trabajos ADC</div><div class="kpi-sub">en el periodo</div></div>`;
 
   buildChartCuad(rFilt);
+  window._rFiltActual=rFilt;
   buildChartTipo(rFilt);
   buildChartMes(rowsAnio);
   buildChartTareas(rFilt);
@@ -1274,6 +1275,56 @@ function buildChartCuad(rFilt){
 }
 
 // ── MODAL DETALLE CUADRILLA ──────────────────────────────────
+function buildChartCuadFiltrado(rFiltProc, proc, color){
+  if(chartCuad){chartCuad.destroy();chartCuad=null;}
+  document.getElementById('wrap-cuad').innerHTML='<canvas id="ch-cuad" style="cursor:pointer"></canvas>';
+
+  // Encabezado indicando el filtro activo
+  const sub=document.getElementById('sub-cuad');
+  if(sub) sub.innerHTML=`<span style="color:${color};font-weight:600">&#11044; ${proc}</span> &mdash; clic en barra para detalle &middot; <span style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="buildChartCuad(window._rFiltActual||[]);document.getElementById('sub-cuad').textContent='Trabajos realizados'">&#8635; Ver todas</span>`;
+
+  if(!rFiltProc.length){
+    document.getElementById('wrap-cuad').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px 0;text-align:center">Sin trabajos realizados para esta procedencia</p>';
+    return;
+  }
+
+  // Agrupar por cuadrilla
+  const cuadMap={};
+  rFiltProc.forEach(r=>{
+    const c=(r['CUADRILLA']||'Sin cuadrilla').trim();
+    cuadMap[c]=(cuadMap[c]||0)+1;
+  });
+  const d=Object.entries(cuadMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const cols=d.map((_,i)=>`hsl(${210+i*18},70%,${38+i*4}%)`);
+
+  chartCuad=new Chart(document.getElementById('ch-cuad'),{
+    type:'bar',
+    plugins:[ChartDataLabels],
+    data:{
+      labels:d.map(([k])=>k.length>22?k.slice(0,20)+'…':k),
+      datasets:[{data:d.map(([,v])=>v),backgroundColor:cols,borderRadius:5,borderSkipped:false}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      onClick:(evt,els)=>{
+        if(!els.length)return;
+        const cuadNombre=d[els[0].index][0];
+        abrirDetalleCuad(cuadNombre,window._rFiltActual||[]);
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y+' trabajos · clic para ver detalle'}},
+        datalabels:{anchor:'end',align:'end',offset:2,color:'#003087',font:{size:11,weight:'bold'},formatter:v=>v}
+      },
+      scales:{
+        y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},
+        x:{grid:{display:false},ticks:{font:{size:9},maxRotation:35}}
+      },
+      layout:{padding:{top:20}}
+    }
+  });
+}
+
 function abrirDetalleCuad(cuad, rFilt){
   cerrarModalCuad();
   const trabajos=rFilt.filter(r=>
@@ -1326,7 +1377,7 @@ function abrirDetalleCuad(cuad, rFilt){
           <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Desglose por tipo de tarea</div>
           <table style="width:100%;border-collapse:collapse;font-size:12px">
             <thead><tr style="border-bottom:1px solid var(--border)">
-              <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)">Tipo</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text3)">Tipo</th>
               <th style="padding:6px 10px;text-align:center;font-size:10px;color:var(--text3)">Cantidad</th>
               <th style="padding:6px 10px;text-align:center;font-size:10px;color:var(--text3)">%</th>
             </tr></thead>
@@ -1350,21 +1401,13 @@ function abrirDetalleCuad(cuad, rFilt){
 
   document.body.appendChild(overlay);
   document.querySelector('.content-area').style.pointerEvents='none';
-
-  // Cerrar con botón
-  document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModalCuad);
-
-  // Cerrar al hacer clic fuera del panel
-  overlay.addEventListener('click', function(e){
-    if(!document.getElementById('modal-cuad-inner').contains(e.target)) cerrarModalCuad();
+  document.getElementById('btn-cerrar-modal').addEventListener('click',cerrarModalCuad);
+  overlay.addEventListener('click',e=>{
+    if(!document.getElementById('modal-cuad-inner').contains(e.target))cerrarModalCuad();
   });
-
-  // Cerrar con Escape
-  document._modalEsc = function(e){ if(e.key==='Escape') cerrarModalCuad(); };
-  document.addEventListener('keydown', document._modalEsc);
+  document._modalEsc=e=>{if(e.key==='Escape')cerrarModalCuad();};
+  document.addEventListener('keydown',document._modalEsc);
 }
-
-function cerrarModalCuad(){
   const m=document.getElementById('modal-cuad');
   if(m) m.remove();
   const ca=document.querySelector('.content-area');
@@ -1393,10 +1436,25 @@ function buildChartTipo(rFilt){
     options:{
       responsive:true,maintainAspectRatio:false,
       onClick:(evt,els)=>{
-        if(!els.length)return;
+        if(!els.length){
+          // Clic en área vacía → restablecer filtro de procedencia
+          buildChartCuad(window._rFiltActual||[]);
+          document.getElementById('sub-cuad').textContent='Trabajos realizados';
+          return;
+        }
         const idx=els[0].index;
         const proc=d[idx][0];
         const color=colors[idx%colors.length];
+
+        // Filtrar cuadrillas solo para esa procedencia
+        const rFiltProc=(window._rFiltActual||[]).filter(r=>
+          (r['PROCEDENCIA']||'').trim()===proc &&
+          (r['ESTADO']||'').trim().toUpperCase()==='REALIZADO'
+        );
+        // Reconstruir gráfica de cuadrillas con el filtro
+        buildChartCuadFiltrado(rFiltProc, proc, color);
+
+        // Abrir modal de desglose
         abrirDesgloseProcedencia(proc,color,rRealizados);
       },
       plugins:{
@@ -3116,6 +3174,17 @@ function toggleFotosMapa(btn){
 function cerrarModal(){
   const m=document.getElementById('foto-modal');
   if(m) m.style.display='none';
+}
+
+function cerrarModalCuad(){
+  const m=document.getElementById('modal-cuad');
+  if(m) m.remove();
+  const ca=document.querySelector('.content-area');
+  if(ca) ca.style.pointerEvents='';
+  if(document._modalEsc){
+    document.removeEventListener('keydown',document._modalEsc);
+    delete document._modalEsc;
+  }
 }
 </script>
 </body>
