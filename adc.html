@@ -1452,7 +1452,7 @@ function abrirDesgloseProcedencia(proc,color,rRealizados){
       regs.forEach(r=>{const c=(r['CAJA']||r['NODO']||'Sin caja').trim();cajas[c]=(cajas[c]||0)+1;});
       detalleItems=Object.entries(cajas).sort((a,b)=>b[1]-a[1])
         .map(([c,n])=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(${color.startsWith('#')?hexToRgb(color):'200,50,50'},.07);border:1px solid rgba(${color.startsWith('#')?hexToRgb(color):'200,50,50'},.18);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--text);margin:2px">
-          &#128268; ${c.length>40?c.slice(0,38)+'…':c}${n>1?' <strong>('+n+')</strong>':''}</span>`).join('');
+          &#128268; ${c}${n>1?' <strong>('+n+')</strong>':''}</span>`).join('');
     }
 
     return`
