@@ -1312,7 +1312,7 @@ function ejecutarCorrelacion(){
 
   const totalIncidencias=incidencias.length;
   const pctCorrelacion=totalIncidencias?Math.round(totalAfectadas/totalIncidencias*100):0;
-  const mesLabel=MESES_N[parseInt(postes[0]?.mes||0)]||'Período analizado';
+  const mesLabel=selMes==='TODOS'?'todos los meses':(selMes.charAt(0)+selMes.slice(1).toLowerCase());
 
   // Desglose por tipo de las incidencias correlacionadas
   const porTipoAfect={};
