@@ -1201,6 +1201,13 @@ function ejecutarCorrelacion(){
   const RADIO=250; // metros
   const PROCS_INCIDENCIA=['INCIDENCIA'];
 
+  // Usar los mismos filtros activos del dashboard (año y mes seleccionados)
+  const rowsFiltrados=(()=>{
+    const anioCol=Object.keys(rows[0]||{}).find(k=>k.toUpperCase().includes('AÑO')||k.toUpperCase().includes('ANIO'))||'AÑO';
+    const rowsAnio=rows.filter(r=>String(r[anioCol]||'').trim()===selAnio);
+    return selMes==='TODOS'?rowsAnio:rowsAnio.filter(r=>(r['MES']||'').toUpperCase()===selMes);
+  })();
+
   // Columnas regulatorio
   const colCoordR=headersReg.find(h=>h.toUpperCase().includes('UBIC')||h.toUpperCase().includes('COORD'))||headersReg[1];
   const colMesR  =headersReg.find(h=>h.toUpperCase()==='MES');
@@ -1234,7 +1241,7 @@ function ejecutarCorrelacion(){
   const MESES_MAP={'ENERO':'1','FEBRERO':'2','MARZO':'3','ABRIL':'4','MAYO':'5','JUNIO':'6',
     'JULIO':'7','AGOSTO':'8','SEPTIEMBRE':'9','OCTUBRE':'10','NOVIEMBRE':'11','DICIEMBRE':'12'};
 
-  const incidencias=rows.filter(r=>{
+  const incidencias=rowsFiltrados.filter(r=>{
     const proc=(r['PROCEDENCIA']||'').trim().toUpperCase();
     return PROCS_INCIDENCIA.includes(proc) &&
       (r['ESTADO']||'').trim().toUpperCase()==='REALIZADO' &&
