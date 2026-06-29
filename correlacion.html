@@ -194,34 +194,46 @@ const SCRIPT_URL='https://script.google.com/macros/s/AKfycbzBxFpv4Q1heUSSAOpyGCb
 const MESES_N={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
 const MESES_MAP={'ENERO':'1','FEBRERO':'2','MARZO':'3','ABRIL':'4','MAYO':'5','JUNIO':'6','JULIO':'7','AGOSTO':'8','SEPTIEMBRE':'9','OCTUBRE':'10','NOVIEMBRE':'11','DICIEMBRE':'12'};
 
-let rowsADC=[], rowsReg=[], headersReg=[];
+let rowsADC=[], rowsReg=[], headersReg=[], anioColADC='AÑO';
 let mapaL=null, capasCorr=[];
 
-// ── CARGA DE DATOS ──────────────────────────────────────────
-function jsonp(url,cb){
-  const name='_cb_'+Date.now();
-  const sc=document.createElement('script');
-  const timer=setTimeout(()=>{delete window[name];sc.remove();cb(null);},30000);
-  window[name]=d=>{clearTimeout(timer);delete window[name];sc.remove();cb(d);};
-  sc.onerror=()=>{clearTimeout(timer);delete window[name];sc.remove();cb(null);};
-  sc.src=url+'&callback='+name;
-  document.head.appendChild(sc);
+// ── JSONP — misma lógica que dashboard ADC ───────────────────
+function jsonpAction(base,action){
+  return new Promise((res,rej)=>{
+    const cb='cba_'+Date.now()+'_'+action;
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{
+      if(s.parentNode)s.parentNode.removeChild(s);
+      rej(new Error('Timeout '+action));
+    },30000);
+    window[cb]=d=>{clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);res(d);};
+    s.onerror=()=>{clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);rej(new Error('Error '+action));};
+    s.src=base+'?action='+action+'&callback='+cb;
+    document.head.appendChild(s);
+  });
 }
 
-function cargarDatos(){
-  let pendientes=2;
-  function done(){
-    pendientes--;
-    if(pendientes===0) onDatosCargados();
+// ── CARGA DE DATOS ──────────────────────────────────────────
+async function cargarDatos(){
+  try{
+    const base=SCRIPT_URL.split('?')[0];
+    const [dADC, dReg]=await Promise.all([
+      jsonpAction(base,'data'),
+      jsonpAction(base,'regint')
+    ]);
+    if(dADC&&dADC.rows) rowsADC=dADC.rows;
+    // Detectar columna de año igual que el dashboard ADC
+    const hdrs=dADC.headers||[];
+    anioColADC=hdrs.includes('AÑO')?'AÑO':hdrs.includes('ANO')?'ANO':(hdrs.find(h=>/^a.?[nñ]o$/i.test(h.trim()))||'AÑO');
+    if(dReg&&dReg.rows){
+      rowsReg=dReg.rows;
+      headersReg=dReg.headers||Object.keys(dReg.rows[0]||{});
+    }
+    onDatosCargados();
+  }catch(e){
+    document.getElementById('slbl').textContent='Error: '+e.message;
+    console.error(e);
   }
-  jsonp(SCRIPT_URL+'?action=data',d=>{
-    if(d&&d.ok&&d.filas) rowsADC=d.filas;
-    done();
-  });
-  jsonp(SCRIPT_URL+'?action=regint',d=>{
-    if(d&&d.ok&&d.filas){rowsReg=d.filas;headersReg=d.columnas||Object.keys(d.filas[0]||{});}
-    done();
-  });
 }
 
 function onDatosCargados(){
@@ -297,12 +309,13 @@ function ejecutarAnalisis(){
   });
 
   // Filtrar incidencias
-  const anioCol=Object.keys(rowsADC[0]||{}).find(k=>k.toUpperCase().includes('AÑO')||k.toUpperCase().includes('ANIO'))||'AÑO';
+  // Detectar columna de año igual que el dashboard ADC
+  const hdrs=dADC.headers||[];
   const incidencias=rowsADC.filter(r=>{
     const proc=(r['PROCEDENCIA']||'').trim().toUpperCase();
     const estado=(r['ESTADO']||'').trim().toUpperCase();
     const mes=(r['MES']||'').trim().toUpperCase();
-    const anio=String(r[anioCol]||'').trim();
+    const anio=String(r[anioColADC]||'').trim();
     return proc.includes('INCIDENCIA')&&estado.includes('REALIZADO')&&
       (mesInc==='all'||mes===mesInc)&&(anio===anioInc)&&(r['UBICACION']||'').trim();
   }).map(r=>{
