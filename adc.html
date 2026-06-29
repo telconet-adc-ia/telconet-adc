@@ -1151,13 +1151,18 @@ function toggleCorrelacion(){
 
 function cerrarCorrelacion(){
   correlacionActiva=false;
-  // Limpiar capas del mapa
   _circulosCorrelacion.forEach(c=>{try{mapaLeaflet.removeLayer(c);}catch(e){}});
   _marcadoresCorrelacion.forEach(m=>{try{mapaLeaflet.removeLayer(m);}catch(e){}});
   _circulosCorrelacion=[];_marcadoresCorrelacion=[];
   document.getElementById('correlacion-panel').style.display='none';
   const btn=document.getElementById('btn-correlacion');
   if(btn){btn.style.background='linear-gradient(135deg,#ff6b00,#ff9800)';btn.innerHTML='&#128269; Analizar correlación postes → incidencias';}
+  // Restaurar capas normales del mapa
+  if(window._capasOcultas){
+    window._capasOcultas.forEach(mk=>{try{mapaLeaflet.addLayer(mk);}catch(e){}});
+    window._capasOcultas=null;
+  }
+  (window._regMarcadores||[]).forEach(mk=>{try{mapaLeaflet.addLayer(mk);}catch(e){}});
 }
 
 // Distancia en metros entre dos coordenadas (Haversine)
@@ -1179,6 +1184,17 @@ function ejecutarCorrelacion(){
   correlacionActiva=true;
   const btn=document.getElementById('btn-correlacion');
   if(btn){btn.style.background='linear-gradient(135deg,#555,#888)';btn.innerHTML='&#128269; Analizando... (clic para cerrar)';}
+
+  // Ocultar marcadores normales del mapa para no confundir
+  // pero mantener visibles los triángulos de postes (_regMarcadores)
+  window._capasOcultas=[];
+  if(window._mapaCapas){
+    Object.values(window._mapaCapas).forEach(mkArr=>{
+      (mkArr||[]).forEach(mk=>{
+        try{mapaLeaflet.removeLayer(mk);window._capasOcultas.push(mk);}catch(e){}
+      });
+    });
+  }
 
   const RADIO=250; // metros
   const PROCS_INCIDENCIA=['INCIDENCIA'];
@@ -1263,7 +1279,8 @@ function ejecutarCorrelacion(){
     // Marcadores de incidencias dentro del radio
     res.incidencias.forEach(inc=>{
       const mk=L.circleMarker([inc.lat,inc.lng],{
-        radius:7,fillColor:'#dc2626',color:'#fff',weight:1.5,fillOpacity:.9
+        radius:9,fillColor:'#dc2626',color:'#fff',weight:2.5,fillOpacity:.95,
+        className:'correlacion-marker'
       }).addTo(mapaLeaflet);
       mk.bindPopup(
         '<div style="font-size:12px;min-width:180px">'+
@@ -2199,6 +2216,12 @@ function buildMapa(){
   });
   if(!puntos.length){wrap.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:12px;color:var(--text3)">Sin coordenadas para el periodo</div>';document.getElementById('mapa-leyenda').innerHTML='';return;}
   if(mapaLeaflet){mapaLeaflet.remove();mapaLeaflet=null;}
+  // Resetear correlación al reconstruir el mapa
+  correlacionActiva=false;
+  _circulosCorrelacion=[];_marcadoresCorrelacion=[];
+  document.getElementById('correlacion-panel').style.display='none';
+  const btnCorr=document.getElementById('btn-correlacion');
+  if(btnCorr){btnCorr.style.background='linear-gradient(135deg,#ff6b00,#ff9800)';btnCorr.innerHTML='&#128269; Analizar correlación postes → incidencias';}
   wrap.innerHTML='';
   const map=L.map(wrap,{zoomControl:true,attributionControl:false});
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
