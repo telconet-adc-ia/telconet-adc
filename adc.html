@@ -1205,18 +1205,23 @@ function ejecutarCorrelacion(){
     return;
   }
 
-  // Incidencias del Sheet ADC con coordenadas
+  // Incidencias del Sheet ADC con coordenadas (columna UBICACION = "lat,lng")
+  const MESES_MAP={'ENERO':'1','FEBRERO':'2','MARZO':'3','ABRIL':'4','MAYO':'5','JUNIO':'6',
+    'JULIO':'7','AGOSTO':'8','SEPTIEMBRE':'9','OCTUBRE':'10','NOVIEMBRE':'11','DICIEMBRE':'12'};
+
   const incidencias=rows.filter(r=>{
     const proc=(r['PROCEDENCIA']||'').trim().toUpperCase();
     return PROCS_INCIDENCIA.includes(proc) &&
       (r['ESTADO']||'').trim().toUpperCase()==='REALIZADO' &&
-      r['LAT'] && r['LNG'] &&
-      !isNaN(parseFloat(r['LAT'])) && !isNaN(parseFloat(r['LNG']));
-  }).map(r=>({
-    lat:parseFloat(r['LAT']),lng:parseFloat(r['LNG']),
-    mes:r['MES']||'',nodo:r['NODO']||'',
-    caja:r['CAJA']||'',tipo:r['TIPO TAREA']||r['TIPO DE TAREA']||''
-  }));
+      (r['UBICACION']||'').trim();
+  }).map(r=>{
+    const parts=(r['UBICACION']||'').trim().split(',');
+    const lat=parseFloat(parts[0]), lng=parseFloat(parts[1]);
+    // Normalizar mes a número string: "JUNIO"→"6" o "6"→"6"
+    const mesRaw=(r['MES']||'').trim().toUpperCase();
+    const mesNum=MESES_MAP[mesRaw]||mesRaw;
+    return {lat,lng,mes:mesNum,nodo:r['NODO']||'',caja:r['CAJA']||'',tipo:r['TIPO TAREA']||r['TIPO DE TAREA']||''};
+  }).filter(r=>!isNaN(r.lat)&&!isNaN(r.lng)&&r.lat!==0&&r.lng!==0);
 
   // Cruce: para cada poste buscar incidencias en mismo mes y dentro del radio
   const resultados=[];
@@ -1225,9 +1230,10 @@ function ejecutarCorrelacion(){
 
   postes.forEach(poste=>{
     const dentroRadio=incidencias.filter(inc=>{
-      // Mismo mes
-      if(poste.mes && inc.mes && String(poste.mes).trim()!==String(inc.mes).trim()) return false;
-      // Dentro del radio
+      // Normalizar mes regulatorio a número string
+      const mesPoste=String(poste.mes||'').trim();
+      const mesInc=String(inc.mes||'').trim();
+      if(mesPoste && mesInc && mesPoste!==mesInc) return false;
       return distMetros(poste.lat,poste.lng,inc.lat,inc.lng)<=RADIO;
     });
     if(dentroRadio.length>0){
