@@ -1378,7 +1378,6 @@ function cerrarModalCuad(){
 function buildChartTipo(rFilt){
   if(chartTipo){chartTipo.destroy();chartTipo=null;}
   document.getElementById('wrap-tipo').innerHTML='<canvas id="ch-tipo"></canvas>';
-  // Solo trabajos REALIZADOS para mostrar los trabajos ejecutados
   const rRealizados=rFilt.filter(r=>(r['ESTADO']||'').toUpperCase().includes('REALIZADO'));
   const d=grp(rRealizados,'PROCEDENCIA',8);
   if(!d.length){document.getElementById('wrap-tipo').innerHTML='<p style="font-size:12px;color:var(--text3);padding:40px 0;text-align:center">Sin trabajos realizados</p>';return;}
@@ -1393,9 +1392,16 @@ function buildChartTipo(rFilt){
     },
     options:{
       responsive:true,maintainAspectRatio:false,
+      onClick:(evt,els)=>{
+        if(!els.length)return;
+        const idx=els[0].index;
+        const proc=d[idx][0];
+        const color=colors[idx%colors.length];
+        abrirDesgloseProcedencia(proc,color,rRealizados);
+      },
       plugins:{
         legend:{position:'right',labels:{font:{size:10},boxWidth:12,padding:8}},
-        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.toLocaleString()+' realizados ('+Math.round(ctx.parsed/total*100)+'%)'}},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.toLocaleString()+' realizados ('+Math.round(ctx.parsed/total*100)+'%) · clic para desglose'}},
         datalabels:{
           color:'#fff',
           font:{size:11,weight:'bold'},
@@ -1408,6 +1414,75 @@ function buildChartTipo(rFilt){
       }
     }
   });
+}
+
+function abrirDesgloseProcedencia(proc,color,rRealizados){
+  cerrarModalCuad();
+  const trabajos=rRealizados.filter(r=>(r['PROCEDENCIA']||'').trim()===proc);
+  const total=trabajos.length;
+
+  // Agrupar por tipo de tarea
+  const porTipo={};
+  trabajos.forEach(r=>{
+    const t=(r['TIPO TAREA']||r['TIPO DE TAREA']||'Sin tipo').trim();
+    porTipo[t]=(porTipo[t]||0)+1;
+  });
+  const tiposSorted=Object.entries(porTipo).sort((a,b)=>b[1]-a[1]);
+
+  const tipoRows=tiposSorted.map(([t,n])=>`
+    <tr style="border-bottom:1px solid rgba(0,0,0,0.04)">
+      <td style="padding:7px 10px;color:var(--text)">${t}</td>
+      <td style="padding:7px 10px;text-align:center;font-weight:600;color:${color}">${n}</td>
+      <td style="padding:7px 10px;text-align:center;color:var(--text3)">${Math.round(n/total*100)}%</td>
+      <td style="padding:7px 10px">
+        <div style="background:#eee;border-radius:4px;height:6px;min-width:80px">
+          <div style="background:${color};width:${Math.round(n/total*100)}%;height:100%;border-radius:4px"></div>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  const overlay=document.createElement('div');
+  overlay.id='modal-cuad';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)';
+  overlay.innerHTML=`
+    <div id="modal-cuad-inner" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:14px;height:14px;border-radius:50%;background:${color};flex-shrink:0"></div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text)">Desglose: ${proc}</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px">${total} trabajos realizados &middot; ${tiposSorted.length} tipo${tiposSorted.length>1?'s':''} de tarea</div>
+          </div>
+        </div>
+        <button id="btn-cerrar-modal" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:inherit">&#10005; Cerrar</button>
+      </div>
+      <div style="overflow-y:auto;padding:20px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)">Tipo de tarea</th>
+            <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text3)">Cantidad</th>
+            <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text3)">%</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text3)">Proporci&oacute;n</th>
+          </tr></thead>
+          <tbody>${tipoRows}</tbody>
+          <tfoot><tr style="background:rgba(0,0,0,0.03);font-weight:700">
+            <td style="padding:8px 10px;color:var(--text)">Total</td>
+            <td style="padding:8px 10px;text-align:center;color:${color}">${total}</td>
+            <td style="padding:8px 10px;text-align:center;color:var(--text3)">100%</td>
+            <td></td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.querySelector('.content-area').style.pointerEvents='none';
+  document.getElementById('btn-cerrar-modal').addEventListener('click',cerrarModalCuad);
+  overlay.addEventListener('click',e=>{
+    if(!document.getElementById('modal-cuad-inner').contains(e.target))cerrarModalCuad();
+  });
+  document._modalEsc=e=>{if(e.key==='Escape')cerrarModalCuad();};
+  document.addEventListener('keydown',document._modalEsc);
 }
 
 function buildChartMes(rowsAnio){
