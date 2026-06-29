@@ -1204,16 +1204,23 @@ function ejecutarCorrelacion(){
   const colMesR  =headersReg.find(h=>h.toUpperCase()==='MES');
   const colTareaR=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
 
-  // Parsear postes con coordenadas válidas
-  const postes=[];
+  // Filtrar postes: solo los 2 últimos meses disponibles en los datos
+  const mesesDisponibles=[...new Set(rowsReg.map(r=>parseInt((r[colMesR]||'0'))))].filter(m=>m>0).sort((a,b)=>a-b);
+  const ultimosMeses=mesesDisponibles.slice(-2);
+  const postesBase=[];
   rowsReg.forEach(r=>{
     const raw=(r[colCoordR]||'').toString().trim();
     const parts=raw.split(',');
     if(parts.length<2)return;
     const lat=parseFloat(parts[0]),lng=parseFloat(parts[1]);
     if(isNaN(lat)||isNaN(lng)||lat===0||lng===0)return;
-    postes.push({lat,lng,mes:colMesR?r[colMesR]:'',tarea:r[colTareaR]||'',raw:r});
+    const mesPoste=parseInt(r[colMesR]||0);
+    if(!ultimosMeses.includes(mesPoste))return;
+    postesBase.push({lat,lng,mes:String(mesPoste),tarea:r[colTareaR]||'',raw:r});
   });
+  const postes=postesBase;
+
+  const mesesLabel=ultimosMeses.map(m=>MESES_N[m]||m).join(' y ');
 
   if(!postes.length){
     document.getElementById('correlacion-panel').style.display='block';
@@ -1300,48 +1307,75 @@ function ejecutarCorrelacion(){
   const panel=document.getElementById('correlacion-panel');
   panel.style.display='block';
 
-  const pctCorrelacion=postes.length?Math.round(resultados.length/postes.length*100):0;
+  const totalIncidencias=incidencias.length;
+  const pctCorrelacion=totalIncidencias?Math.round(totalAfectadas/totalIncidencias*100):0;
+  const mesLabel=MESES_N[parseInt(postes[0]?.mes||0)]||'Período analizado';
+
+  // Desglose por tipo de las incidencias correlacionadas
+  const porTipoAfect={};
+  resultados.forEach(res=>res.incidencias.forEach(i=>{
+    const t=i.tipo||'Sin tipo';
+    porTipoAfect[t]=(porTipoAfect[t]||0)+1;
+  }));
+  const tiposSorted=Object.entries(porTipoAfect).sort((a,b)=>b[1]-a[1]);
+
   document.getElementById('correlacion-kpis').innerHTML=`
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-      <div style="font-size:24px;font-weight:700;color:#ff6b00">${postes.length}</div>
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px">Postes analizados</div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:28px;font-weight:700;color:var(--blue)">${totalIncidencias}</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px">Total incidencias en ${mesLabel}</div>
     </div>
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-      <div style="font-size:24px;font-weight:700;color:#dc2626">${totalAfectadas}</div>
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px">Incidencias en zona (${cajasAfectadasSet.size} cajas)</div>
+    <div style="background:rgba(220,38,38,.05);border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:28px;font-weight:700;color:#dc2626">${totalAfectadas}</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px">En zona de cambio de poste <span style="color:#dc2626;font-weight:600">(${pctCorrelacion}%)</span></div>
     </div>
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-      <div style="font-size:24px;font-weight:700;color:${pctCorrelacion>50?'#dc2626':pctCorrelacion>25?'#f59e0b':'#16a34a'}">${pctCorrelacion}%</div>
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px">Postes con incidencias cercanas</div>
+    <div style="background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:28px;font-weight:700;color:#16a34a">${totalIncidencias-totalAfectadas}</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px">Fuera del radio de postes <span style="color:#16a34a;font-weight:600">(${100-pctCorrelacion}%)</span></div>
     </div>`;
 
-  // Tabla de resultados
-  if(!resultados.length){
-    document.getElementById('correlacion-tabla').innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px">No se encontraron incidencias dentro del radio de 250m en el mismo mes de los cambios de poste.</div>';
-  } else {
-    const filas=resultados.map(res=>`
-      <tr style="border-bottom:1px solid rgba(0,0,0,0.04)">
-        <td style="padding:7px 10px;font-size:11px;color:var(--text);font-weight:500">${res.poste.tarea}</td>
-        <td style="padding:7px 10px;font-size:11px;text-align:center;color:var(--text3)">${MESES_N[parseInt(res.poste.mes)]||res.poste.mes}</td>
-        <td style="padding:7px 10px;font-size:11px;text-align:center;font-weight:600;color:#dc2626">${res.incidencias.length}</td>
-        <td style="padding:7px 10px;font-size:11px;color:var(--text2)">${res.incidencias.map(i=>i.tipo).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}</td>
-        <td style="padding:7px 10px;font-size:11px;color:var(--text3)">${res.poste.lat.toFixed(5)}, ${res.poste.lng.toFixed(5)}</td>
-      </tr>`).join('');
-    document.getElementById('correlacion-tabla').innerHTML=`
-      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Postes con incidencias en su zona de influencia (250m, mismo mes)</div>
-      <div style="overflow-x:auto;max-height:260px;overflow-y:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead><tr style="border-bottom:1px solid var(--border)">
-            <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Tarea poste</th>
-            <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Mes</th>
-            <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Incidencias</th>
-            <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Tipos</th>
-            <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Coordenadas</th>
-          </tr></thead>
-          <tbody>${filas}</tbody>
-        </table>
-      </div>`;
-  }
+  // Resumen ejecutivo
+  const tiposTexto=tiposSorted.map(([t,n])=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.15);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;color:#dc2626;margin:2px">&#9679; ${t} (${n})</span>`).join('');
+
+  const resumenHTML=`
+    <div style="background:rgba(255,107,0,.05);border:1px solid rgba(255,107,0,.2);border-left:4px solid #ff6b00;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:#ff6b00;margin-bottom:6px">&#128269; Resumen ejecutivo — Postes de ${mesesLabel}</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.7">
+        Analizando los <strong>${postes.length} cambios de poste</strong> efectuados en <strong>${mesesLabel}</strong>,
+        se encontraron <strong style="color:#dc2626">${totalAfectadas} incidencias (${pctCorrelacion}%)</strong> de un total de <strong>${totalIncidencias}</strong>
+        dentro del radio de 250m, lo que sugiere una posible correlación entre el cambio de postería y las fallas reportadas.
+      </div>
+      ${tiposSorted.length?`<div style="margin-top:8px;font-size:11px;color:var(--text2);font-weight:600">Tipos de incidencia en zona:</div>
+      <div style="margin-top:4px">${tiposTexto}</div>`:''}
+    </div>`;
+
+  // Tabla detalle por poste
+  const filasTabla=resultados.map(res=>{
+    const tipoRes=Object.entries(res.incidencias.reduce((acc,i)=>{acc[i.tipo||'Sin tipo']=(acc[i.tipo||'Sin tipo']||0)+1;return acc;},{}))
+      .sort((a,b)=>b[1]-a[1]).map(([t,n])=>t+(n>1?' ('+n+')':'')).join(', ');
+    return`<tr style="border-bottom:1px solid rgba(0,0,0,0.04)">
+      <td style="padding:7px 10px;font-size:11px;color:var(--text);font-weight:500">${res.poste.tarea}</td>
+      <td style="padding:7px 10px;font-size:11px;text-align:center;color:var(--text3)">${MESES_N[parseInt(res.poste.mes)]||res.poste.mes}</td>
+      <td style="padding:7px 10px;font-size:11px;text-align:center;font-weight:700;color:#dc2626">${res.incidencias.length}</td>
+      <td style="padding:7px 10px;font-size:11px;color:var(--text2)">${tipoRes}</td>
+    </tr>`;
+  }).join('');
+
+  const tablaHTML=resultados.length?`
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Detalle por poste afectado</div>
+    <div style="overflow-x:auto;max-height:240px;overflow-y:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="border-bottom:1px solid var(--border)">
+          <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Tarea poste</th>
+          <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Mes</th>
+          <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Incidencias</th>
+          <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Tipos detectados</th>
+        </tr></thead>
+        <tbody>${filasTabla}</tbody>
+      </table>
+    </div>`
+  :'<div style="font-size:12px;color:var(--text3);padding:8px">No se encontraron incidencias dentro del radio de 250m en el mismo mes de los cambios de poste.</div>';
+
+  document.getElementById('correlacion-tabla').innerHTML=resumenHTML+tablaHTML;
 }
 
 async function refresh(){
