@@ -336,7 +336,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <span class="nav-label">Mapa de trabajos</span>
     </div>
 
-
     <div class="sidebar-section">Migraciones</div>
     <div class="nav-item" onclick="navTo('mpls')" id="nav-mpls">
       <span class="nav-icon">&#128257;</span>
@@ -454,8 +453,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
     </div>
 
-
-
     <!-- ══ SECCION: MPLS ══ -->
     <div id="sec-mpls" style="display:none">
       <div class="sec-header">
@@ -508,7 +505,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <div id="tb-olt"></div>
       </div>
     </div>
-
 
     <!-- ══ SECCION: RUTAS NUEVAS ══ -->
     <div id="sec-rutasnuevas" style="display:none">
@@ -646,7 +642,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="chint">Enter para enviar &middot; Shift+Enter nueva linea</div>
   </div>
 </div>
-
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBxFpv4Q1heUSSAOpyGCbTncY4XY2tjJjvYbjIj1w2GqQevl2UDb8MqMnAeR1uKkzKqQ/exec';
@@ -1131,10 +1126,7 @@ function filtrarCapaRegulatorio(){agregarCapaRegulatorio();}
 
 // ── ANÁLISIS DE CORRELACIÓN POSTES → INCIDENCIAS ─────────────
 
-
-
 // Distancia en metros entre dos coordenadas (Haversine)
-
 
 async function refresh(){
   document.getElementById('btn-ref').classList.add('spinning');
@@ -1439,7 +1431,7 @@ function abrirDetalleCuad(cuad, rFilt){
     </div>`;
 
   document.body.appendChild(overlay);
-  document.querySelector('.content-area').style.pointerEvents='none';
+  
   document.getElementById('btn-cerrar-modal').addEventListener('click',cerrarModalCuad);
   overlay.addEventListener('click',e=>{
     if(!document.getElementById('modal-cuad-inner').contains(e.target))cerrarModalCuad();
@@ -1507,7 +1499,7 @@ function buildChartTipo(rFilt){
 function abrirDesgloseProcedencia(proc,color,rRealizados){
   // Cerrar cualquier modal previo
   ['modal-cuad','modal-desglose'].forEach(id=>{const m=document.getElementById(id);if(m)m.remove();});
-  const ca=document.querySelector('.content-area');if(ca)ca.style.pointerEvents='none';
+  
   if(document._modalEsc){document.removeEventListener('keydown',document._modalEsc);delete document._modalEsc;}
 
   const trabajos=rRealizados.filter(r=>(r['PROCEDENCIA']||'').trim()===proc);
@@ -1604,7 +1596,7 @@ function abrirDesgloseProcedencia(proc,color,rRealizados){
     </div>`;
 
   document.body.appendChild(overlay);
-  document.querySelector('.content-area').style.pointerEvents='none';
+  
   document.getElementById('btn-cerrar-modal').addEventListener('click',cerrarModalDesglose);
   overlay.addEventListener('click',e=>{
     if(!document.getElementById('modal-desglose-inner').contains(e.target))cerrarModalDesglose();
@@ -1616,8 +1608,7 @@ function abrirDesgloseProcedencia(proc,color,rRealizados){
 function cerrarModalDesglose(){
   const m=document.getElementById('modal-desglose');
   if(m)m.remove();
-  const ca=document.querySelector('.content-area');
-  if(ca)ca.style.pointerEvents='';
+  
   if(document._modalEsc){document.removeEventListener('keydown',document._modalEsc);delete document._modalEsc;}
 }
 
@@ -1629,7 +1620,6 @@ function toggleDetalle(uid){
   el.style.display=abierto?'none':'block';
   if(arr)arr.style.transform=abierto?'':'rotate(90deg)';
 }
-
 
 function buildChartMes(rowsAnio){
   if(chartMes){chartMes.destroy();chartMes=null;}
@@ -1867,7 +1857,6 @@ function selAlerta(idx){
   const el=document.getElementById('alerta-ruta');
   if(el) el.innerHTML=buildAlertaHTML(idx);
 }
-
 
 /* ── SECCION REINCIDENCIAS ── */
 function buildReincidencias(){
@@ -2142,8 +2131,6 @@ function resetCapasMapa(){
   toggleTodasCapas();
   _todasVisible=true; // forzar estado correcto
 }
-
-
 
 /* ── MIGRACIONES MPLS ── */
 let estadoDataGlobal=[], cantonDataGlobal=[], colEstGlobal=[], colCantGlobal=[];
@@ -3244,8 +3231,7 @@ function cerrarModal(){
 function cerrarModalCuad(){
   const m=document.getElementById('modal-cuad');
   if(m) m.remove();
-  const ca=document.querySelector('.content-area');
-  if(ca) ca.style.pointerEvents='';
+  
   if(document._modalEsc){
     document.removeEventListener('keydown',document._modalEsc);
     delete document._modalEsc;
