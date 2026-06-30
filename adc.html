@@ -1505,7 +1505,11 @@ function buildChartTipo(rFilt){
 }
 
 function abrirDesgloseProcedencia(proc,color,rRealizados){
-  cerrarModalCuad();
+  // Cerrar cualquier modal previo
+  ['modal-cuad','modal-desglose'].forEach(id=>{const m=document.getElementById(id);if(m)m.remove();});
+  const ca=document.querySelector('.content-area');if(ca)ca.style.pointerEvents='none';
+  if(document._modalEsc){document.removeEventListener('keydown',document._modalEsc);delete document._modalEsc;}
+
   const trabajos=rRealizados.filter(r=>(r['PROCEDENCIA']||'').trim()===proc);
   const total=trabajos.length;
 
@@ -1566,10 +1570,10 @@ function abrirDesgloseProcedencia(proc,color,rRealizados){
   }).join('');
 
   const overlay=document.createElement('div');
-  overlay.id='modal-cuad';
+  overlay.id='modal-desglose';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)';
   overlay.innerHTML=`
-    <div id="modal-cuad-inner" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:640px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+    <div id="modal-desglose-inner" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:640px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
       <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="width:14px;height:14px;border-radius:50%;background:${color};flex-shrink:0"></div>
@@ -1601,12 +1605,20 @@ function abrirDesgloseProcedencia(proc,color,rRealizados){
 
   document.body.appendChild(overlay);
   document.querySelector('.content-area').style.pointerEvents='none';
-  document.getElementById('btn-cerrar-modal').addEventListener('click',cerrarModalCuad);
+  document.getElementById('btn-cerrar-modal').addEventListener('click',cerrarModalDesglose);
   overlay.addEventListener('click',e=>{
-    if(!document.getElementById('modal-cuad-inner').contains(e.target))cerrarModalCuad();
+    if(!document.getElementById('modal-desglose-inner').contains(e.target))cerrarModalDesglose();
   });
-  document._modalEsc=e=>{if(e.key==='Escape')cerrarModalCuad();};
+  document._modalEsc=e=>{if(e.key==='Escape')cerrarModalDesglose();};
   document.addEventListener('keydown',document._modalEsc);
+}
+
+function cerrarModalDesglose(){
+  const m=document.getElementById('modal-desglose');
+  if(m)m.remove();
+  const ca=document.querySelector('.content-area');
+  if(ca)ca.style.pointerEvents='';
+  if(document._modalEsc){document.removeEventListener('keydown',document._modalEsc);delete document._modalEsc;}
 }
 
 function toggleDetalle(uid){
