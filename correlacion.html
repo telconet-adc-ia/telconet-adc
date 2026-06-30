@@ -246,11 +246,11 @@ document.addEventListener('click',e=>{
 });
 
 function buildMsDropdown(which, opciones){
-  // opciones: [{value, label, count}]
   const dd=document.getElementById('ms-'+which+'-dropdown');
-  let html='<div class="ms-actions"><button onclick="msSelectAll(\\''+which+'\\')">Todos</button><button onclick="msSelectNone(\\''+which+'\\')">Ninguno</button></div><div class="ms-sep"></div>';
+  let html='<div class="ms-actions"><button onclick="msSelectAll(&#39;'+which+'&#39;)">Todos</button><button onclick="msSelectNone(&#39;'+which+'&#39;)">Ninguno</button></div><div class="ms-sep"></div>';
   opciones.forEach(o=>{
-    html+='<label class="ms-opt"><input type="checkbox" value="'+o.value+'" onchange="msToggle(\\''+which+'\\',\\''+o.value+'\\')" '+(which==='inc'?(mesesIncSel.has(o.value)?'checked':''):(mesesPostSel.has(o.value)?'checked':''))+'> '+o.label+(o.count!=null?'<span class="cnt">('+o.count+')</span>':'')+'</label>';
+    const checked=(which==='inc'?mesesIncSel.has(o.value):mesesPostSel.has(o.value))?'checked':'';
+    html+='<label class="ms-opt"><input type="checkbox" value="'+o.value+'" onchange="msToggle(&#39;'+which+'&#39;,&#39;'+o.value+'&#39;)" '+checked+'> '+o.label+(o.count!=null?'<span class="cnt">('+o.count+')</span>':'')+'</label>';
   });
   dd.innerHTML=html;
 }
