@@ -18,7 +18,6 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-/* TOPBAR */
 .topbar{background:var(--tn-blue);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;box-shadow:0 2px 12px rgba(14,66,156,.2)}
 .tb-left{display:flex;align-items:center;gap:12px}
 .btn-back{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:5px 12px;color:#fff;font-size:12px;font-weight:500;cursor:pointer;text-decoration:none;transition:.15s}
@@ -26,72 +25,60 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 .tb-divider{width:1px;height:22px;background:rgba(255,255,255,.2)}
 .tb-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#fff;letter-spacing:.3px}
 .tb-brand span{color:var(--tn-cyan)}
-.tb-right{display:flex;align-items:center;gap:10px}
 .sync-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,.8);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4)}
 .sync-dot.ok{background:#4ade80;animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* LAYOUT */
 .layout{display:flex;flex:1;overflow:hidden}
 
-/* PANEL IZQUIERDO */
-.panel{width:320px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.panel-header{padding:16px;border-bottom:1px solid var(--border);flex-shrink:0}
-.panel-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px}
-.panel-sub{font-size:11px;color:var(--txt3)}
+.panel{width:330px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.panel-hdr{padding:16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.panel-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--txt);margin-bottom:3px}
+.panel-sub{font-size:11px;color:var(--txt3);line-height:1.5}
 .panel-body{flex:1;overflow-y:auto;padding:14px}
 .panel-body::-webkit-scrollbar{width:3px}
 .panel-body::-webkit-scrollbar-thumb{background:var(--border)}
 
-/* FILTROS */
-.f-group{margin-bottom:14px}
+.f-group{margin-bottom:12px}
 .f-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:5px;display:block}
-.f-select{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;outline:none;transition:.15s}
+.f-select{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;outline:none}
 .f-select:focus{border-color:var(--tn-blue)}
-.f-row{display:flex;gap:8px}
-.f-row .f-group{flex:1}
 
-/* BOTÓN ANALIZAR */
-.btn-analizar{width:100%;padding:11px;background:linear-gradient(135deg,#ff6b00,#ff9800);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 3px 12px rgba(255,107,0,.3);transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn-analizar:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(255,107,0,.35)}
-.btn-analizar:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-analizar{width:100%;padding:10px;background:linear-gradient(135deg,#ff6b00,#ff9800);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 3px 12px rgba(255,107,0,.3);transition:.2s;margin-bottom:14px}
+.btn-analizar:hover{transform:translateY(-1px)}
+.btn-analizar:disabled{opacity:.4;cursor:not-allowed;transform:none}
 
-/* KPIs */
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .kpi{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px;text-align:center}
 .kpi-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1}
 .kpi-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
 
-/* RESUMEN EJECUTIVO */
-.resumen-box{margin-top:12px;background:rgba(255,107,0,.05);border:1px solid rgba(255,107,0,.2);border-left:4px solid #ff6b00;border-radius:8px;padding:11px 13px}
+.resumen-box{background:rgba(255,107,0,.05);border:1px solid rgba(255,107,0,.2);border-left:4px solid #ff6b00;border-radius:8px;padding:11px 13px;margin-bottom:12px}
 .resumen-title{font-size:11px;font-weight:700;color:#ff6b00;margin-bottom:5px}
 .resumen-txt{font-size:11px;color:var(--txt);line-height:1.6}
-
-/* CHIPS DE TIPOS */
-.chips-wrap{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.chips-tipos{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
 .chip-tipo{display:inline-flex;align-items:center;gap:3px;background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.15);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:600;color:var(--red)}
 
-/* TABLA */
-.tbl-wrap{margin-top:14px;max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px}
+.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:220px;overflow-y:auto}
+.tbl-wrap::-webkit-scrollbar{width:3px}
+.tbl-wrap::-webkit-scrollbar-thumb{background:var(--border)}
 .tbl{width:100%;border-collapse:collapse;font-size:11px}
-.tbl th{padding:7px 8px;background:var(--bg3);text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);border-bottom:1px solid var(--border);position:sticky;top:0}
+.tbl th{padding:7px 8px;background:var(--bg3);text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
 .tbl td{padding:6px 8px;border-bottom:1px solid rgba(14,66,156,.05);color:var(--txt2)}
+.tbl tr:last-child td{border-bottom:none}
 .tbl tr:hover td{background:rgba(14,66,156,.02)}
 
-/* LEYENDA MAPA */
-.map-legend{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:1000;background:#fff;border:1px solid var(--border);border-radius:20px;padding:8px 16px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 12px rgba(0,0,0,.1);font-size:11px;color:var(--txt2)}
-.leg-item{display:flex;align-items:center;gap:5px}
-
-/* LOADING */
-.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--txt3)}
+.loading-map{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--txt3);background:var(--bg);z-index:10}
 .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--tn-blue);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+.map-legend{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:1000;background:#fff;border:1px solid var(--border);border-radius:20px;padding:7px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 12px rgba(0,0,0,.1);font-size:11px;color:var(--txt2);white-space:nowrap}
+.leg-item{display:flex;align-items:center;gap:5px}
 </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
   <div class="tb-left">
     <a href="./adc.html" class="btn-back">&#8592; Dashboard ADC</a>
@@ -105,107 +92,96 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 </div>
 
 <div class="layout">
-
-  <!-- PANEL IZQUIERDO -->
+  <!-- PANEL -->
   <div class="panel">
-    <div class="panel-header">
+    <div class="panel-hdr">
       <div class="panel-title">&#128269; Análisis de correlación</div>
-      <div class="panel-sub">Detecta incidencias dentro del radio de influencia de cada cambio de poste</div>
+      <div class="panel-sub">Incidencias del mes seleccionado vs cambios de poste de los últimos 2 meses</div>
     </div>
     <div class="panel-body">
-
-      <!-- FILTROS -->
       <div class="f-group">
         <span class="f-label">Mes de incidencias</span>
-        <select class="f-select" id="sel-mes-inc">
-          <option value="all">Todos los meses</option>
+        <select class="f-select" id="sel-mes" onchange="ejecutarAnalisis()">
+          <option value="">Cargando...</option>
         </select>
       </div>
       <div class="f-group">
         <span class="f-label">Año</span>
-        <select class="f-select" id="sel-anio-inc">
+        <select class="f-select" id="sel-anio" onchange="ejecutarAnalisis()">
           <option value="2026">2026</option>
           <option value="2025">2025</option>
         </select>
       </div>
       <div class="f-group">
         <span class="f-label">Radio de influencia del poste</span>
-        <select class="f-select" id="sel-radio">
+        <select class="f-select" id="sel-radio" onchange="ejecutarAnalisis()">
           <option value="150">150 metros</option>
           <option value="250" selected>250 metros (estándar)</option>
           <option value="500">500 metros</option>
           <option value="1000">1 kilómetro</option>
         </select>
       </div>
-      <div class="f-group">
-        <span class="f-label">Postes a analizar (últimos N meses)</span>
-        <select class="f-select" id="sel-meses-post">
-          <option value="1">Último mes</option>
-          <option value="2" selected>Últimos 2 meses</option>
-          <option value="3">Últimos 3 meses</option>
-          <option value="all">Todos</option>
-        </select>
-      </div>
 
-      <button class="btn-analizar" id="btn-analizar" onclick="ejecutarAnalisis()" disabled>
-        &#128269; Ejecutar análisis
-      </button>
-
-      <!-- RESULTADOS -->
       <div id="resultados" style="display:none">
         <div class="kpis" id="kpis"></div>
-        <div class="resumen-box" id="resumen-box" style="display:none">
-          <div class="resumen-title" id="resumen-title"></div>
-          <div class="resumen-txt" id="resumen-txt"></div>
-          <div class="chips-wrap" id="chips-tipos"></div>
+        <div class="resumen-box" id="resumen-box">
+          <div class="resumen-title" id="res-title"></div>
+          <div class="resumen-txt" id="res-txt"></div>
+          <div class="chips-tipos" id="res-chips"></div>
         </div>
-        <div class="tbl-wrap" id="tbl-wrap" style="display:none">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);margin-bottom:6px">Detalle por poste</div>
+        <div class="tbl-wrap">
           <table class="tbl">
             <thead><tr>
-              <th>Poste</th><th>Mes</th><th>Incid.</th><th>Tipos</th>
+              <th>Tarea poste</th><th>Mes poste</th><th style="text-align:center">Incid.</th><th>Tipos detectados</th>
             </tr></thead>
             <tbody id="tbl-body"></tbody>
           </table>
         </div>
       </div>
-
     </div>
   </div>
 
   <!-- MAPA -->
   <div style="flex:1;position:relative">
-    <div id="loading-map" class="loading">
+    <div id="loading-map" class="loading-map">
       <div class="spinner"></div>
       <div>Cargando datos desde Google Sheets...</div>
     </div>
-    <div id="map" style="width:100%;height:100%;display:none"></div>
+    <div id="map" style="width:100%;height:100%"></div>
     <div class="map-legend" id="map-legend" style="display:none">
-      <div class="leg-item"><div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:15px solid #ff6b00"></div> Cambio de poste</div>
-      <div class="leg-item"><div style="width:12px;height:12px;border-radius:50%;background:#dc2626;border:2px solid #fff"></div> Incidencia en zona</div>
-      <div class="leg-item"><div style="width:14px;height:4px;border:2px dashed #ff6b00;border-radius:2px"></div> Radio 250m</div>
+      <div class="leg-item">
+        <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #ff6b00"></div>
+        Cambio de poste
+      </div>
+      <div class="leg-item">
+        <div style="width:12px;height:12px;border-radius:50%;background:#dc2626;border:2px solid #fff;box-shadow:0 0 0 1px #dc2626"></div>
+        Incidencia en zona
+      </div>
+      <div class="leg-item">
+        <div style="width:18px;height:0;border-top:2px dashed #ff6b00"></div>
+        Radio de influencia
+      </div>
     </div>
   </div>
-
 </div>
 
 <script>
+// ── CONFIG ── misma URL que el dashboard ADC ─────────────────
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbzBxFpv4Q1heUSSAOpyGCbTncY4XY2tjJjvYbjIj1w2GqQevl2UDb8MqMnAeR1uKkzKqQ/exec';
 
 const MESES_N={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
 const MESES_MAP={'ENERO':'1','FEBRERO':'2','MARZO':'3','ABRIL':'4','MAYO':'5','JUNIO':'6','JULIO':'7','AGOSTO':'8','SEPTIEMBRE':'9','OCTUBRE':'10','NOVIEMBRE':'11','DICIEMBRE':'12'};
 
-let rowsADC=[], rowsReg=[], headersReg=[], anioColADC='AÑO';
-let mapaL=null, capasCorr=[];
+let rows=[], headers=[], rowsReg=[], headersReg=[];
+let mapaL=null, capasCorr=[], marcadoresPostes=[];
 
-// ── JSONP — misma lógica que dashboard ADC ───────────────────
+// ── JSONP — idéntico al dashboard ADC ───────────────────────
 function jsonpAction(base,action){
   return new Promise((res,rej)=>{
     const cb='cba_'+Date.now()+'_'+action;
     const s=document.createElement('script');
-    const t=setTimeout(()=>{
-      if(s.parentNode)s.parentNode.removeChild(s);
-      rej(new Error('Timeout '+action));
-    },30000);
+    const t=setTimeout(()=>{if(s.parentNode)s.parentNode.removeChild(s);rej(new Error('Timeout '+action));},30000);
     window[cb]=d=>{clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);res(d);};
     s.onerror=()=>{clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);rej(new Error('Error '+action));};
     s.src=base+'?action='+action+'&callback='+cb;
@@ -213,89 +189,111 @@ function jsonpAction(base,action){
   });
 }
 
-// ── CARGA DE DATOS ──────────────────────────────────────────
+// ── CARGA — idéntico al dashboard ADC ───────────────────────
+function getAnioCol(hdrs){
+  if(hdrs.includes('AÑO'))return 'AÑO';
+  if(hdrs.includes('ANO'))return 'ANO';
+  return hdrs.find(h=>/^a.?[nñ]o$/i.test(h.trim()))||'AÑO';
+}
+
 async function cargarDatos(){
   try{
     const base=SCRIPT_URL.split('?')[0];
-    const [dADC, dReg]=await Promise.all([
+    const [dADC,dReg]=await Promise.all([
       jsonpAction(base,'data'),
       jsonpAction(base,'regint')
     ]);
-    if(dADC&&dADC.rows) rowsADC=dADC.rows;
-    // Detectar columna de año igual que el dashboard ADC
-    const hdrs=dADC.headers||[];
-    anioColADC=hdrs.includes('AÑO')?'AÑO':hdrs.includes('ANO')?'ANO':(hdrs.find(h=>/^a.?[nñ]o$/i.test(h.trim()))||'AÑO');
-    if(dReg&&dReg.rows){
-      rowsReg=dReg.rows;
-      headersReg=dReg.headers||Object.keys(dReg.rows[0]||{});
+
+    if(dADC&&dADC.rows){rows=dADC.rows;headers=dADC.headers||[];}
+    if(dReg&&dReg.rows){rowsReg=dReg.rows;headersReg=dReg.headers||Object.keys(dReg.rows[0]||{});}
+
+    document.getElementById('sdot').className='sync-dot ok';
+    document.getElementById('slbl').textContent=rows.length.toLocaleString()+' trabajos · '+rowsReg.length+' postes';
+    document.getElementById('loading-map').style.display='none';
+    document.getElementById('map-legend').style.display='flex';
+
+    // Iniciar mapa
+    mapaL=L.map('map').setView([-2.9,-78.85],12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',maxZoom:19}).addTo(mapaL);
+
+    // Pintar todos los postes como triángulos naranjas
+    const colCoord=headersReg.find(h=>h.toUpperCase().includes('UBIC')||h.toUpperCase().includes('COORD'))||headersReg[1];
+    const colTarea=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
+    const colMesR=headersReg.find(h=>h.toUpperCase()==='MES');
+
+    rowsReg.forEach(r=>{
+      const raw=(r[colCoord]||'').toString().trim().split(',');
+      if(raw.length<2)return;
+      const lat=parseFloat(raw[0]),lng=parseFloat(raw[1]);
+      if(isNaN(lat)||isNaN(lng)||lat===0)return;
+      const mesPoste=parseInt(r[colMesR]||0);
+      const icon=L.divIcon({
+        className:'',
+        html:'<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #ff6b00;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))"></div>',
+        iconSize:[16,16],iconAnchor:[8,16]
+      });
+      const mk=L.marker([lat,lng],{icon})
+        .bindTooltip('<b>'+r[colTarea]+'</b><br>'+( MESES_N[mesPoste]||mesPoste),{sticky:true})
+        .addTo(mapaL);
+      marcadoresPostes.push(mk);
+    });
+
+    // Construir selector de meses desde los datos
+    const anioCol=getAnioCol(headers);
+    const mesesDisp=[...new Set(rows
+      .filter(r=>String(r[anioCol]||'').trim()==='2026')
+      .map(r=>(r['MES']||'').trim().toUpperCase())
+      .filter(Boolean)
+    )].sort((a,b)=>parseInt(MESES_MAP[a]||a)-parseInt(MESES_MAP[b]||b));
+
+    const sel=document.getElementById('sel-mes');
+    sel.innerHTML='';
+    mesesDisp.forEach(m=>{
+      const o=document.createElement('option');
+      o.value=m;
+      o.textContent=m.charAt(0)+m.slice(1).toLowerCase();
+      sel.appendChild(o);
+    });
+
+    // Seleccionar el mes más reciente y ejecutar análisis automáticamente
+    if(mesesDisp.length){
+      sel.value=mesesDisp[mesesDisp.length-1];
+      ejecutarAnalisis();
     }
-    onDatosCargados();
+
   }catch(e){
     document.getElementById('slbl').textContent='Error: '+e.message;
+    document.getElementById('loading-map').innerHTML='<div style="color:#dc2626;font-size:13px">⚠ '+e.message+'</div>';
     console.error(e);
   }
 }
 
-function onDatosCargados(){
-  document.getElementById('loading-map').style.display='none';
-  document.getElementById('map').style.display='block';
-  document.getElementById('map-legend').style.display='flex';
-  document.getElementById('sdot').className='sync-dot ok';
-  document.getElementById('slbl').textContent='Datos cargados · '+rowsADC.length+' trabajos · '+rowsReg.length+' postes';
-
-  // Construir selector de meses
-  const mesesDisp=new Set();
-  rowsADC.forEach(r=>{const m=(r['MES']||'').toUpperCase();if(m)mesesDisp.add(m);});
-  const selM=document.getElementById('sel-mes-inc');
-  [...mesesDisp].sort((a,b)=>(parseInt(MESES_MAP[a]||a))-(parseInt(MESES_MAP[b]||b))).forEach(m=>{
-    const o=document.createElement('option');
-    o.value=m;o.textContent=m.charAt(0)+m.slice(1).toLowerCase();
-    selM.appendChild(o);
-  });
-  // Seleccionar mes más reciente
-  const mesReciente=[...mesesDisp].sort((a,b)=>parseInt(MESES_MAP[b]||b)-parseInt(MESES_MAP[a]||a))[0];
-  if(mesReciente)selM.value=mesReciente;
-
-  // Inicializar mapa
-  mapaL=L.map('map').setView([-2.9,-78.85],12);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',maxZoom:19}).addTo(mapaL);
-
-  // Pintar todos los postes como triángulos naranjas
-  const colCoord=headersReg.find(h=>h.toUpperCase().includes('UBIC')||h.toUpperCase().includes('COORD'))||headersReg[1];
-  const colTarea=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
-  rowsReg.forEach(r=>{
-    const raw=(r[colCoord]||'').toString().trim();
-    const parts=raw.split(',');
-    if(parts.length<2)return;
-    const lat=parseFloat(parts[0]),lng=parseFloat(parts[1]);
-    if(isNaN(lat)||isNaN(lng)||lat===0)return;
-    const icon=L.divIcon({className:'',html:'<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #ff6b00;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))"></div>',iconSize:[16,16],iconAnchor:[8,16]});
-    L.marker([lat,lng],{icon}).bindTooltip(r[colTarea]||'Poste',{sticky:true}).addTo(mapaL);
-  });
-
-  document.getElementById('btn-analizar').disabled=false;
-}
-
-// ── ANÁLISIS ────────────────────────────────────────────────
+// ── HAVERSINE ────────────────────────────────────────────────
 function distM(lat1,lng1,lat2,lng2){
   const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
   const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
+// ── ANÁLISIS ────────────────────────────────────────────────
 function ejecutarAnalisis(){
-  const RADIO=parseInt(document.getElementById('sel-radio').value);
-  const mesInc=document.getElementById('sel-mes-inc').value;
-  const anioInc=document.getElementById('sel-anio-inc').value;
-  const nMesesPost=document.getElementById('sel-meses-post').value;
+  if(!mapaL||!rows.length||!rowsReg.length)return;
 
+  const RADIO=parseInt(document.getElementById('sel-radio').value);
+  const mesInc=document.getElementById('sel-mes').value;
+  const anioInc=document.getElementById('sel-anio').value;
+  if(!mesInc)return;
+
+  const anioCol=getAnioCol(headers);
+
+  // Columnas regulatorio
   const colCoord=headersReg.find(h=>h.toUpperCase().includes('UBIC')||h.toUpperCase().includes('COORD'))||headersReg[1];
-  const colMesR=headersReg.find(h=>h.toUpperCase()==='MES');
+  const colMesR =headersReg.find(h=>h.toUpperCase()==='MES');
   const colTareaR=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
 
-  // Filtrar postes según últimos N meses
+  // Postes: últimos 2 meses disponibles en regulatorio
   const mesesPostDisp=[...new Set(rowsReg.map(r=>parseInt(r[colMesR]||0)))].filter(m=>m>0).sort((a,b)=>a-b);
-  const ultimosMeses=nMesesPost==='all'?mesesPostDisp:mesesPostDisp.slice(-parseInt(nMesesPost));
+  const ultimosMeses=mesesPostDisp.slice(-2);
 
   const postes=[];
   rowsReg.forEach(r=>{
@@ -304,61 +302,84 @@ function ejecutarAnalisis(){
     const lat=parseFloat(raw[0]),lng=parseFloat(raw[1]);
     if(isNaN(lat)||isNaN(lng)||lat===0)return;
     const mp=parseInt(r[colMesR]||0);
-    if(nMesesPost!=='all'&&!ultimosMeses.includes(mp))return;
-    postes.push({lat,lng,mes:String(mp),tarea:r[colTareaR]||''});
+    if(!ultimosMeses.includes(mp))return;
+    postes.push({lat,lng,mes:mp,tarea:r[colTareaR]||''});
   });
 
-  // Filtrar incidencias
-  // Detectar columna de año igual que el dashboard ADC
-  const hdrs=dADC.headers||[];
-  const incidencias=rowsADC.filter(r=>{
+  // Incidencias del mes/año seleccionado — misma lógica que la dona del ADC
+  const incidencias=rows.filter(r=>{
     const proc=(r['PROCEDENCIA']||'').trim().toUpperCase();
     const estado=(r['ESTADO']||'').trim().toUpperCase();
     const mes=(r['MES']||'').trim().toUpperCase();
-    const anio=String(r[anioColADC]||'').trim();
-    return proc.includes('INCIDENCIA')&&estado.includes('REALIZADO')&&
-      (mesInc==='all'||mes===mesInc)&&(anio===anioInc)&&(r['UBICACION']||'').trim();
+    const anio=String(r[anioCol]||'').trim();
+    return proc.includes('INCIDENCIA')&&estado.includes('REALIZADO')
+      &&mes===mesInc&&anio===anioInc
+      &&(r['UBICACION']||'').trim();
   }).map(r=>{
     const parts=(r['UBICACION']||'').trim().split(',');
     return{lat:parseFloat(parts[0]),lng:parseFloat(parts[1]),
-      caja:r['CAJA']||'',tipo:r['TIPO TAREA']||r['TIPO DE TAREA']||'',mes:(r['MES']||'').toUpperCase()};
+      caja:r['CAJA']||'',tipo:r['TIPO TAREA']||r['TIPO DE TAREA']||''};
   }).filter(r=>!isNaN(r.lat)&&r.lat!==0);
 
-  // Cruce
-  const resultados=[];
-  let totalAfect=0;
-  const cajasSet=new Set();
+  // Cruce por distancia
+  const resultados=[];let totalAfect=0;
   postes.forEach(p=>{
     const dentro=incidencias.filter(i=>distM(p.lat,p.lng,i.lat,i.lng)<=RADIO);
-    if(dentro.length){resultados.push({poste:p,incs:dentro});totalAfect+=dentro.length;dentro.forEach(i=>cajasSet.add(i.caja));}
+    if(dentro.length){resultados.push({poste:p,incs:dentro});totalAfect+=dentro.length;}
   });
 
-  // Limpiar capas previas
+  // Limpiar capas de análisis previas
   capasCorr.forEach(c=>{try{mapaL.removeLayer(c);}catch(e){}});
   capasCorr=[];
 
-  // Dibujar
+  // Dibujar círculos e incidencias correlacionadas
   resultados.forEach(res=>{
-    const circ=L.circle([res.poste.lat,res.poste.lng],{radius:RADIO,color:'#ff6b00',fillColor:'#ff6b00',fillOpacity:.08,weight:2,dashArray:'6,4'}).addTo(mapaL);
-    circ.bindTooltip('Poste: '+res.poste.tarea+' · '+res.incs.length+' incidencia(s)',{sticky:true});
+    const circ=L.circle([res.poste.lat,res.poste.lng],{
+      radius:RADIO,color:'#ff6b00',fillColor:'#ff6b00',fillOpacity:.07,weight:2,dashArray:'6,4'
+    }).addTo(mapaL);
+    circ.bindTooltip('Poste: '+res.poste.tarea+' — '+res.incs.length+' incidencia(s) en zona',{sticky:true});
     capasCorr.push(circ);
+
     res.incs.forEach(inc=>{
-      const mk=L.circleMarker([inc.lat,inc.lng],{radius:8,fillColor:'#dc2626',color:'#fff',weight:2,fillOpacity:.9}).addTo(mapaL);
-      mk.bindPopup('<div style="font-size:12px"><div style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9888; INCIDENCIA EN ZONA POSTE</div><div style="padding:6px 8px"><b>Caja:</b> '+inc.caja+'<br><b>Tipo:</b> '+inc.tipo+'<br><b>Poste ref.:</b> '+res.poste.tarea+'</div></div>');
+      const mk=L.circleMarker([inc.lat,inc.lng],{
+        radius:8,fillColor:'#dc2626',color:'#fff',weight:2,fillOpacity:.92
+      }).addTo(mapaL);
+      mk.bindPopup(
+        '<div style="font-size:12px;min-width:190px">'+
+        '<div style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9888; INCIDENCIA EN ZONA POSTE</div>'+
+        '<div style="padding:7px 9px">'+
+        '<b>Caja:</b> '+inc.caja+'<br>'+
+        '<b>Tipo:</b> '+inc.tipo+'<br>'+
+        '<b>Poste ref.:</b> '+res.poste.tarea+
+        '</div></div>'
+      );
       capasCorr.push(mk);
     });
   });
 
-  // Mostrar panel
-  const pct=incidencias.length?Math.round(totalAfect/incidencias.length*100):0;
-  const mesLabel=mesInc==='all'?'todos los meses':(mesInc.charAt(0)+mesInc.slice(1).toLowerCase());
+  // Panel de resultados
+  const total=incidencias.length;
+  const pct=total?Math.round(totalAfect/total*100):0;
+  const mesLabel=mesInc.charAt(0)+mesInc.slice(1).toLowerCase();
   const mesesPostLabel=ultimosMeses.map(m=>MESES_N[m]||m).join(' y ');
 
   document.getElementById('kpis').innerHTML=`
-    <div class="kpi"><div class="kpi-val" style="color:var(--tn-blue)">${incidencias.length}</div><div class="kpi-lbl">Incidencias en ${mesLabel}</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--red)">${totalAfect}</div><div class="kpi-lbl">En zona de poste</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:${pct>50?'var(--red)':pct>25?'var(--yellow)':'var(--green)'}">${pct}%</div><div class="kpi-lbl">Correlación</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--tn-orange)">${postes.length}</div><div class="kpi-lbl">Postes (${mesesPostLabel})</div></div>`;
+    <div class="kpi">
+      <div class="kpi-val" style="color:var(--tn-blue)">${total}</div>
+      <div class="kpi-lbl">Incidencias en ${mesLabel}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val" style="color:var(--red)">${totalAfect}</div>
+      <div class="kpi-lbl">En zona de poste</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val" style="color:${pct>50?'var(--red)':pct>25?'var(--yellow)':'var(--green)'}">${pct}%</div>
+      <div class="kpi-lbl">Correlación</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val" style="color:var(--tn-orange)">${postes.length}</div>
+      <div class="kpi-lbl">Postes (${mesesPostLabel})</div>
+    </div>`;
 
   // Tipos afectados
   const porTipo={};
@@ -366,25 +387,29 @@ function ejecutarAnalisis(){
   const tiposHTML=Object.entries(porTipo).sort((a,b)=>b[1]-a[1])
     .map(([t,n])=>`<span class="chip-tipo">&#9679; ${t} (${n})</span>`).join('');
 
-  document.getElementById('resumen-title').textContent='Resumen ejecutivo — '+mesLabel+' vs postes de '+mesesPostLabel;
-  document.getElementById('resumen-txt').innerHTML=`De <strong>${incidencias.length}</strong> incidencias en <strong>${mesLabel}</strong>, <strong style="color:var(--red)">${totalAfect} (${pct}%)</strong> están dentro del radio de ${RADIO}m de un cambio de poste.`;
-  document.getElementById('chips-tipos').innerHTML=tiposHTML;
-  document.getElementById('resumen-box').style.display=tiposHTML?'block':'none';
+  document.getElementById('res-title').textContent='Resumen ejecutivo — '+mesLabel;
+  document.getElementById('res-txt').innerHTML=
+    'En <strong>'+mesLabel+'</strong> se registraron <strong>'+total+' incidencias</strong> en total. '+
+    'De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro del radio de '+RADIO+'m '+
+    'de postes cambiados en <strong>'+mesesPostLabel+'</strong>, lo que sugiere una correlación con el cambio de postería.';
+  document.getElementById('res-chips').innerHTML=tiposHTML;
 
   // Tabla
-  const filas=resultados.map(r=>{
+  const filas=resultados.length?resultados.map(r=>{
     const tipos=[...new Set(r.incs.map(i=>i.tipo))].join(', ');
-    const mesPoste=MESES_N[parseInt(r.poste.mes)]||r.poste.mes;
-    return`<tr><td style="color:var(--txt);font-weight:500">${r.poste.tarea}</td><td>${mesPoste}</td><td style="color:var(--red);font-weight:700;text-align:center">${r.incs.length}</td><td style="font-size:10px">${tipos}</td></tr>`;
-  }).join('');
-  document.getElementById('tbl-body').innerHTML=filas||'<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:12px">Sin coincidencias en este período</td></tr>';
-  document.getElementById('tbl-wrap').style.display='block';
+    return`<tr>
+      <td style="color:var(--txt);font-weight:500;font-size:10px">${r.poste.tarea}</td>
+      <td>${MESES_N[r.poste.mes]||r.poste.mes}</td>
+      <td style="text-align:center;font-weight:700;color:var(--red)">${r.incs.length}</td>
+      <td style="font-size:10px;color:var(--txt2)">${tipos}</td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:12px">Sin coincidencias en este período</td></tr>`;
+  document.getElementById('tbl-body').innerHTML=filas;
   document.getElementById('resultados').style.display='block';
 
-  // Centrar mapa si hay resultados
+  // Zoom a los resultados si hay
   if(capasCorr.length){
-    const grp=L.featureGroup(capasCorr);
-    mapaL.fitBounds(grp.getBounds().pad(.15));
+    try{mapaL.fitBounds(L.featureGroup(capasCorr).getBounds().pad(.2));}catch(e){}
   }
 }
 
