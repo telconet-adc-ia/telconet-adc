@@ -431,32 +431,45 @@ function renderResultados(){
   marcadoresPostes.forEach(m=>{try{mapaL.removeLayer(m);}catch(e){}});
   marcadoresPostes=[];
   postes.forEach(p=>{
-    const icon=L.divIcon({className:'',html:'<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #EB6100;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))"></div>',iconSize:[16,16],iconAnchor:[8,16]});
-    const mk=L.marker([p.lat,p.lng],{icon}).bindTooltip('<b>'+p.tarea+'</b><br>'+(MESES_N[p.mes]||p.mes),{sticky:true}).addTo(mapaL);
-    marcadoresPostes.push(mk);
+    try{
+      const lat=Number(p.lat), lng=Number(p.lng);
+      if(!isFinite(lat)||!isFinite(lng))return;
+      const icon=L.divIcon({className:'',html:'<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #EB6100;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))"></div>',iconSize:[16,16],iconAnchor:[8,16]});
+      const mk=L.marker([lat,lng],{icon}).bindTooltip('<b>'+p.tarea+'</b><br>'+(MESES_N[p.mes]||p.mes),{sticky:true}).addTo(mapaL);
+      marcadoresPostes.push(mk);
+    }catch(e){console.warn('Triángulo omitido:',p,e);}
   });
 
   // Repintar círculos e incidencias (filtrados)
   capasCorr.forEach(c=>{try{mapaL.removeLayer(c);}catch(e){}});
   capasCorr=[];
   resultadosFiltrados.forEach(res=>{
-    const circ=L.circle([res.poste.lat,res.poste.lng],{radius:RADIO,color:'#EB6100',fillColor:'#EB6100',fillOpacity:.07,weight:2,dashArray:'6,4'}).addTo(mapaL);
-    circ.bindTooltip('Poste: '+res.poste.tarea+' — '+res.incs.length+' incidencia(s)',{sticky:true});
-    capasCorr.push(circ);
+    try{
+      const circ=L.circle([res.poste.lat,res.poste.lng],{radius:RADIO,color:'#EB6100',fillColor:'#EB6100',fillOpacity:.07,weight:2,dashArray:'6,4'}).addTo(mapaL);
+      circ.bindTooltip('Poste: '+res.poste.tarea+' — '+res.incs.length+' incidencia(s)',{sticky:true});
+      capasCorr.push(circ);
+    }catch(e){console.warn('Círculo omitido:',res.poste,e);return;}
     res.incs.forEach(inc=>{
-      const mk=L.circleMarker([inc.lat,inc.lng],{radius:8,fillColor:'#DC2626',color:'#fff',weight:2,fillOpacity:.92}).addTo(mapaL);
-      mk.bindPopup('<div style="font-size:12px;min-width:190px"><div style="background:#DC2626;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9888; INCIDENCIA EN ZONA POSTE</div><div style="padding:7px 9px"><b>Caja:</b> '+inc.caja+'<br><b>Tipo:</b> '+inc.tipo+'<br><b>Poste ref.:</b> '+res.poste.tarea+'</div></div>');
-      capasCorr.push(mk);
+      try{
+        const lat=Number(inc.lat), lng=Number(inc.lng);
+        if(!isFinite(lat)||!isFinite(lng))return;
+        const mk=L.circleMarker([lat,lng],{radius:8,fillColor:'#DC2626',color:'#fff',weight:2,fillOpacity:.92}).addTo(mapaL);
+        mk.bindPopup('<div style="font-size:12px;min-width:190px"><div style="background:#DC2626;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9888; INCIDENCIA EN ZONA POSTE</div><div style="padding:7px 9px"><b>Caja:</b> '+(inc.caja||'—')+'<br><b>Tipo:</b> '+(inc.tipo||'—')+'<br><b>Poste ref.:</b> '+res.poste.tarea+'</div></div>');
+        capasCorr.push(mk);
+      }catch(e){console.warn('Marcador rojo omitido:',inc,e);}
     });
   });
 
   // Incidencias sin relación a ningún poste (verdes) — respeta filtro de tipo si está activo
   const noAfectFiltradas=(incidenciasNoAfectadas||[]).filter(i=>!tipoFiltroActivo||i.tipo===tipoFiltroActivo);
   noAfectFiltradas.forEach(inc=>{
-    if(isNaN(inc.lat)||isNaN(inc.lng))return;
-    const mk=L.circleMarker([inc.lat,inc.lng],{radius:7,fillColor:'#16A34A',color:'#fff',weight:2,fillOpacity:.85}).addTo(mapaL);
-    mk.bindPopup('<div style="font-size:12px;min-width:190px"><div style="background:#16A34A;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9989; SIN RELACIÓN A CAMBIO DE POSTE</div><div style="padding:7px 9px"><b>Caja:</b> '+inc.caja+'<br><b>Tipo:</b> '+inc.tipo+'</div></div>');
-    capasCorr.push(mk);
+    try{
+      const lat=Number(inc.lat), lng=Number(inc.lng);
+      if(!isFinite(lat)||!isFinite(lng)||lat===0||lng===0)return;
+      const mk=L.circleMarker([lat,lng],{radius:7,fillColor:'#16A34A',color:'#fff',weight:2,fillOpacity:.85}).addTo(mapaL);
+      mk.bindPopup('<div style="font-size:12px;min-width:190px"><div style="background:#16A34A;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9989; SIN RELACIÓN A CAMBIO DE POSTE</div><div style="padding:7px 9px"><b>Caja:</b> '+(inc.caja||'—')+'<br><b>Tipo:</b> '+(inc.tipo||'—')+'</div></div>');
+      capasCorr.push(mk);
+    }catch(e){console.warn('Marcador verde omitido:',inc,e);}
   });
 
   // ── KPIs ──────────────────────────────────────────────────
