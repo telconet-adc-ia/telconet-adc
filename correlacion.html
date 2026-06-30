@@ -166,7 +166,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
       <div class="spinner"></div>
       <div>Cargando datos desde Google Sheets...</div>
     </div>
-    <div id="map" style="display:none"></div>
+    <div id="map" style="width:100%;height:100%;opacity:0;transition:opacity .3s"></div>
     <div class="map-legend" id="map-legend" style="display:none">
       <div class="leg-item"><div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #EB6100"></div> Cambio de poste</div>
       <div class="leg-item"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;border:2px solid #fff;box-shadow:0 0 0 1px #DC2626"></div> En zona de poste</div>
@@ -316,12 +316,12 @@ async function cargarDatos(){
     document.getElementById('sdot').className='sync-dot ok';
     document.getElementById('slbl').textContent=rows.length.toLocaleString()+' trabajos · '+rowsReg.length+' postes';
     document.getElementById('loading-map').style.display='none';
-    document.getElementById('map').style.display='block';
     document.getElementById('map-legend').style.display='flex';
 
     mapaL=L.map('map').setView([-2.9,-78.85],12);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',maxZoom:19}).addTo(mapaL);
-    setTimeout(()=>{if(mapaL)mapaL.invalidateSize();},100);
+    document.getElementById('map').style.opacity='1';
+    setTimeout(()=>{if(mapaL)mapaL.invalidateSize();},50);
 
     // Meses de INCIDENCIAS
     const anioCol=getAnioCol(headers);
@@ -504,6 +504,10 @@ function renderResultados(){
           const idx=els[0].index;
           const tipo=tiposSorted[idx][0];
           tipoFiltroActivo=tipoFiltroActivo===tipo?null:tipo;
+          console.log('[DEBUG] Tipo seleccionado:',tipo);
+          console.log('[DEBUG] Resultados totales:',resultados.length);
+          const filtrados=resultados.map(r=>({poste:r.poste,incs:r.incs.filter(i=>i.tipo===tipo)})).filter(r=>r.incs.length);
+          console.log('[DEBUG] Resultados con ese tipo:',filtrados.length, filtrados);
           document.getElementById('btn-clear-filter').style.display=tipoFiltroActivo?'block':'none';
           renderResultados();
         },
