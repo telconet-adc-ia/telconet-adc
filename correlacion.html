@@ -154,7 +154,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 <div class="kpibar" id="kpibar">
   <div class="kpi"><div class="kpi-val" style="color:var(--tn-blue)" id="kpi-total">—</div><div class="kpi-lbl" id="kpi-total-lbl">Incidencias</div></div>
   <div class="kpi"><div class="kpi-val" style="color:var(--red)" id="kpi-afect">—</div><div class="kpi-lbl">En zona de cambio de poste</div></div>
-  <div class="kpi"><div class="kpi-val" style="color:var(--green)" id="kpi-noafect">—</div><div class="kpi-lbl">Sin relación al cambio</div></div>
   <div class="kpi"><div class="kpi-val" style="color:var(--yellow)" id="kpi-pct">—</div><div class="kpi-lbl">Del total de incidencias</div></div>
   <div class="kpi"><div class="kpi-val" style="color:var(--tn-orange)" id="kpi-postes">—</div><div class="kpi-lbl" id="kpi-postes-lbl">Cambios de poste</div></div>
 </div>
@@ -169,8 +168,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
     <div id="map" style="width:100%;height:100%;opacity:0;transition:opacity .3s"></div>
     <div class="map-legend" id="map-legend" style="display:none">
       <div class="leg-item"><div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #EB6100"></div> Cambio de poste</div>
-      <div class="leg-item"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;border:2px solid #fff;box-shadow:0 0 0 1px #DC2626"></div> En zona de poste</div>
-      <div class="leg-item"><div style="width:12px;height:12px;border-radius:50%;background:#16A34A;border:2px solid #fff;box-shadow:0 0 0 1px #16A34A"></div> Sin relación a poste</div>
+      <div class="leg-item"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;border:2px solid #fff;box-shadow:0 0 0 1px #DC2626"></div> Incidencia en zona</div>
       <div class="leg-item"><div style="width:18px;height:0;border-top:2px dashed #EB6100"></div> Radio de influencia</div>
     </div>
   </div>
@@ -399,29 +397,19 @@ function ejecutarAnalisis(){
 
   // Cruce por distancia
   const resultados=[];
-  const cajasAfectadasSet=new Set();
   postes.forEach(p=>{
     const dentro=incidencias.filter(i=>distM(p.lat,p.lng,i.lat,i.lng)<=RADIO);
-    if(dentro.length){
-      resultados.push({poste:p,incs:dentro});
-      dentro.forEach(i=>cajasAfectadasSet.add(i.caja+'|'+i.lat+'|'+i.lng));
-    }
+    if(dentro.length)resultados.push({poste:p,incs:dentro});
   });
 
-  // Incidencias que NO cayeron en ningún radio
-  const incidenciasNoAfectadas=incidencias.filter(i=>
-    !cajasAfectadasSet.has(i.caja+'|'+i.lat+'|'+i.lng) &&
-    !isNaN(i.lat) && !isNaN(i.lng) && i.lat!==0 && i.lng!==0
-  );
-
-  resultadosActuales={resultados,postes,incidencias,incidenciasNoAfectadas,RADIO};
+  resultadosActuales={resultados,postes,incidencias,RADIO};
   tipoFiltroActivo=null;
   document.getElementById('btn-clear-filter').style.display='none';
   renderResultados();
 }
 
 function renderResultados(){
-  const {resultados,postes,incidencias,incidenciasNoAfectadas,RADIO}=resultadosActuales;
+  const {resultados,postes,incidencias,RADIO}=resultadosActuales;
 
   // Aplicar filtro de tipo si está activo
   const resultadosFiltrados=tipoFiltroActivo
@@ -453,16 +441,6 @@ function renderResultados(){
     });
   });
 
-  // Incidencias NO afectadas (verdes) — solo si no hay filtro de tipo, o si coinciden con el filtro
-  const noAfectFiltradas=tipoFiltroActivo
-    ? incidenciasNoAfectadas.filter(i=>i.tipo===tipoFiltroActivo)
-    : incidenciasNoAfectadas;
-  noAfectFiltradas.forEach(inc=>{
-    const mk=L.circleMarker([inc.lat,inc.lng],{radius:7,fillColor:'#16A34A',color:'#fff',weight:2,fillOpacity:.85}).addTo(mapaL);
-    mk.bindPopup('<div style="font-size:12px;min-width:190px"><div style="background:#16A34A;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9989; INCIDENCIA SIN RELACIÓN A POSTE</div><div style="padding:7px 9px"><b>Caja:</b> '+inc.caja+'<br><b>Tipo:</b> '+inc.tipo+'<br><span style="font-size:10px;color:#888">Fuera del radio de cualquier cambio de poste</span></div></div>');
-    capasCorr.push(mk);
-  });
-
   // ── KPIs ──────────────────────────────────────────────────
   const total=incidencias.length;
   const pct=total?Math.round(totalAfect/total*100):0;
@@ -472,14 +450,13 @@ function renderResultados(){
   document.getElementById('kpi-total').textContent=total;
   document.getElementById('kpi-total-lbl').textContent='Incidencias';
   document.getElementById('kpi-afect').textContent=totalAfect;
-  document.getElementById('kpi-noafect').textContent=incidenciasNoAfectadas.length;
   document.getElementById('kpi-pct').textContent=pct+'%';
   document.getElementById('kpi-postes').textContent=postes.length;
   document.getElementById('kpi-postes-lbl').textContent='Cambios de poste';
 
   // ── Resumen ejecutivo ──────────────────────────────────────
   document.getElementById('res-title').textContent='Resumen — '+mesesIncLabel+' vs postes de '+mesesPostLabel;
-  document.getElementById('res-txt').innerHTML='Se registraron <strong>'+total+' incidencias</strong> en <strong>'+mesesIncLabel+'</strong>. De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro de '+RADIO+'m de un cambio de poste en <strong>'+mesesPostLabel+'</strong> ('+postes.length+' postes), y <strong style="color:var(--green)">'+incidenciasNoAfectadas.length+' ('+(100-pct)+'%)</strong> no tienen relación con ning&uacute;n cambio de poste.'+(tipoFiltroActivo?' <em>Filtrado por tipo: '+tipoFiltroActivo+'</em>':'');
+  document.getElementById('res-txt').innerHTML='Se registraron <strong>'+total+' incidencias</strong> en <strong>'+mesesIncLabel+'</strong>. De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro de '+RADIO+'m de un cambio de poste en <strong>'+mesesPostLabel+'</strong> ('+postes.length+' postes).'+(tipoFiltroActivo?' <em>Filtrado por tipo: '+tipoFiltroActivo+'</em>':'');
   document.getElementById('resumen-box').style.display='block';
 
   // ── Gráfica de tipos (con colores Telconet, interactiva) ───
@@ -511,10 +488,6 @@ function renderResultados(){
           const idx=els[0].index;
           const tipo=tiposSorted[idx][0];
           tipoFiltroActivo=tipoFiltroActivo===tipo?null:tipo;
-          console.log('[DEBUG] Tipo seleccionado:',tipo);
-          console.log('[DEBUG] Resultados totales:',resultados.length);
-          const filtrados=resultados.map(r=>({poste:r.poste,incs:r.incs.filter(i=>i.tipo===tipo)})).filter(r=>r.incs.length);
-          console.log('[DEBUG] Resultados con ese tipo:',filtrados.length, filtrados);
           document.getElementById('btn-clear-filter').style.display=tipoFiltroActivo?'block':'none';
           renderResultados();
         },
