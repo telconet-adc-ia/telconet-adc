@@ -213,13 +213,29 @@ let mapaL=null, capasCorr=[], marcadoresPostes=[], chartTipos=null;
 let mesesIncSel=new Set(), mesesPostSel=new Set();
 let resultadosActuales=[], tipoFiltroActivo=null;
 
-function jsonpAction(base,action){
+function jsonpAction(base,action,intentos){
+  intentos=intentos||0;
   return new Promise((res,rej)=>{
-    const cb='cba_'+Date.now()+'_'+action;
+    const cb='cba_'+Date.now()+'_'+action+'_'+intentos;
     const s=document.createElement('script');
-    const t=setTimeout(()=>{if(s.parentNode)s.parentNode.removeChild(s);rej(new Error('Timeout '+action));},30000);
+    const t=setTimeout(()=>{
+      if(s.parentNode)s.parentNode.removeChild(s);
+      if(intentos<2){
+        // Reintentar tras un breve delay
+        setTimeout(()=>jsonpAction(base,action,intentos+1).then(res).catch(rej),800);
+      } else {
+        rej(new Error('Timeout '+action));
+      }
+    },15000);
     window[cb]=d=>{clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);res(d);};
-    s.onerror=()=>{clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);rej(new Error('Error '+action));};
+    s.onerror=()=>{
+      clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);
+      if(intentos<2){
+        setTimeout(()=>jsonpAction(base,action,intentos+1).then(res).catch(rej),800);
+      } else {
+        rej(new Error('Error '+action));
+      }
+    };
     s.src=base+'?action='+action+'&callback='+cb;
     document.head.appendChild(s);
   });
@@ -291,7 +307,8 @@ function updateMsLabel(which){
 async function cargarDatos(){
   try{
     const base=SCRIPT_URL.split('?')[0];
-    const [dADC,dReg]=await Promise.all([jsonpAction(base,'data'),jsonpAction(base,'regint')]);
+    const dADC=await jsonpAction(base,'data');
+    const dReg=await jsonpAction(base,'regint');
 
     if(dADC&&dADC.rows){rows=dADC.rows;headers=dADC.headers||[];}
     if(dReg&&dReg.rows){rowsReg=dReg.rows;headersReg=dReg.headers||Object.keys(dReg.rows[0]||{});}
@@ -515,11 +532,25 @@ function renderResultados(){
   document.getElementById('tbl-body').innerHTML=filas.length?filas.join(''):'<tr><td colspan="3" style="text-align:center;color:var(--txt3);padding:14px">Sin coincidencias en este período</td></tr>';
 
   // Zoom
-  if(capasCorr.length){
-    try{mapaL.fitBounds(L.featureGroup(capasCorr).getBounds().pad(.2));}catch(e){}
-  } else if(marcadoresPostes.length){
-    try{mapaL.fitBounds(L.featureGroup(marcadoresPostes).getBounds().pad(.2));}catch(e){}
-  }
+  setTimeout(()=>{
+    if(!mapaL)return;
+    mapaL.invalidateSize();
+    if(capasCorr.length){
+      try{
+        const b=L.featureGroup(capasCorr).getBounds();
+        if(b.isValid())mapaL.fitBounds(b.pad(.2));
+        else mapaL.setView([-2.9,-78.85],12);
+      }catch(e){mapaL.setView([-2.9,-78.85],12);}
+    } else if(marcadoresPostes.length){
+      try{
+        const b=L.featureGroup(marcadoresPostes).getBounds();
+        if(b.isValid())mapaL.fitBounds(b.pad(.2));
+        else mapaL.setView([-2.9,-78.85],12);
+      }catch(e){mapaL.setView([-2.9,-78.85],12);}
+    } else {
+      mapaL.setView([-2.9,-78.85],12);
+    }
+  },150);
 }
 
 window.addEventListener('DOMContentLoaded',cargarDatos);
