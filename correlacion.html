@@ -497,7 +497,7 @@ function renderResultados(){
 
   // ── Resumen ejecutivo ──────────────────────────────────────
   document.getElementById('res-title').textContent='Resumen — '+mesesIncLabel+' vs postes de '+mesesPostLabel;
-  document.getElementById('res-txt').innerHTML='Se registraron <strong>'+total+' incidencias</strong> en <strong>'+mesesIncLabel+'</strong>. De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro de '+RADIO+'m de un cambio de poste en <strong>'+mesesPostLabel+'</strong> ('+postes.length+' postes).'+(tipoFiltroActivo?' <em>Filtrado por tipo: '+tipoFiltroActivo+'</em>':'');
+  document.getElementById('res-txt').innerHTML='Se registraron <strong>'+total+' incidencias</strong> en <strong>'+mesesIncLabel+'</strong>. De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro de '+RADIO+'m de un cambio de poste en <strong>'+mesesPostLabel+'</strong> ('+postes.length+' notificaciones de cambios de postes).'+(tipoFiltroActivo?' <em>Filtrado por tipo: '+tipoFiltroActivo+'</em>':'');
   document.getElementById('resumen-box').style.display='block';
   document.getElementById('plan-accion-box').style.display='block';
 
