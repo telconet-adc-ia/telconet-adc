@@ -154,7 +154,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
   <div class="kpi"><div class="kpi-val" style="color:var(--tn-blue)" id="kpi-total">—</div><div class="kpi-lbl" id="kpi-total-lbl">Incidencias</div></div>
   <div class="kpi"><div class="kpi-val" style="color:var(--red)" id="kpi-afect">—</div><div class="kpi-lbl">En zona de cambio de poste</div></div>
   <div class="kpi"><div class="kpi-val" style="color:var(--yellow)" id="kpi-pct">—</div><div class="kpi-lbl">Del total de incidencias</div></div>
-  <div class="kpi"><div class="kpi-val" style="color:var(--tn-orange)" id="kpi-postes">—</div><div class="kpi-lbl" id="kpi-postes-lbl">Cambios de poste</div></div>
+  <div class="kpi"><div class="kpi-val" style="color:var(--tn-orange)" id="kpi-postes">—</div><div class="kpi-lbl" id="kpi-postes-lbl">Notificaciones de cambio de poste</div></div>
 </div>
 
 <div class="main">
@@ -178,6 +178,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
       <div class="resumen-box side-col-full" id="resumen-box" style="display:none">
         <div class="resumen-title" id="res-title"></div>
         <div class="resumen-txt" id="res-txt"></div>
+      </div>
+
+      <div class="side-col-full" id="plan-accion-box" style="display:none;background:rgba(14,66,156,.05);border:1px solid rgba(14,66,156,.2);border-left:4px solid var(--tn-blue);border-radius:8px;padding:14px 16px;margin-bottom:6px">
+        <div style="font-size:11px;font-weight:700;color:var(--tn-blue);margin-bottom:6px;display:flex;align-items:center;gap:6px">&#128203; Plan de acción propuesto</div>
+        <div style="font-size:12px;color:var(--txt);line-height:1.7">
+          Para atender las incidencias generadas por los cambios de poste, se recomienda <strong>recuperar a la cuadrilla CUE PROV CUE ADC 01</strong> y asignarla exclusivamente al seguimiento y corrección de las incidencias detectadas en zonas con notificación de cambio de poste, priorizando los tipos de tarea con mayor incidencia (ver gráfica de la izquierda).
+        </div>
       </div>
 
       <!-- COLUMNA IZQUIERDA -->
@@ -486,12 +493,13 @@ function renderResultados(){
   document.getElementById('kpi-afect').textContent=totalAfect;
   document.getElementById('kpi-pct').textContent=pct+'%';
   document.getElementById('kpi-postes').textContent=postes.length;
-  document.getElementById('kpi-postes-lbl').textContent='Cambios de poste';
+  document.getElementById('kpi-postes-lbl').textContent='Notificaciones de cambio de poste';
 
   // ── Resumen ejecutivo ──────────────────────────────────────
   document.getElementById('res-title').textContent='Resumen — '+mesesIncLabel+' vs postes de '+mesesPostLabel;
   document.getElementById('res-txt').innerHTML='Se registraron <strong>'+total+' incidencias</strong> en <strong>'+mesesIncLabel+'</strong>. De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro de '+RADIO+'m de un cambio de poste en <strong>'+mesesPostLabel+'</strong> ('+postes.length+' postes).'+(tipoFiltroActivo?' <em>Filtrado por tipo: '+tipoFiltroActivo+'</em>':'');
   document.getElementById('resumen-box').style.display='block';
+  document.getElementById('plan-accion-box').style.display='block';
 
   // ── Gráfica de tipos (con colores Telconet, interactiva) ───
   const porTipo={};
