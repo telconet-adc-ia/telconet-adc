@@ -509,7 +509,6 @@ function renderResultados(){
   if(tiposSorted.length){
     chartTipos=new Chart(document.getElementById('ch-tipos'),{
       type:'bar',
-      plugins:[ChartDataLabels],
       data:{labels:tiposSorted.map(([t])=>t.length>22?t.slice(0,20)+'…':t),
         datasets:[{data:tiposSorted.map(([,n])=>n),
           backgroundColor:tiposSorted.map(([t])=>tipoFiltroActivo&&tipoFiltroActivo!==t?tipoColores[t]+'40':tipoColores[t]),
@@ -521,7 +520,8 @@ function renderResultados(){
           const tipo=tiposSorted[idx][0];
           tipoFiltroActivo=tipoFiltroActivo===tipo?null:tipo;
           document.getElementById('btn-clear-filter').style.display=tipoFiltroActivo?'block':'none';
-          renderResultados();
+          // Diferir el re-render para no destruir el chart en medio de su propio evento de clic
+          setTimeout(renderResultados,0);
         },
         plugins:{legend:{display:false},
           tooltip:{callbacks:{label:c=>' '+c.raw+' casos · clic para filtrar'}},
