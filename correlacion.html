@@ -377,7 +377,7 @@ function ejecutarAnalisis(){
   }).map(r=>{
     const parts=(r['UBICACION']||'').trim().split(',');
     return{lat:parseFloat(parts[0]),lng:parseFloat(parts[1]),caja:r['CAJA']||r['NODO']||'Sin caja',tipo:r['TIPO TAREA']||r['TIPO DE TAREA']||'Sin tipo'};
-  }).filter(r=>!isNaN(r.lat)&&r.lat!==0);
+  }).filter(r=>!isNaN(r.lat)&&!isNaN(r.lng)&&r.lat!==0&&r.lng!==0);
 
   // Cruce por distancia
   const resultados=[];
@@ -391,7 +391,10 @@ function ejecutarAnalisis(){
   });
 
   // Incidencias que NO cayeron en ningún radio
-  const incidenciasNoAfectadas=incidencias.filter(i=>!cajasAfectadasSet.has(i.caja+'|'+i.lat+'|'+i.lng));
+  const incidenciasNoAfectadas=incidencias.filter(i=>
+    !cajasAfectadasSet.has(i.caja+'|'+i.lat+'|'+i.lng) &&
+    !isNaN(i.lat) && !isNaN(i.lng) && i.lat!==0 && i.lng!==0
+  );
 
   resultadosActuales={resultados,postes,incidencias,incidenciasNoAfectadas,RADIO};
   tipoFiltroActivo=null;
