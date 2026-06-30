@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
 :root{
   --tn-blue:#0E429C;--tn-orange:#EB6100;--tn-cyan:#10A8C7;
@@ -32,12 +33,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* FILTER BAR */
-.filterbar{background:#fff;border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex-shrink:0}
-.f-item{display:flex;align-items:center;gap:6px}
+.filterbar{background:#fff;border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex-shrink:0;position:relative;z-index:500}
+.f-item{display:flex;align-items:center;gap:6px;position:relative}
 .f-item label{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--txt3)}
 .f-select{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;outline:none}
 .f-select:focus{border-color:var(--tn-blue)}
 .f-divider{width:1px;height:24px;background:var(--border)}
+
+/* MULTISELECT DROPDOWN */
+.ms-box{position:relative}
+.ms-trigger{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--txt);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;min-width:160px;justify-content:space-between}
+.ms-trigger:hover{border-color:var(--tn-blue)}
+.ms-trigger .arrow{font-size:9px;color:var(--txt3);transition:.2s}
+.ms-trigger.open .arrow{transform:rotate(180deg)}
+.ms-dropdown{position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(14,66,156,.15);padding:8px;min-width:220px;max-height:280px;overflow-y:auto;z-index:1000;display:none}
+.ms-dropdown.open{display:block}
+.ms-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--txt2)}
+.ms-opt:hover{background:var(--bg3)}
+.ms-opt input{cursor:pointer;accent-color:var(--tn-blue)}
+.ms-opt .cnt{margin-left:auto;font-size:10px;color:var(--txt3)}
+.ms-sep{height:1px;background:var(--border);margin:6px 0}
+.ms-actions{display:flex;gap:6px;padding:4px 8px 0}
+.ms-actions button{flex:1;font-size:10px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--txt2);cursor:pointer}
+.ms-actions button:hover{background:var(--tn-blue);color:#fff;border-color:var(--tn-blue)}
 
 /* KPI BAR */
 .kpibar{display:flex;gap:12px;padding:14px 20px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
@@ -65,12 +83,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 .resumen-title{font-size:11px;font-weight:700;color:#ff6b00;margin-bottom:5px}
 .resumen-txt{font-size:12px;color:var(--txt);line-height:1.6}
 
-.sec-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sec-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:4px;display:flex;align-items:center;gap:6px}
 .sec-title .dot{width:6px;height:6px;border-radius:50%;background:var(--red)}
+.sec-hint{font-size:10px;color:var(--txt3);margin-bottom:10px}
 
-.chart-wrap{position:relative;height:200px;margin-bottom:18px}
+.chart-wrap{position:relative;height:210px;margin-bottom:8px}
+.btn-clear-filter{display:none;font-size:10px;color:var(--tn-blue);text-decoration:underline;cursor:pointer;margin-bottom:14px}
 
-.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:280px;overflow-y:auto}
+.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:260px;overflow-y:auto}
 .tbl-wrap::-webkit-scrollbar{width:3px}
 .tbl-wrap::-webkit-scrollbar-thumb{background:var(--border)}
 .tbl{width:100%;border-collapse:collapse;font-size:11px}
@@ -98,7 +118,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 <div class="filterbar">
   <div class="f-item">
     <label>Incidencias — mes</label>
-    <select class="f-select" id="sel-mes-inc" onchange="ejecutarAnalisis()"><option value="">Cargando...</option></select>
+    <div class="ms-box" id="ms-inc">
+      <div class="ms-trigger" onclick="toggleMs('inc')"><span id="ms-inc-label">Cargando...</span><span class="arrow">&#9660;</span></div>
+      <div class="ms-dropdown" id="ms-inc-dropdown"></div>
+    </div>
   </div>
   <div class="f-item">
     <label>Año</label>
@@ -110,7 +133,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
   <div class="f-divider"></div>
   <div class="f-item">
     <label>Cambio de postes — mes</label>
-    <select class="f-select" id="sel-mes-post" onchange="ejecutarAnalisis()"><option value="">Cargando...</option></select>
+    <div class="ms-box" id="ms-post">
+      <div class="ms-trigger" onclick="toggleMs('post')"><span id="ms-post-label">Cargando...</span><span class="arrow">&#9660;</span></div>
+      <div class="ms-dropdown" id="ms-post-dropdown"></div>
+    </div>
   </div>
   <div class="f-divider"></div>
   <div class="f-item">
@@ -141,9 +167,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
     </div>
     <div id="map" style="display:none"></div>
     <div class="map-legend" id="map-legend" style="display:none">
-      <div class="leg-item"><div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #ff6b00"></div> Cambio de poste</div>
-      <div class="leg-item"><div style="width:12px;height:12px;border-radius:50%;background:#dc2626;border:2px solid #fff;box-shadow:0 0 0 1px #dc2626"></div> Incidencia en zona</div>
-      <div class="leg-item"><div style="width:18px;height:0;border-top:2px dashed #ff6b00"></div> Radio de influencia</div>
+      <div class="leg-item"><div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #EB6100"></div> Cambio de poste</div>
+      <div class="leg-item"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;border:2px solid #fff;box-shadow:0 0 0 1px #DC2626"></div> Incidencia en zona</div>
+      <div class="leg-item"><div style="width:18px;height:0;border-top:2px dashed #EB6100"></div> Radio de influencia</div>
     </div>
   </div>
 
@@ -156,7 +182,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
       </div>
 
       <div class="sec-title"><div class="dot"></div>Tipos de tarea provocados por el cambio</div>
+      <div class="sec-hint">Clic en una barra para filtrar el mapa y la lista</div>
       <div class="chart-wrap"><canvas id="ch-tipos"></canvas></div>
+      <div class="btn-clear-filter" id="btn-clear-filter" onclick="limpiarFiltroTipo()">&#10005; Quitar filtro de tipo</div>
 
       <div class="sec-title"><div class="dot" style="background:var(--tn-blue)"></div>Detalle: tarea, caja y tipo</div>
       <div class="tbl-wrap">
@@ -175,8 +203,13 @@ const SCRIPT_URL='https://script.google.com/macros/s/AKfycbzBxFpv4Q1heUSSAOpyGCb
 const MESES_N={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
 const MESES_MAP={'ENERO':'1','FEBRERO':'2','MARZO':'3','ABRIL':'4','MAYO':'5','JUNIO':'6','JULIO':'7','AGOSTO':'8','SEPTIEMBRE':'9','OCTUBRE':'10','NOVIEMBRE':'11','DICIEMBRE':'12'};
 
+// Paleta Telconet para diferenciar tipos de tarea
+const TN_PALETTE=['#0E429C','#EB6100','#10A8C7','#7C3AED','#16A34A','#D97706','#DC2626','#0891B2','#4338CA','#EA580C'];
+
 let rows=[], headers=[], rowsReg=[], headersReg=[];
 let mapaL=null, capasCorr=[], marcadoresPostes=[], chartTipos=null;
+let mesesIncSel=new Set(), mesesPostSel=new Set();
+let resultadosActuales=[], tipoFiltroActivo=null;
 
 function jsonpAction(base,action){
   return new Promise((res,rej)=>{
@@ -196,6 +229,59 @@ function getAnioCol(hdrs){
   return hdrs.find(h=>/^a.?[nñ]o$/i.test(h.trim()))||'AÑO';
 }
 
+// ── MULTISELECT DROPDOWN ──────────────────────────────────────
+function toggleMs(which){
+  const dd=document.getElementById('ms-'+which+'-dropdown');
+  const trig=document.querySelector('#ms-'+which+' .ms-trigger');
+  const isOpen=dd.classList.contains('open');
+  document.querySelectorAll('.ms-dropdown').forEach(d=>d.classList.remove('open'));
+  document.querySelectorAll('.ms-trigger').forEach(t=>t.classList.remove('open'));
+  if(!isOpen){dd.classList.add('open');trig.classList.add('open');}
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.ms-box')){
+    document.querySelectorAll('.ms-dropdown').forEach(d=>d.classList.remove('open'));
+    document.querySelectorAll('.ms-trigger').forEach(t=>t.classList.remove('open'));
+  }
+});
+
+function buildMsDropdown(which, opciones){
+  // opciones: [{value, label, count}]
+  const dd=document.getElementById('ms-'+which+'-dropdown');
+  let html='<div class="ms-actions"><button onclick="msSelectAll(\\''+which+'\\')">Todos</button><button onclick="msSelectNone(\\''+which+'\\')">Ninguno</button></div><div class="ms-sep"></div>';
+  opciones.forEach(o=>{
+    html+='<label class="ms-opt"><input type="checkbox" value="'+o.value+'" onchange="msToggle(\\''+which+'\\',\\''+o.value+'\\')" '+(which==='inc'?(mesesIncSel.has(o.value)?'checked':''):(mesesPostSel.has(o.value)?'checked':''))+'> '+o.label+(o.count!=null?'<span class="cnt">('+o.count+')</span>':'')+'</label>';
+  });
+  dd.innerHTML=html;
+}
+
+function msToggle(which,val){
+  const set=which==='inc'?mesesIncSel:mesesPostSel;
+  if(set.has(val))set.delete(val);else set.add(val);
+  updateMsLabel(which);
+  ejecutarAnalisis();
+}
+function msSelectAll(which){
+  const set=which==='inc'?mesesIncSel:mesesPostSel;
+  const opts=document.querySelectorAll('#ms-'+which+'-dropdown input[type=checkbox]');
+  opts.forEach(o=>{set.add(o.value);o.checked=true;});
+  updateMsLabel(which);ejecutarAnalisis();
+}
+function msSelectNone(which){
+  const set=which==='inc'?mesesIncSel:mesesPostSel;
+  set.clear();
+  document.querySelectorAll('#ms-'+which+'-dropdown input[type=checkbox]').forEach(o=>o.checked=false);
+  updateMsLabel(which);ejecutarAnalisis();
+}
+function updateMsLabel(which){
+  const set=which==='inc'?mesesIncSel:mesesPostSel;
+  const lbl=document.getElementById('ms-'+which+'-label');
+  if(set.size===0)lbl.textContent='Ninguno seleccionado';
+  else if(set.size===1)lbl.textContent=MESES_N[parseInt([...set][0])]||[...set][0];
+  else lbl.textContent=set.size+' meses seleccionados';
+}
+
+// ── CARGA DE DATOS ────────────────────────────────────────────
 async function cargarDatos(){
   try{
     const base=SCRIPT_URL.split('?')[0];
@@ -213,26 +299,18 @@ async function cargarDatos(){
     mapaL=L.map('map').setView([-2.9,-78.85],12);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',maxZoom:19}).addTo(mapaL);
 
-    // Selector de meses de INCIDENCIAS
+    // Meses de INCIDENCIAS
     const anioCol=getAnioCol(headers);
     const mesesInc=[...new Set(rows.filter(r=>String(r[anioCol]||'').trim()==='2026').map(r=>(r['MES']||'').trim().toUpperCase()).filter(Boolean))]
       .sort((a,b)=>parseInt(MESES_MAP[a]||a)-parseInt(MESES_MAP[b]||b));
-    const selInc=document.getElementById('sel-mes-inc');
-    selInc.innerHTML='';
-    mesesInc.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m.charAt(0)+m.slice(1).toLowerCase();selInc.appendChild(o);});
+    buildMsDropdown('inc', mesesInc.map(m=>({value:m,label:m.charAt(0)+m.slice(1).toLowerCase(),count:null})));
+    if(mesesInc.length){mesesIncSel.add(mesesInc[mesesInc.length-1]);updateMsLabel('inc');}
 
-    // Selector de meses de POSTES (independiente)
+    // Meses de POSTES
     const colMesR=headersReg.find(h=>h.toUpperCase()==='MES');
     const mesesPost=[...new Set(rowsReg.map(r=>parseInt(r[colMesR]||0)))].filter(m=>m>0).sort((a,b)=>a-b);
-    const selPost=document.getElementById('sel-mes-post');
-    selPost.innerHTML='<option value="all">Todos los meses</option>';
-    mesesPost.forEach(m=>{
-      const cant=rowsReg.filter(r=>parseInt(r[colMesR]||0)===m).length;
-      const o=document.createElement('option');o.value=m;o.textContent=(MESES_N[m]||m)+' ('+cant+')';selPost.appendChild(o);
-    });
-
-    if(mesesInc.length)selInc.value=mesesInc[mesesInc.length-1];
-    if(mesesPost.length)selPost.value=mesesPost[mesesPost.length-1];
+    buildMsDropdown('post', mesesPost.map(m=>({value:String(m),label:MESES_N[m]||m,count:rowsReg.filter(r=>parseInt(r[colMesR]||0)===m).length})));
+    if(mesesPost.length){mesesPostSel.add(String(mesesPost[mesesPost.length-1]));updateMsLabel('post');}
 
     if(mesesInc.length)ejecutarAnalisis();
 
@@ -249,21 +327,27 @@ function distM(lat1,lng1,lat2,lng2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
+function limpiarFiltroTipo(){
+  tipoFiltroActivo=null;
+  document.getElementById('btn-clear-filter').style.display='none';
+  renderResultados();
+}
+
 function ejecutarAnalisis(){
   if(!mapaL||!rows.length||!rowsReg.length)return;
+  if(mesesIncSel.size===0||mesesPostSel.size===0){
+    document.getElementById('tbl-body').innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--txt3);padding:14px">Selecciona al menos un mes en cada filtro</td></tr>';
+    return;
+  }
 
   const RADIO=parseInt(document.getElementById('sel-radio').value);
-  const mesInc=document.getElementById('sel-mes-inc').value;
   const anioInc=document.getElementById('sel-anio').value;
-  const mesPostSel=document.getElementById('sel-mes-post').value;
-  if(!mesInc)return;
-
   const anioCol=getAnioCol(headers);
   const colCoord=headersReg.find(h=>h.toUpperCase().includes('UBIC')||h.toUpperCase().includes('COORD'))||headersReg[1];
   const colMesR =headersReg.find(h=>h.toUpperCase()==='MES');
   const colTareaR=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
 
-  // Postes filtrados por el mes seleccionado (o todos)
+  // Postes filtrados por los meses seleccionados
   const postes=[];
   rowsReg.forEach(r=>{
     const raw=(r[colCoord]||'').toString().trim().split(',');
@@ -271,49 +355,64 @@ function ejecutarAnalisis(){
     const lat=parseFloat(raw[0]),lng=parseFloat(raw[1]);
     if(isNaN(lat)||isNaN(lng)||lat===0)return;
     const mp=parseInt(r[colMesR]||0);
-    if(mesPostSel!=='all'&&String(mp)!==String(mesPostSel))return;
+    if(!mesesPostSel.has(String(mp)))return;
     postes.push({lat,lng,mes:mp,tarea:r[colTareaR]||''});
   });
 
-  // Repintar triángulos de postes (solo los del filtro actual)
-  marcadoresPostes.forEach(m=>{try{mapaL.removeLayer(m);}catch(e){}});
-  marcadoresPostes=[];
-  postes.forEach(p=>{
-    const icon=L.divIcon({className:'',html:'<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #ff6b00;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))"></div>',iconSize:[16,16],iconAnchor:[8,16]});
-    const mk=L.marker([p.lat,p.lng],{icon}).bindTooltip('<b>'+p.tarea+'</b><br>'+(MESES_N[p.mes]||p.mes),{sticky:true}).addTo(mapaL);
-    marcadoresPostes.push(mk);
-  });
-
-  // Incidencias del mes/año seleccionado
+  // Incidencias filtradas por los meses seleccionados
   const incidencias=rows.filter(r=>{
     const proc=(r['PROCEDENCIA']||'').trim().toUpperCase();
     const estado=(r['ESTADO']||'').trim().toUpperCase();
     const mes=(r['MES']||'').trim().toUpperCase();
     const anio=String(r[anioCol]||'').trim();
-    return proc.includes('INCIDENCIA')&&estado.includes('REALIZADO')&&mes===mesInc&&anio===anioInc&&(r['UBICACION']||'').trim();
+    return proc.includes('INCIDENCIA')&&estado.includes('REALIZADO')&&mesesIncSel.has(mes)&&anio===anioInc&&(r['UBICACION']||'').trim();
   }).map(r=>{
     const parts=(r['UBICACION']||'').trim().split(',');
     return{lat:parseFloat(parts[0]),lng:parseFloat(parts[1]),caja:r['CAJA']||r['NODO']||'Sin caja',tipo:r['TIPO TAREA']||r['TIPO DE TAREA']||'Sin tipo'};
   }).filter(r=>!isNaN(r.lat)&&r.lat!==0);
 
   // Cruce por distancia
-  const resultados=[];let totalAfect=0;
+  const resultados=[];
   postes.forEach(p=>{
     const dentro=incidencias.filter(i=>distM(p.lat,p.lng,i.lat,i.lng)<=RADIO);
-    if(dentro.length){resultados.push({poste:p,incs:dentro});totalAfect+=dentro.length;}
+    if(dentro.length)resultados.push({poste:p,incs:dentro});
   });
 
-  // Limpiar capas de análisis previas
+  resultadosActuales={resultados,postes,incidencias,RADIO};
+  tipoFiltroActivo=null;
+  document.getElementById('btn-clear-filter').style.display='none';
+  renderResultados();
+}
+
+function renderResultados(){
+  const {resultados,postes,incidencias,RADIO}=resultadosActuales;
+
+  // Aplicar filtro de tipo si está activo
+  const resultadosFiltrados=tipoFiltroActivo
+    ? resultados.map(r=>({poste:r.poste,incs:r.incs.filter(i=>i.tipo===tipoFiltroActivo)})).filter(r=>r.incs.length)
+    : resultados;
+
+  const totalAfect=resultadosFiltrados.reduce((s,r)=>s+r.incs.length,0);
+
+  // Repintar postes
+  marcadoresPostes.forEach(m=>{try{mapaL.removeLayer(m);}catch(e){}});
+  marcadoresPostes=[];
+  postes.forEach(p=>{
+    const icon=L.divIcon({className:'',html:'<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #EB6100;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))"></div>',iconSize:[16,16],iconAnchor:[8,16]});
+    const mk=L.marker([p.lat,p.lng],{icon}).bindTooltip('<b>'+p.tarea+'</b><br>'+(MESES_N[p.mes]||p.mes),{sticky:true}).addTo(mapaL);
+    marcadoresPostes.push(mk);
+  });
+
+  // Repintar círculos e incidencias (filtrados)
   capasCorr.forEach(c=>{try{mapaL.removeLayer(c);}catch(e){}});
   capasCorr=[];
-
-  resultados.forEach(res=>{
-    const circ=L.circle([res.poste.lat,res.poste.lng],{radius:RADIO,color:'#ff6b00',fillColor:'#ff6b00',fillOpacity:.07,weight:2,dashArray:'6,4'}).addTo(mapaL);
+  resultadosFiltrados.forEach(res=>{
+    const circ=L.circle([res.poste.lat,res.poste.lng],{radius:RADIO,color:'#EB6100',fillColor:'#EB6100',fillOpacity:.07,weight:2,dashArray:'6,4'}).addTo(mapaL);
     circ.bindTooltip('Poste: '+res.poste.tarea+' — '+res.incs.length+' incidencia(s)',{sticky:true});
     capasCorr.push(circ);
     res.incs.forEach(inc=>{
-      const mk=L.circleMarker([inc.lat,inc.lng],{radius:8,fillColor:'#dc2626',color:'#fff',weight:2,fillOpacity:.92}).addTo(mapaL);
-      mk.bindPopup('<div style="font-size:12px;min-width:190px"><div style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9888; INCIDENCIA EN ZONA POSTE</div><div style="padding:7px 9px"><b>Caja:</b> '+inc.caja+'<br><b>Tipo:</b> '+inc.tipo+'<br><b>Poste ref.:</b> '+res.poste.tarea+'</div></div>');
+      const mk=L.circleMarker([inc.lat,inc.lng],{radius:8,fillColor:'#DC2626',color:'#fff',weight:2,fillOpacity:.92}).addTo(mapaL);
+      mk.bindPopup('<div style="font-size:12px;min-width:190px"><div style="background:#DC2626;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9888; INCIDENCIA EN ZONA POSTE</div><div style="padding:7px 9px"><b>Caja:</b> '+inc.caja+'<br><b>Tipo:</b> '+inc.tipo+'<br><b>Poste ref.:</b> '+res.poste.tarea+'</div></div>');
       capasCorr.push(mk);
     });
   });
@@ -321,46 +420,71 @@ function ejecutarAnalisis(){
   // ── KPIs ──────────────────────────────────────────────────
   const total=incidencias.length;
   const pct=total?Math.round(totalAfect/total*100):0;
-  const mesLabel=mesInc.charAt(0)+mesInc.slice(1).toLowerCase();
-  const mesPostLabel=mesPostSel==='all'?'todos los meses':(MESES_N[parseInt(mesPostSel)]||mesPostSel);
+  const mesesIncLabel=[...mesesIncSel].map(m=>m.charAt(0)+m.slice(1).toLowerCase()).join(', ');
+  const mesesPostLabel=[...mesesPostSel].map(m=>MESES_N[parseInt(m)]||m).join(', ');
 
   document.getElementById('kpi-total').textContent=total;
-  document.getElementById('kpi-total-lbl').textContent='Incidencias en '+mesLabel;
+  document.getElementById('kpi-total-lbl').textContent='Incidencias';
   document.getElementById('kpi-afect').textContent=totalAfect;
   document.getElementById('kpi-pct').textContent=pct+'%';
   document.getElementById('kpi-postes').textContent=postes.length;
-  document.getElementById('kpi-postes-lbl').textContent='Postes ('+mesPostLabel+')';
+  document.getElementById('kpi-postes-lbl').textContent='Cambios de poste';
 
   // ── Resumen ejecutivo ──────────────────────────────────────
-  document.getElementById('res-title').textContent='Resumen — '+mesLabel+' vs postes de '+mesPostLabel;
-  document.getElementById('res-txt').innerHTML='En <strong>'+mesLabel+'</strong> se registraron <strong>'+total+' incidencias</strong>. De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro de '+RADIO+'m de un cambio de poste en <strong>'+mesPostLabel+'</strong> ('+postes.length+' postes).';
+  document.getElementById('res-title').textContent='Resumen — '+mesesIncLabel+' vs postes de '+mesesPostLabel;
+  document.getElementById('res-txt').innerHTML='Se registraron <strong>'+total+' incidencias</strong> en <strong>'+mesesIncLabel+'</strong>. De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro de '+RADIO+'m de un cambio de poste en <strong>'+mesesPostLabel+'</strong> ('+postes.length+' postes).'+(tipoFiltroActivo?' <em>Filtrado por tipo: '+tipoFiltroActivo+'</em>':'');
   document.getElementById('resumen-box').style.display='block';
 
-  // ── Gráfica de tipos ───────────────────────────────────────
+  // ── Gráfica de tipos (con colores Telconet, interactiva) ───
   const porTipo={};
   resultados.forEach(r=>r.incs.forEach(i=>{const t=i.tipo||'Sin tipo';porTipo[t]=(porTipo[t]||0)+1;}));
   const tiposSorted=Object.entries(porTipo).sort((a,b)=>b[1]-a[1]);
+  const tipoColores={};
+  tiposSorted.forEach(([t],i)=>tipoColores[t]=TN_PALETTE[i%TN_PALETTE.length]);
 
   if(chartTipos)chartTipos.destroy();
   if(tiposSorted.length){
     chartTipos=new Chart(document.getElementById('ch-tipos'),{
       type:'bar',
+      plugins:[ChartDataLabels],
       data:{labels:tiposSorted.map(([t])=>t.length>22?t.slice(0,20)+'…':t),
-        datasets:[{data:tiposSorted.map(([,n])=>n),backgroundColor:'#dc2626cc',borderRadius:4,borderSkipped:false}]},
+        datasets:[{data:tiposSorted.map(([,n])=>n),
+          backgroundColor:tiposSorted.map(([t])=>tipoFiltroActivo&&tipoFiltroActivo!==t?tipoColores[t]+'40':tipoColores[t]),
+          borderRadius:4,borderSkipped:false}]},
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw+' casos'}}},
+        onClick:(evt,els)=>{
+          if(!els.length)return;
+          const idx=els[0].index;
+          const tipo=tiposSorted[idx][0];
+          tipoFiltroActivo=tipoFiltroActivo===tipo?null:tipo;
+          document.getElementById('btn-clear-filter').style.display=tipoFiltroActivo?'block':'none';
+          renderResultados();
+        },
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:c=>' '+c.raw+' casos · clic para filtrar'}},
+          datalabels:{
+            anchor:'end',align:'end',offset:4,
+            color:(ctx)=>{const t=tiposSorted[ctx.dataIndex][0];return tipoFiltroActivo&&tipoFiltroActivo!==t?'#9CA3AF':'#0D1F3C';},
+            font:{size:11,weight:'bold'},
+            formatter:v=>v
+          }
+        },
+        layout:{padding:{right:24}},
         scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
     });
+  } else {
+    document.getElementById('ch-tipos').getContext('2d').clearRect(0,0,500,500);
   }
 
-  // ── Tabla detalle ──────────────────────────────────────────
+  // ── Tabla detalle (respeta filtro de tipo) ──────────────────
   const filas=[];
-  resultados.forEach(r=>r.incs.forEach(i=>{
-    filas.push('<tr><td style="font-size:10px;color:var(--txt)">'+r.poste.tarea+'</td><td style="font-size:10px">'+i.caja+'</td><td style="font-size:10px;color:var(--red);font-weight:600">'+i.tipo+'</td></tr>');
+  resultadosFiltrados.forEach(r=>r.incs.forEach(i=>{
+    const color=tipoColores[i.tipo]||'#888';
+    filas.push('<tr><td style="font-size:10px;color:var(--txt)">'+r.poste.tarea+'</td><td style="font-size:10px">'+i.caja+'</td><td style="font-size:10px;color:'+color+';font-weight:600">'+i.tipo+'</td></tr>');
   }));
   document.getElementById('tbl-body').innerHTML=filas.length?filas.join(''):'<tr><td colspan="3" style="text-align:center;color:var(--txt3);padding:14px">Sin coincidencias en este período</td></tr>';
 
-  // Zoom a resultados
+  // Zoom
   if(capasCorr.length){
     try{mapaL.fitBounds(L.featureGroup(capasCorr).getBounds().pad(.2));}catch(e){}
   } else if(marcadoresPostes.length){
