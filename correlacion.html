@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Correlación Postes → Incidencias | Telconet ADC</title>
+<title>Comparativo Cambio de Postes VS Incidencias | Telconet ADC</title>
+<link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --tn-blue:#0E429C;--tn-orange:#EB6100;--tn-cyan:#10A8C7;
   --bg:#EEF2F8;--bg2:#fff;--bg3:#F0F4FA;
   --border:#D0D9EC;--txt:#0D1F3C;--txt2:#3A5080;--txt3:#6B7FA8;
   --red:#DC2626;--green:#16A34A;--yellow:#D97706;
-  --radius:12px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);height:100vh;display:flex;flex-direction:column;overflow:hidden}
@@ -23,58 +24,60 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 .btn-back{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:5px 12px;color:#fff;font-size:12px;font-weight:500;cursor:pointer;text-decoration:none;transition:.15s}
 .btn-back:hover{background:rgba(255,255,255,.22)}
 .tb-divider{width:1px;height:22px;background:rgba(255,255,255,.2)}
-.tb-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#fff;letter-spacing:.3px}
+.tb-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#fff;letter-spacing:.3px}
 .tb-brand span{color:var(--tn-cyan)}
 .sync-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,.8);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4)}
 .sync-dot.ok{background:#4ade80;animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-.layout{display:flex;flex:1;overflow:hidden}
-
-.panel{width:330px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.panel-hdr{padding:16px;border-bottom:1px solid var(--border);flex-shrink:0}
-.panel-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--txt);margin-bottom:3px}
-.panel-sub{font-size:11px;color:var(--txt3);line-height:1.5}
-.panel-body{flex:1;overflow-y:auto;padding:14px}
-.panel-body::-webkit-scrollbar{width:3px}
-.panel-body::-webkit-scrollbar-thumb{background:var(--border)}
-
-.f-group{margin-bottom:12px}
-.f-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:5px;display:block}
-.f-select{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;outline:none}
+/* FILTER BAR */
+.filterbar{background:#fff;border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex-shrink:0}
+.f-item{display:flex;align-items:center;gap:6px}
+.f-item label{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--txt3)}
+.f-select{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;outline:none}
 .f-select:focus{border-color:var(--tn-blue)}
+.f-divider{width:1px;height:24px;background:var(--border)}
 
-.btn-analizar{width:100%;padding:10px;background:linear-gradient(135deg,#ff6b00,#ff9800);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 3px 12px rgba(255,107,0,.3);transition:.2s;margin-bottom:14px}
-.btn-analizar:hover{transform:translateY(-1px)}
-.btn-analizar:disabled{opacity:.4;cursor:not-allowed;transform:none}
+/* KPI BAR */
+.kpibar{display:flex;gap:12px;padding:14px 20px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.kpi{flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center}
+.kpi-val{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1}
+.kpi-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-top:5px}
 
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.kpi{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px;text-align:center}
-.kpi-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1}
-.kpi-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
-
-.resumen-box{background:rgba(255,107,0,.05);border:1px solid rgba(255,107,0,.2);border-left:4px solid #ff6b00;border-radius:8px;padding:11px 13px;margin-bottom:12px}
-.resumen-title{font-size:11px;font-weight:700;color:#ff6b00;margin-bottom:5px}
-.resumen-txt{font-size:11px;color:var(--txt);line-height:1.6}
-.chips-tipos{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
-.chip-tipo{display:inline-flex;align-items:center;gap:3px;background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.15);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:600;color:var(--red)}
-
-.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:220px;overflow-y:auto}
-.tbl-wrap::-webkit-scrollbar{width:3px}
-.tbl-wrap::-webkit-scrollbar-thumb{background:var(--border)}
-.tbl{width:100%;border-collapse:collapse;font-size:11px}
-.tbl th{padding:7px 8px;background:var(--bg3);text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
-.tbl td{padding:6px 8px;border-bottom:1px solid rgba(14,66,156,.05);color:var(--txt2)}
-.tbl tr:last-child td{border-bottom:none}
-.tbl tr:hover td{background:rgba(14,66,156,.02)}
-
+/* MAIN LAYOUT */
+.main{flex:1;display:flex;overflow:hidden}
+.map-col{flex:1.4;position:relative;border-right:1px solid var(--border)}
+#map{width:100%;height:100%}
 .loading-map{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--txt3);background:var(--bg);z-index:10}
 .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--tn-blue);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-
 .map-legend{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:1000;background:#fff;border:1px solid var(--border);border-radius:20px;padding:7px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 12px rgba(0,0,0,.1);font-size:11px;color:var(--txt2);white-space:nowrap}
 .leg-item{display:flex;align-items:center;gap:5px}
+
+/* SIDE PANEL */
+.side-col{width:380px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;overflow:hidden}
+.side-body{flex:1;overflow-y:auto;padding:16px}
+.side-body::-webkit-scrollbar{width:4px}
+.side-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.resumen-box{background:rgba(255,107,0,.05);border:1px solid rgba(255,107,0,.2);border-left:4px solid #ff6b00;border-radius:8px;padding:12px 14px;margin-bottom:16px}
+.resumen-title{font-size:11px;font-weight:700;color:#ff6b00;margin-bottom:5px}
+.resumen-txt{font-size:12px;color:var(--txt);line-height:1.6}
+
+.sec-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sec-title .dot{width:6px;height:6px;border-radius:50%;background:var(--red)}
+
+.chart-wrap{position:relative;height:200px;margin-bottom:18px}
+
+.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:280px;overflow-y:auto}
+.tbl-wrap::-webkit-scrollbar{width:3px}
+.tbl-wrap::-webkit-scrollbar-thumb{background:var(--border)}
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl th{padding:7px 8px;background:var(--bg3);text-align:left;font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--txt3);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
+.tbl td{padding:6px 8px;border-bottom:1px solid rgba(14,66,156,.05);color:var(--txt2)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(14,66,156,.02)}
 </style>
 </head>
 <body>
@@ -83,7 +86,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
   <div class="tb-left">
     <a href="./adc.html" class="btn-back">&#8592; Dashboard ADC</a>
     <div class="tb-divider"></div>
-    <div class="tb-brand">TELCONET <span>·</span> Correlación Postes → Incidencias</div>
+    <div class="tb-brand">TELCONET <span>·</span> Comparativo Cambio de Postes VS Incidencias</div>
   </div>
   <div class="sync-badge">
     <div class="sync-dot" id="sdot"></div>
@@ -91,92 +94,90 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
   </div>
 </div>
 
-<div class="layout">
-  <!-- PANEL -->
-  <div class="panel">
-    <div class="panel-hdr">
-      <div class="panel-title">&#128269; Análisis de correlación</div>
-      <div class="panel-sub">Incidencias del mes seleccionado vs cambios de poste de los últimos 2 meses</div>
-    </div>
-    <div class="panel-body">
-      <div class="f-group">
-        <span class="f-label">Mes de incidencias</span>
-        <select class="f-select" id="sel-mes" onchange="ejecutarAnalisis()">
-          <option value="">Cargando...</option>
-        </select>
-      </div>
-      <div class="f-group">
-        <span class="f-label">Año</span>
-        <select class="f-select" id="sel-anio" onchange="ejecutarAnalisis()">
-          <option value="2026">2026</option>
-          <option value="2025">2025</option>
-        </select>
-      </div>
-      <div class="f-group">
-        <span class="f-label">Radio de influencia del poste</span>
-        <select class="f-select" id="sel-radio" onchange="ejecutarAnalisis()">
-          <option value="150">150 metros</option>
-          <option value="250" selected>250 metros (estándar)</option>
-          <option value="500">500 metros</option>
-          <option value="1000">1 kilómetro</option>
-        </select>
-      </div>
-
-      <div id="resultados" style="display:none">
-        <div class="kpis" id="kpis"></div>
-        <div class="resumen-box" id="resumen-box">
-          <div class="resumen-title" id="res-title"></div>
-          <div class="resumen-txt" id="res-txt"></div>
-          <div class="chips-tipos" id="res-chips"></div>
-        </div>
-        <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);margin-bottom:6px">Detalle por poste</div>
-        <div class="tbl-wrap">
-          <table class="tbl">
-            <thead><tr>
-              <th>Tarea poste</th><th>Mes poste</th><th style="text-align:center">Incid.</th><th>Tipos detectados</th>
-            </tr></thead>
-            <tbody id="tbl-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+<!-- FILTROS -->
+<div class="filterbar">
+  <div class="f-item">
+    <label>Incidencias — mes</label>
+    <select class="f-select" id="sel-mes-inc" onchange="ejecutarAnalisis()"><option value="">Cargando...</option></select>
   </div>
+  <div class="f-item">
+    <label>Año</label>
+    <select class="f-select" id="sel-anio" onchange="ejecutarAnalisis()">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+    </select>
+  </div>
+  <div class="f-divider"></div>
+  <div class="f-item">
+    <label>Cambio de postes — mes</label>
+    <select class="f-select" id="sel-mes-post" onchange="ejecutarAnalisis()"><option value="">Cargando...</option></select>
+  </div>
+  <div class="f-divider"></div>
+  <div class="f-item">
+    <label>Radio de influencia</label>
+    <select class="f-select" id="sel-radio" onchange="ejecutarAnalisis()">
+      <option value="150">150 m</option>
+      <option value="250" selected>250 m (estándar)</option>
+      <option value="500">500 m</option>
+      <option value="1000">1 km</option>
+    </select>
+  </div>
+</div>
 
+<!-- KPIs -->
+<div class="kpibar" id="kpibar">
+  <div class="kpi"><div class="kpi-val" style="color:var(--tn-blue)" id="kpi-total">—</div><div class="kpi-lbl" id="kpi-total-lbl">Incidencias</div></div>
+  <div class="kpi"><div class="kpi-val" style="color:var(--red)" id="kpi-afect">—</div><div class="kpi-lbl">En zona de cambio de poste</div></div>
+  <div class="kpi"><div class="kpi-val" style="color:var(--yellow)" id="kpi-pct">—</div><div class="kpi-lbl">Del total de incidencias</div></div>
+  <div class="kpi"><div class="kpi-val" style="color:var(--tn-orange)" id="kpi-postes">—</div><div class="kpi-lbl" id="kpi-postes-lbl">Cambios de poste</div></div>
+</div>
+
+<div class="main">
   <!-- MAPA -->
-  <div style="flex:1;position:relative">
+  <div class="map-col">
     <div id="loading-map" class="loading-map">
       <div class="spinner"></div>
       <div>Cargando datos desde Google Sheets...</div>
     </div>
-    <div id="map" style="width:100%;height:100%"></div>
+    <div id="map" style="display:none"></div>
     <div class="map-legend" id="map-legend" style="display:none">
-      <div class="leg-item">
-        <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #ff6b00"></div>
-        Cambio de poste
+      <div class="leg-item"><div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #ff6b00"></div> Cambio de poste</div>
+      <div class="leg-item"><div style="width:12px;height:12px;border-radius:50%;background:#dc2626;border:2px solid #fff;box-shadow:0 0 0 1px #dc2626"></div> Incidencia en zona</div>
+      <div class="leg-item"><div style="width:18px;height:0;border-top:2px dashed #ff6b00"></div> Radio de influencia</div>
+    </div>
+  </div>
+
+  <!-- PANEL LATERAL -->
+  <div class="side-col">
+    <div class="side-body">
+      <div class="resumen-box" id="resumen-box" style="display:none">
+        <div class="resumen-title" id="res-title"></div>
+        <div class="resumen-txt" id="res-txt"></div>
       </div>
-      <div class="leg-item">
-        <div style="width:12px;height:12px;border-radius:50%;background:#dc2626;border:2px solid #fff;box-shadow:0 0 0 1px #dc2626"></div>
-        Incidencia en zona
-      </div>
-      <div class="leg-item">
-        <div style="width:18px;height:0;border-top:2px dashed #ff6b00"></div>
-        Radio de influencia
+
+      <div class="sec-title"><div class="dot"></div>Tipos de tarea provocados por el cambio</div>
+      <div class="chart-wrap"><canvas id="ch-tipos"></canvas></div>
+
+      <div class="sec-title"><div class="dot" style="background:var(--tn-blue)"></div>Detalle: tarea, caja y tipo</div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Tarea poste</th><th>Caja afectada</th><th>Tipo de tarea</th></tr></thead>
+          <tbody id="tbl-body"><tr><td colspan="3" style="text-align:center;color:var(--txt3);padding:14px">Ejecutando análisis...</td></tr></tbody>
+        </table>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-// ── CONFIG ── misma URL que el dashboard ADC ─────────────────
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbzBxFpv4Q1heUSSAOpyGCbTncY4XY2tjJjvYbjIj1w2GqQevl2UDb8MqMnAeR1uKkzKqQ/exec';
 
 const MESES_N={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
 const MESES_MAP={'ENERO':'1','FEBRERO':'2','MARZO':'3','ABRIL':'4','MAYO':'5','JUNIO':'6','JULIO':'7','AGOSTO':'8','SEPTIEMBRE':'9','OCTUBRE':'10','NOVIEMBRE':'11','DICIEMBRE':'12'};
 
 let rows=[], headers=[], rowsReg=[], headersReg=[];
-let mapaL=null, capasCorr=[], marcadoresPostes=[];
+let mapaL=null, capasCorr=[], marcadoresPostes=[], chartTipos=null;
 
-// ── JSONP — idéntico al dashboard ADC ───────────────────────
 function jsonpAction(base,action){
   return new Promise((res,rej)=>{
     const cb='cba_'+Date.now()+'_'+action;
@@ -189,7 +190,6 @@ function jsonpAction(base,action){
   });
 }
 
-// ── CARGA — idéntico al dashboard ADC ───────────────────────
 function getAnioCol(hdrs){
   if(hdrs.includes('AÑO'))return 'AÑO';
   if(hdrs.includes('ANO'))return 'ANO';
@@ -199,10 +199,7 @@ function getAnioCol(hdrs){
 async function cargarDatos(){
   try{
     const base=SCRIPT_URL.split('?')[0];
-    const [dADC,dReg]=await Promise.all([
-      jsonpAction(base,'data'),
-      jsonpAction(base,'regint')
-    ]);
+    const [dADC,dReg]=await Promise.all([jsonpAction(base,'data'),jsonpAction(base,'regint')]);
 
     if(dADC&&dADC.rows){rows=dADC.rows;headers=dADC.headers||[];}
     if(dReg&&dReg.rows){rowsReg=dReg.rows;headersReg=dReg.headers||Object.keys(dReg.rows[0]||{});}
@@ -210,56 +207,34 @@ async function cargarDatos(){
     document.getElementById('sdot').className='sync-dot ok';
     document.getElementById('slbl').textContent=rows.length.toLocaleString()+' trabajos · '+rowsReg.length+' postes';
     document.getElementById('loading-map').style.display='none';
+    document.getElementById('map').style.display='block';
     document.getElementById('map-legend').style.display='flex';
 
-    // Iniciar mapa
     mapaL=L.map('map').setView([-2.9,-78.85],12);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',maxZoom:19}).addTo(mapaL);
 
-    // Pintar todos los postes como triángulos naranjas
-    const colCoord=headersReg.find(h=>h.toUpperCase().includes('UBIC')||h.toUpperCase().includes('COORD'))||headersReg[1];
-    const colTarea=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
-    const colMesR=headersReg.find(h=>h.toUpperCase()==='MES');
-
-    rowsReg.forEach(r=>{
-      const raw=(r[colCoord]||'').toString().trim().split(',');
-      if(raw.length<2)return;
-      const lat=parseFloat(raw[0]),lng=parseFloat(raw[1]);
-      if(isNaN(lat)||isNaN(lng)||lat===0)return;
-      const mesPoste=parseInt(r[colMesR]||0);
-      const icon=L.divIcon({
-        className:'',
-        html:'<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #ff6b00;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))"></div>',
-        iconSize:[16,16],iconAnchor:[8,16]
-      });
-      const mk=L.marker([lat,lng],{icon})
-        .bindTooltip('<b>'+r[colTarea]+'</b><br>'+( MESES_N[mesPoste]||mesPoste),{sticky:true})
-        .addTo(mapaL);
-      marcadoresPostes.push(mk);
-    });
-
-    // Construir selector de meses desde los datos
+    // Selector de meses de INCIDENCIAS
     const anioCol=getAnioCol(headers);
-    const mesesDisp=[...new Set(rows
-      .filter(r=>String(r[anioCol]||'').trim()==='2026')
-      .map(r=>(r['MES']||'').trim().toUpperCase())
-      .filter(Boolean)
-    )].sort((a,b)=>parseInt(MESES_MAP[a]||a)-parseInt(MESES_MAP[b]||b));
+    const mesesInc=[...new Set(rows.filter(r=>String(r[anioCol]||'').trim()==='2026').map(r=>(r['MES']||'').trim().toUpperCase()).filter(Boolean))]
+      .sort((a,b)=>parseInt(MESES_MAP[a]||a)-parseInt(MESES_MAP[b]||b));
+    const selInc=document.getElementById('sel-mes-inc');
+    selInc.innerHTML='';
+    mesesInc.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m.charAt(0)+m.slice(1).toLowerCase();selInc.appendChild(o);});
 
-    const sel=document.getElementById('sel-mes');
-    sel.innerHTML='';
-    mesesDisp.forEach(m=>{
-      const o=document.createElement('option');
-      o.value=m;
-      o.textContent=m.charAt(0)+m.slice(1).toLowerCase();
-      sel.appendChild(o);
+    // Selector de meses de POSTES (independiente)
+    const colMesR=headersReg.find(h=>h.toUpperCase()==='MES');
+    const mesesPost=[...new Set(rowsReg.map(r=>parseInt(r[colMesR]||0)))].filter(m=>m>0).sort((a,b)=>a-b);
+    const selPost=document.getElementById('sel-mes-post');
+    selPost.innerHTML='<option value="all">Todos los meses</option>';
+    mesesPost.forEach(m=>{
+      const cant=rowsReg.filter(r=>parseInt(r[colMesR]||0)===m).length;
+      const o=document.createElement('option');o.value=m;o.textContent=(MESES_N[m]||m)+' ('+cant+')';selPost.appendChild(o);
     });
 
-    // Seleccionar el mes más reciente y ejecutar análisis automáticamente
-    if(mesesDisp.length){
-      sel.value=mesesDisp[mesesDisp.length-1];
-      ejecutarAnalisis();
-    }
+    if(mesesInc.length)selInc.value=mesesInc[mesesInc.length-1];
+    if(mesesPost.length)selPost.value=mesesPost[mesesPost.length-1];
+
+    if(mesesInc.length)ejecutarAnalisis();
 
   }catch(e){
     document.getElementById('slbl').textContent='Error: '+e.message;
@@ -268,33 +243,27 @@ async function cargarDatos(){
   }
 }
 
-// ── HAVERSINE ────────────────────────────────────────────────
 function distM(lat1,lng1,lat2,lng2){
   const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
   const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-// ── ANÁLISIS ────────────────────────────────────────────────
 function ejecutarAnalisis(){
   if(!mapaL||!rows.length||!rowsReg.length)return;
 
   const RADIO=parseInt(document.getElementById('sel-radio').value);
-  const mesInc=document.getElementById('sel-mes').value;
+  const mesInc=document.getElementById('sel-mes-inc').value;
   const anioInc=document.getElementById('sel-anio').value;
+  const mesPostSel=document.getElementById('sel-mes-post').value;
   if(!mesInc)return;
 
   const anioCol=getAnioCol(headers);
-
-  // Columnas regulatorio
   const colCoord=headersReg.find(h=>h.toUpperCase().includes('UBIC')||h.toUpperCase().includes('COORD'))||headersReg[1];
   const colMesR =headersReg.find(h=>h.toUpperCase()==='MES');
   const colTareaR=headersReg.find(h=>h.toUpperCase().includes('TAREA'))||headersReg[0];
 
-  // Postes: últimos 2 meses disponibles en regulatorio
-  const mesesPostDisp=[...new Set(rowsReg.map(r=>parseInt(r[colMesR]||0)))].filter(m=>m>0).sort((a,b)=>a-b);
-  const ultimosMeses=mesesPostDisp.slice(-2);
-
+  // Postes filtrados por el mes seleccionado (o todos)
   const postes=[];
   rowsReg.forEach(r=>{
     const raw=(r[colCoord]||'').toString().trim().split(',');
@@ -302,23 +271,29 @@ function ejecutarAnalisis(){
     const lat=parseFloat(raw[0]),lng=parseFloat(raw[1]);
     if(isNaN(lat)||isNaN(lng)||lat===0)return;
     const mp=parseInt(r[colMesR]||0);
-    if(!ultimosMeses.includes(mp))return;
+    if(mesPostSel!=='all'&&String(mp)!==String(mesPostSel))return;
     postes.push({lat,lng,mes:mp,tarea:r[colTareaR]||''});
   });
 
-  // Incidencias del mes/año seleccionado — misma lógica que la dona del ADC
+  // Repintar triángulos de postes (solo los del filtro actual)
+  marcadoresPostes.forEach(m=>{try{mapaL.removeLayer(m);}catch(e){}});
+  marcadoresPostes=[];
+  postes.forEach(p=>{
+    const icon=L.divIcon({className:'',html:'<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #ff6b00;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))"></div>',iconSize:[16,16],iconAnchor:[8,16]});
+    const mk=L.marker([p.lat,p.lng],{icon}).bindTooltip('<b>'+p.tarea+'</b><br>'+(MESES_N[p.mes]||p.mes),{sticky:true}).addTo(mapaL);
+    marcadoresPostes.push(mk);
+  });
+
+  // Incidencias del mes/año seleccionado
   const incidencias=rows.filter(r=>{
     const proc=(r['PROCEDENCIA']||'').trim().toUpperCase();
     const estado=(r['ESTADO']||'').trim().toUpperCase();
     const mes=(r['MES']||'').trim().toUpperCase();
     const anio=String(r[anioCol]||'').trim();
-    return proc.includes('INCIDENCIA')&&estado.includes('REALIZADO')
-      &&mes===mesInc&&anio===anioInc
-      &&(r['UBICACION']||'').trim();
+    return proc.includes('INCIDENCIA')&&estado.includes('REALIZADO')&&mes===mesInc&&anio===anioInc&&(r['UBICACION']||'').trim();
   }).map(r=>{
     const parts=(r['UBICACION']||'').trim().split(',');
-    return{lat:parseFloat(parts[0]),lng:parseFloat(parts[1]),
-      caja:r['CAJA']||'',tipo:r['TIPO TAREA']||r['TIPO DE TAREA']||''};
+    return{lat:parseFloat(parts[0]),lng:parseFloat(parts[1]),caja:r['CAJA']||r['NODO']||'Sin caja',tipo:r['TIPO TAREA']||r['TIPO DE TAREA']||'Sin tipo'};
   }).filter(r=>!isNaN(r.lat)&&r.lat!==0);
 
   // Cruce por distancia
@@ -332,84 +307,64 @@ function ejecutarAnalisis(){
   capasCorr.forEach(c=>{try{mapaL.removeLayer(c);}catch(e){}});
   capasCorr=[];
 
-  // Dibujar círculos e incidencias correlacionadas
   resultados.forEach(res=>{
-    const circ=L.circle([res.poste.lat,res.poste.lng],{
-      radius:RADIO,color:'#ff6b00',fillColor:'#ff6b00',fillOpacity:.07,weight:2,dashArray:'6,4'
-    }).addTo(mapaL);
-    circ.bindTooltip('Poste: '+res.poste.tarea+' — '+res.incs.length+' incidencia(s) en zona',{sticky:true});
+    const circ=L.circle([res.poste.lat,res.poste.lng],{radius:RADIO,color:'#ff6b00',fillColor:'#ff6b00',fillOpacity:.07,weight:2,dashArray:'6,4'}).addTo(mapaL);
+    circ.bindTooltip('Poste: '+res.poste.tarea+' — '+res.incs.length+' incidencia(s)',{sticky:true});
     capasCorr.push(circ);
-
     res.incs.forEach(inc=>{
-      const mk=L.circleMarker([inc.lat,inc.lng],{
-        radius:8,fillColor:'#dc2626',color:'#fff',weight:2,fillOpacity:.92
-      }).addTo(mapaL);
-      mk.bindPopup(
-        '<div style="font-size:12px;min-width:190px">'+
-        '<div style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9888; INCIDENCIA EN ZONA POSTE</div>'+
-        '<div style="padding:7px 9px">'+
-        '<b>Caja:</b> '+inc.caja+'<br>'+
-        '<b>Tipo:</b> '+inc.tipo+'<br>'+
-        '<b>Poste ref.:</b> '+res.poste.tarea+
-        '</div></div>'
-      );
+      const mk=L.circleMarker([inc.lat,inc.lng],{radius:8,fillColor:'#dc2626',color:'#fff',weight:2,fillOpacity:.92}).addTo(mapaL);
+      mk.bindPopup('<div style="font-size:12px;min-width:190px"><div style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9888; INCIDENCIA EN ZONA POSTE</div><div style="padding:7px 9px"><b>Caja:</b> '+inc.caja+'<br><b>Tipo:</b> '+inc.tipo+'<br><b>Poste ref.:</b> '+res.poste.tarea+'</div></div>');
       capasCorr.push(mk);
     });
   });
 
-  // Panel de resultados
+  // ── KPIs ──────────────────────────────────────────────────
   const total=incidencias.length;
   const pct=total?Math.round(totalAfect/total*100):0;
   const mesLabel=mesInc.charAt(0)+mesInc.slice(1).toLowerCase();
-  const mesesPostLabel=ultimosMeses.map(m=>MESES_N[m]||m).join(' y ');
+  const mesPostLabel=mesPostSel==='all'?'todos los meses':(MESES_N[parseInt(mesPostSel)]||mesPostSel);
 
-  document.getElementById('kpis').innerHTML=`
-    <div class="kpi">
-      <div class="kpi-val" style="color:var(--tn-blue)">${total}</div>
-      <div class="kpi-lbl">Incidencias en ${mesLabel}</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-val" style="color:var(--red)">${totalAfect}</div>
-      <div class="kpi-lbl">En zona de poste</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-val" style="color:${pct>50?'var(--red)':pct>25?'var(--yellow)':'var(--green)'}">${pct}%</div>
-      <div class="kpi-lbl">Correlación</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-val" style="color:var(--tn-orange)">${postes.length}</div>
-      <div class="kpi-lbl">Postes (${mesesPostLabel})</div>
-    </div>`;
+  document.getElementById('kpi-total').textContent=total;
+  document.getElementById('kpi-total-lbl').textContent='Incidencias en '+mesLabel;
+  document.getElementById('kpi-afect').textContent=totalAfect;
+  document.getElementById('kpi-pct').textContent=pct+'%';
+  document.getElementById('kpi-postes').textContent=postes.length;
+  document.getElementById('kpi-postes-lbl').textContent='Postes ('+mesPostLabel+')';
 
-  // Tipos afectados
+  // ── Resumen ejecutivo ──────────────────────────────────────
+  document.getElementById('res-title').textContent='Resumen — '+mesLabel+' vs postes de '+mesPostLabel;
+  document.getElementById('res-txt').innerHTML='En <strong>'+mesLabel+'</strong> se registraron <strong>'+total+' incidencias</strong>. De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro de '+RADIO+'m de un cambio de poste en <strong>'+mesPostLabel+'</strong> ('+postes.length+' postes).';
+  document.getElementById('resumen-box').style.display='block';
+
+  // ── Gráfica de tipos ───────────────────────────────────────
   const porTipo={};
   resultados.forEach(r=>r.incs.forEach(i=>{const t=i.tipo||'Sin tipo';porTipo[t]=(porTipo[t]||0)+1;}));
-  const tiposHTML=Object.entries(porTipo).sort((a,b)=>b[1]-a[1])
-    .map(([t,n])=>`<span class="chip-tipo">&#9679; ${t} (${n})</span>`).join('');
+  const tiposSorted=Object.entries(porTipo).sort((a,b)=>b[1]-a[1]);
 
-  document.getElementById('res-title').textContent='Resumen ejecutivo — '+mesLabel;
-  document.getElementById('res-txt').innerHTML=
-    'En <strong>'+mesLabel+'</strong> se registraron <strong>'+total+' incidencias</strong> en total. '+
-    'De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro del radio de '+RADIO+'m '+
-    'de postes cambiados en <strong>'+mesesPostLabel+'</strong>, lo que sugiere una correlación con el cambio de postería.';
-  document.getElementById('res-chips').innerHTML=tiposHTML;
+  if(chartTipos)chartTipos.destroy();
+  if(tiposSorted.length){
+    chartTipos=new Chart(document.getElementById('ch-tipos'),{
+      type:'bar',
+      data:{labels:tiposSorted.map(([t])=>t.length>22?t.slice(0,20)+'…':t),
+        datasets:[{data:tiposSorted.map(([,n])=>n),backgroundColor:'#dc2626cc',borderRadius:4,borderSkipped:false}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw+' casos'}}},
+        scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+    });
+  }
 
-  // Tabla
-  const filas=resultados.length?resultados.map(r=>{
-    const tipos=[...new Set(r.incs.map(i=>i.tipo))].join(', ');
-    return`<tr>
-      <td style="color:var(--txt);font-weight:500;font-size:10px">${r.poste.tarea}</td>
-      <td>${MESES_N[r.poste.mes]||r.poste.mes}</td>
-      <td style="text-align:center;font-weight:700;color:var(--red)">${r.incs.length}</td>
-      <td style="font-size:10px;color:var(--txt2)">${tipos}</td>
-    </tr>`;
-  }).join(''):`<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:12px">Sin coincidencias en este período</td></tr>`;
-  document.getElementById('tbl-body').innerHTML=filas;
-  document.getElementById('resultados').style.display='block';
+  // ── Tabla detalle ──────────────────────────────────────────
+  const filas=[];
+  resultados.forEach(r=>r.incs.forEach(i=>{
+    filas.push('<tr><td style="font-size:10px;color:var(--txt)">'+r.poste.tarea+'</td><td style="font-size:10px">'+i.caja+'</td><td style="font-size:10px;color:var(--red);font-weight:600">'+i.tipo+'</td></tr>');
+  }));
+  document.getElementById('tbl-body').innerHTML=filas.length?filas.join(''):'<tr><td colspan="3" style="text-align:center;color:var(--txt3);padding:14px">Sin coincidencias en este período</td></tr>';
 
-  // Zoom a los resultados si hay
+  // Zoom a resultados
   if(capasCorr.length){
     try{mapaL.fitBounds(L.featureGroup(capasCorr).getBounds().pad(.2));}catch(e){}
+  } else if(marcadoresPostes.length){
+    try{mapaL.fitBounds(L.featureGroup(marcadoresPostes).getBounds().pad(.2));}catch(e){}
   }
 }
 
