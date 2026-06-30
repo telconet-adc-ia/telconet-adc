@@ -64,8 +64,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 .kpi-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-top:5px}
 
 /* MAIN LAYOUT */
-.main{flex:1;display:flex;overflow:hidden}
-.map-col{flex:1.4;position:relative;border-right:1px solid var(--border)}
+.main{flex:1;display:flex;flex-direction:column;overflow-y:auto}
+.map-col{height:55vh;min-height:380px;position:relative;border-bottom:1px solid var(--border);flex-shrink:0}
 #map{width:100%;height:100%}
 .loading-map{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--txt3);background:var(--bg);z-index:10}
 .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--tn-blue);border-radius:50%;animation:spin .8s linear infinite}
@@ -74,10 +74,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 .leg-item{display:flex;align-items:center;gap:5px}
 
 /* SIDE PANEL */
-.side-col{width:380px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;overflow:hidden}
-.side-body{flex:1;overflow-y:auto;padding:16px}
-.side-body::-webkit-scrollbar{width:4px}
-.side-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.side-col{width:100%;flex-shrink:0;background:#fff;display:block;overflow:visible}
+.side-body{padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.side-col-full{grid-column:1/-1}
 
 .resumen-box{background:rgba(255,107,0,.05);border:1px solid rgba(255,107,0,.2);border-left:4px solid #ff6b00;border-radius:8px;padding:12px 14px;margin-bottom:16px}
 .resumen-title{font-size:11px;font-weight:700;color:#ff6b00;margin-bottom:5px}
@@ -176,37 +175,41 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
   <!-- PANEL LATERAL -->
   <div class="side-col">
     <div class="side-body">
-      <div class="resumen-box" id="resumen-box" style="display:none">
+      <div class="resumen-box side-col-full" id="resumen-box" style="display:none">
         <div class="resumen-title" id="res-title"></div>
         <div class="resumen-txt" id="res-txt"></div>
       </div>
 
-      <div class="sec-title"><div class="dot"></div>Tipos de tarea provocados por el cambio</div>
-      <div class="sec-hint">Clic en una barra para filtrar el mapa y la lista</div>
-      <div class="chart-wrap"><canvas id="ch-tipos"></canvas></div>
-      <div class="btn-clear-filter" id="btn-clear-filter" onclick="limpiarFiltroTipo()">&#10005; Quitar filtro de tipo</div>
+      <!-- COLUMNA IZQUIERDA -->
+      <div>
+        <div class="sec-title"><div class="dot"></div>Tipos de tarea provocados por el cambio</div>
+        <div class="sec-hint">Clic en una barra para filtrar el mapa y la lista</div>
+        <div class="chart-wrap"><canvas id="ch-tipos"></canvas></div>
+        <div class="btn-clear-filter" id="btn-clear-filter" onclick="limpiarFiltroTipo()">&#10005; Quitar filtro de tipo</div>
 
-      <div class="sec-title"><div class="dot" style="background:var(--tn-blue)"></div>Detalle: tarea, caja y tipo</div>
-      <div class="tbl-wrap">
-        <table class="tbl">
-          <thead><tr><th>Tarea poste</th><th>Caja afectada</th><th>Tipo de tarea</th></tr></thead>
-          <tbody id="tbl-body"><tr><td colspan="3" style="text-align:center;color:var(--txt3);padding:14px">Ejecutando análisis...</td></tr></tbody>
-        </table>
+        <div class="sec-title"><div class="dot" style="background:var(--tn-blue)"></div>Detalle: tarea, caja y tipo</div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Tarea poste</th><th>Caja afectada</th><th>Tipo de tarea</th></tr></thead>
+            <tbody id="tbl-body"><tr><td colspan="3" style="text-align:center;color:var(--txt3);padding:14px">Ejecutando análisis...</td></tr></tbody>
+          </table>
+        </div>
       </div>
 
-      <div style="height:1px;background:var(--border);margin:18px 0"></div>
+      <!-- COLUMNA DERECHA -->
+      <div>
+        <div class="sec-title"><div class="dot" style="background:var(--green)"></div>Comparativo: con relación VS sin relación</div>
+        <div class="sec-hint">Proporción de cada tipo de incidencia que coincide o no con un cambio de poste</div>
+        <div class="chart-wrap"><canvas id="ch-comparativo"></canvas></div>
 
-      <div class="sec-title"><div class="dot" style="background:var(--green)"></div>Comparativo: con relación VS sin relación</div>
-      <div class="sec-hint">Proporción de cada tipo de incidencia que coincide o no con un cambio de poste</div>
-      <div class="chart-wrap"><canvas id="ch-comparativo"></canvas></div>
-
-      <div class="sec-title" style="margin-top:4px"><div class="dot" style="background:var(--green)"></div>Incidencias sin relación al cambio de poste</div>
-      <div class="sec-hint" id="sinrel-hint">—</div>
-      <div class="tbl-wrap">
-        <table class="tbl">
-          <thead><tr><th>Caja</th><th>Tipo de tarea</th></tr></thead>
-          <tbody id="tbl-sinrel-body"><tr><td colspan="2" style="text-align:center;color:var(--txt3);padding:14px">—</td></tr></tbody>
-        </table>
+        <div class="sec-title" style="margin-top:4px"><div class="dot" style="background:var(--green)"></div>Incidencias sin relación al cambio de poste</div>
+        <div class="sec-hint" id="sinrel-hint">—</div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Caja</th><th>Tipo de tarea</th></tr></thead>
+            <tbody id="tbl-sinrel-body"><tr><td colspan="2" style="text-align:center;color:var(--txt3);padding:14px">—</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -499,6 +502,7 @@ function renderResultados(){
   if(tiposSorted.length){
     chartTipos=new Chart(document.getElementById('ch-tipos'),{
       type:'bar',
+      plugins:[ChartDataLabels],
       data:{labels:tiposSorted.map(([t])=>t.length>22?t.slice(0,20)+'…':t),
         datasets:[{data:tiposSorted.map(([,n])=>n),
           backgroundColor:tiposSorted.map(([t])=>tipoFiltroActivo&&tipoFiltroActivo!==t?tipoColores[t]+'40':tipoColores[t]),
@@ -560,6 +564,7 @@ function renderResultados(){
   if(todosTipos.length){
     chartComparativo=new Chart(document.getElementById('ch-comparativo'),{
       type:'bar',
+      plugins:[ChartDataLabels],
       data:{
         labels:todosTipos.map(t=>t.length>20?t.slice(0,18)+'…':t),
         datasets:[
