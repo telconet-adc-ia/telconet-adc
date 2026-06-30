@@ -409,18 +409,31 @@ function ejecutarAnalisis(){
     return{lat:parseFloat(parts[0]),lng:parseFloat(parts[1]),caja:r['CAJA']||r['NODO']||'Sin caja',tipo:r['TIPO TAREA']||r['TIPO DE TAREA']||'Sin tipo'};
   }).filter(r=>!isNaN(r.lat)&&!isNaN(r.lng)&&r.lat!==0&&r.lng!==0);
 
-  // Cruce por distancia
-  const resultados=[];
-  const afectadasRefs=new Set();
-  postes.forEach(p=>{
-    const dentro=incidencias.filter(i=>distM(p.lat,p.lng,i.lat,i.lng)<=RADIO);
-    if(dentro.length){
-      resultados.push({poste:p,incs:dentro});
-      dentro.forEach(i=>afectadasRefs.add(i));
+  // Cruce por distancia — cada incidencia se asigna SOLO al poste más cercano dentro del radio
+  const resultadosMap=new Map(); // poste -> array de incidencias
+  incidencias.forEach(inc=>{
+    let mejorPoste=null, mejorDist=Infinity;
+    postes.forEach(p=>{
+      const d=distM(p.lat,p.lng,inc.lat,inc.lng);
+      if(d<=RADIO && d<mejorDist){
+        mejorDist=d;
+        mejorPoste=p;
+      }
+    });
+    if(mejorPoste){
+      if(!resultadosMap.has(mejorPoste))resultadosMap.set(mejorPoste,[]);
+      resultadosMap.get(mejorPoste).push(inc);
     }
   });
 
-  // Incidencias sin relación a ningún poste — solo para tabla/gráfica, NO se dibujan en el mapa
+  const resultados=[];
+  const afectadasRefs=new Set();
+  resultadosMap.forEach((incs,poste)=>{
+    resultados.push({poste,incs});
+    incs.forEach(i=>afectadasRefs.add(i));
+  });
+
+  // Incidencias sin relación a ningún poste — solo para tabla, NO se dibujan en el mapa
   const incidenciasSinRelacion=incidencias.filter(i=>!afectadasRefs.has(i));
 
   resultadosActuales={resultados,postes,incidencias,incidenciasSinRelacion,RADIO};
