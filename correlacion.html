@@ -405,7 +405,16 @@ function ejecutarAnalisis(){
     postes.push({lat,lng,mes:mp,tarea:r[colTareaR]||''});
   });
 
-  // Incidencias filtradas por los meses seleccionados
+  // Total real de incidencias SIN filtro de coords (coincide con la dona del ADC)
+  const totalIncReal=rows.filter(r=>{
+    const proc=(r['PROCEDENCIA']||'').trim().toUpperCase();
+    const estado=(r['ESTADO']||'').trim().toUpperCase();
+    const mes=(r['MES']||'').trim().toUpperCase();
+    const anio=String(r[anioCol]||'').trim();
+    return proc.includes('INCIDENCIA')&&estado.includes('REALIZADO')&&mesesIncSel.has(mes)&&anio===anioInc;
+  }).length;
+
+  // Incidencias filtradas por los meses seleccionados (con coords válidas para el mapa)
   const incidencias=rows.filter(r=>{
     const proc=(r['PROCEDENCIA']||'').trim().toUpperCase();
     const estado=(r['ESTADO']||'').trim().toUpperCase();
@@ -485,11 +494,11 @@ function renderResultados(){
 
   // ── KPIs ──────────────────────────────────────────────────
   const total=incidencias.length;
-  const pct=total?Math.round(totalAfect/total*100):0;
+  const pct=totalIncReal?Math.round(totalAfect/totalIncReal*100):0;
   const mesesIncLabel=[...mesesIncSel].map(m=>m.charAt(0)+m.slice(1).toLowerCase()).join(', ');
   const mesesPostLabel=[...mesesPostSel].map(m=>MESES_N[parseInt(m)]||m).join(', ');
 
-  document.getElementById('kpi-total').textContent=total;
+  document.getElementById('kpi-total').textContent=totalIncReal;
   document.getElementById('kpi-total-lbl').textContent='Incidencias';
   document.getElementById('kpi-afect').textContent=totalAfect;
   document.getElementById('kpi-pct').textContent=pct+'%';
@@ -498,7 +507,7 @@ function renderResultados(){
 
   // ── Resumen ejecutivo ──────────────────────────────────────
   document.getElementById('res-title').textContent='Resumen — '+mesesIncLabel+' vs postes de '+mesesPostLabel;
-  document.getElementById('res-txt').innerHTML='Se registraron <strong>'+total+' incidencias</strong> en <strong>'+mesesIncLabel+'</strong>. De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro de '+RADIO+'m de un cambio de poste en <strong>'+mesesPostLabel+'</strong> ('+postes.length+' notificaciones de cambios de postes).'+(tipoFiltroActivo?' <em>Filtrado por tipo: '+tipoFiltroActivo+'</em>':'');
+  document.getElementById('res-txt').innerHTML='Se registraron <strong>'+totalIncReal+' incidencias</strong> en <strong>'+mesesIncLabel+'</strong>. De estas, <strong style="color:var(--red)">'+totalAfect+' ('+pct+'%)</strong> caen dentro de '+RADIO+'m de un cambio de poste en <strong>'+mesesPostLabel+'</strong> ('+postes.length+' notificaciones de cambios de postes).'+(tipoFiltroActivo?' <em>Filtrado por tipo: '+tipoFiltroActivo+'</em>':'');
   document.getElementById('resumen-box').style.display='block';
   document.getElementById('plan-accion-box').style.display='block';
 
