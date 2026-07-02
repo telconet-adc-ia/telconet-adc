@@ -453,14 +453,14 @@ function ejecutarAnalisis(){
   // Incidencias sin relación a ningún poste — solo para tabla, NO se dibujan en el mapa
   const incidenciasSinRelacion=incidencias.filter(i=>!afectadasRefs.has(i));
 
-  resultadosActuales={resultados,postes,incidencias,incidenciasSinRelacion,RADIO};
+  resultadosActuales={resultados,postes,incidencias,incidenciasSinRelacion,RADIO,totalIncReal};
   tipoFiltroActivo=null;
   document.getElementById('btn-clear-filter').style.display='none';
   renderResultados();
 }
 
 function renderResultados(){
-  const {resultados,postes,incidencias,incidenciasSinRelacion,RADIO}=resultadosActuales;
+  const {resultados,postes,incidencias,incidenciasSinRelacion,RADIO,totalIncReal}=resultadosActuales;
 
   // Aplicar filtro de tipo si está activo
   const resultadosFiltrados=tipoFiltroActivo
