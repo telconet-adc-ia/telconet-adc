@@ -140,7 +140,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
   </div>
   <div class="f-divider"></div>
   <div class="f-item">
-    <label>Radio de influencia</label>
+    <label>Ir a coordenadas</label>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="inp-coords" type="text" placeholder="-2.9045,-79.0059"
+        style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);font-family:'DM Sans',sans-serif;font-size:12px;width:160px;outline:none;color:var(--txt)"
+        onkeydown="if(event.key==='Enter')irACoordenadas()"/>
+      <button onclick="irACoordenadas()"
+        style="padding:6px 12px;border-radius:8px;border:none;background:var(--tn-blue);color:#fff;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600">&#128205; Ir</button>
+      <button onclick="quitarPin()" id="btn-quitar-pin" style="display:none;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--txt3);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer">&#10005;</button>
+    </div>
+  </div>
     <select class="f-select" id="sel-radio" onchange="ejecutarAnalisis()">
       <option value="150">150 m</option>
       <option value="250" selected>250 m (estándar)</option>
@@ -595,6 +604,41 @@ function renderResultados(){
       mapaL.setView([-2.9,-78.85],12);
     }
   },150);
+}
+
+let pinCoordenadas=null;
+
+function irACoordenadas(){
+  if(!mapaL)return;
+  const val=document.getElementById('inp-coords').value.trim();
+  if(!val)return;
+  const parts=val.split(',');
+  if(parts.length<2){alert('Formato inválido. Usa: lat,lng\nEjemplo: -2.9045,-79.0059');return;}
+  const lat=parseFloat(parts[0].trim());
+  const lng=parseFloat(parts[1].trim());
+  if(isNaN(lat)||isNaN(lng)){alert('Coordenadas inválidas.');return;}
+
+  // Quitar pin previo si existe
+  if(pinCoordenadas){try{mapaL.removeLayer(pinCoordenadas);}catch(e){}}
+
+  // Crear pin azul distintivo
+  const icon=L.divIcon({
+    className:'',
+    html:'<div style="display:flex;flex-direction:column;align-items:center"><div style="width:16px;height:16px;border-radius:50% 50% 50% 0;background:#0E429C;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);transform:rotate(-45deg)"></div></div>',
+    iconSize:[22,22],iconAnchor:[11,22]
+  });
+  pinCoordenadas=L.marker([lat,lng],{icon,zIndexOffset:1000})
+    .bindPopup('<div style="font-size:12px;min-width:160px"><div style="background:#0E429C;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#128205; PUNTO MARCADO</div><div style="padding:6px 8px"><b>Lat:</b> '+lat.toFixed(6)+'<br><b>Lng:</b> '+lng.toFixed(6)+'</div></div>')
+    .addTo(mapaL);
+  pinCoordenadas.openPopup();
+  mapaL.setView([lat,lng],16);
+  document.getElementById('btn-quitar-pin').style.display='block';
+}
+
+function quitarPin(){
+  if(pinCoordenadas){try{mapaL.removeLayer(pinCoordenadas);}catch(e){}pinCoordenadas=null;}
+  document.getElementById('inp-coords').value='';
+  document.getElementById('btn-quitar-pin').style.display='none';
 }
 
 window.addEventListener('DOMContentLoaded',cargarDatos);
