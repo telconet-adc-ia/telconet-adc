@@ -2223,14 +2223,29 @@ function filtrarTablaMig(tipo,valor,color){
     const barC=pct===100?'#0a7c52':pct>50?'#8a5800':'#a01e1e';
     const rutasMig=info.rutas.filter(r=>r.esMigrada).length;
     const rutasPend=info.rutas.filter(r=>!r.esMigrada).length;
-    const rutasHtml=info.rutas.sort((a,b)=>b.pd-a.pd).slice(0,5).map(r=>`<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);gap:6px">
+    const cantonId='canton-'+canton.replace(/[^a-zA-Z0-9]/g,'_');
+    const rutasVis=info.rutas.sort((a,b)=>b.pd-a.pd).slice(0,5);
+    const rutasExtra=info.rutas.sort((a,b)=>b.pd-a.pd).slice(5);
+    const rutasHtml=rutasVis.map(r=>`<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);gap:6px">
       <div style="font-size:10px;color:var(--text2);flex:1;line-height:1.4">${r.ruta.slice(0,35)}${r.ruta.length>35?'…':''}</div>
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
         <span style="font-size:9px;background:${r.esMigrada?'var(--green-light)':'var(--amber-light)'};color:${r.esMigrada?'var(--green)':'var(--amber)'};padding:1px 5px;border-radius:3px;font-weight:600">${r.esMigrada?'OK':'PEND'}</span>
         <span style="font-size:12px;font-weight:700;color:${r.pd>0?'var(--red)':'var(--green)'};min-width:18px;text-align:right">${r.pd>0?r.pd:'✅'}</span>
       </div>
     </div>`).join('');
-    const extra=info.rutas.length>5?`<div style="font-size:10px;color:var(--text3);padding:5px 0;text-align:center">+${info.rutas.length-5} rutas mas</div>`:'';
+    const extraHtml=rutasExtra.map(r=>`<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);gap:6px">
+      <div style="font-size:10px;color:var(--text2);flex:1;line-height:1.4">${r.ruta.slice(0,35)}${r.ruta.length>35?'…':''}</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+        <span style="font-size:9px;background:${r.esMigrada?'var(--green-light)':'var(--amber-light)'};color:${r.esMigrada?'var(--green)':'var(--amber)'};padding:1px 5px;border-radius:3px;font-weight:600">${r.esMigrada?'OK':'PEND'}</span>
+        <span style="font-size:12px;font-weight:700;color:${r.pd>0?'var(--red)':'var(--green)'};min-width:18px;text-align:right">${r.pd>0?r.pd:'✅'}</span>
+      </div>
+    </div>`).join('');
+    const extra=rutasExtra.length>0?`
+      <div id="extra-${cantonId}" style="display:none">${extraHtml}</div>
+      <div onclick="toggleExtraRutas('${cantonId}')" id="btn-extra-${cantonId}"
+        style="font-size:10px;color:var(--tnblue);padding:6px 0;text-align:center;cursor:pointer;font-weight:600;user-select:none;border-radius:6px;margin-top:2px;background:var(--bg3);border:1px solid var(--border)">
+        &#43; ${rutasExtra.length} rutas más
+      </div>`:'';
 
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
@@ -2260,6 +2275,16 @@ function filtrarTablaMig(tipo,valor,color){
   const bl=document.getElementById('btn-lim');
   if(bl) bl.onclick=()=>filtrarTablaMig('todos','','');
 }
+function toggleExtraRutas(id){
+  const extra=document.getElementById('extra-'+id);
+  const btn=document.getElementById('btn-extra-'+id);
+  if(!extra||!btn)return;
+  const abierto=extra.style.display!=='none';
+  extra.style.display=abierto?'none':'block';
+  const cant=extra.querySelectorAll('div[style*="border-bottom"]').length;
+  btn.innerHTML=abierto?`&#43; ${cant} rutas más`:`&#8722; Ocultar`;
+}
+
 function renderOlt620(){
   if(!rowsOlt.length){document.getElementById('olt-kpis').innerHTML='<p style="color:var(--text3);font-size:12px;padding:10px">Cargando datos OLT 620...</p>';return;}
   console.log('[OLT620] Headers:', headersOlt);
