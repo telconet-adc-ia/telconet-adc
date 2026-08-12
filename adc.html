@@ -2761,18 +2761,34 @@ function filtrarTablaOlt(tipo, valor, color){
     const barW=Math.max(2,pct);
     const barC=pct===100?'#0a7c52':pct>50?'#8a5800':'#a01e1e';
 
-    // Nodos detalle (max 5 visibles)
-    const nodosHtml=info.nodos
-      .sort((a,b)=>b.pd-a.pd)
-      .slice(0,6)
-      .map(n=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border)">
+    // Nodos detalle (max 6 visibles, resto expandible)
+    const nodosOrdenados=info.nodos.sort((a,b)=>b.pd-a.pd);
+    const nodosVis=nodosOrdenados.slice(0,6);
+    const nodosExtra=nodosOrdenados.slice(6);
+    const oltId='olt-'+canton.replace(/[^a-zA-Z0-9]/g,'_');
+
+    const nodosHtml=nodosVis.map(n=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border)">
         <div style="font-size:11px;color:var(--text2);flex:1">${n.nodo}</div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
           <span style="font-size:10px;background:${estadoBg[n.estado]||'#f5f6fa'};color:${estadoColor[n.estado]||'#666'};padding:1px 6px;border-radius:3px;font-weight:600">${n.estado}</span>
           <span style="font-size:12px;font-weight:700;color:${n.pd>0?'var(--red)':'var(--green)'};min-width:20px;text-align:right">${n.pd>0?n.pd:'&#9989;'}</span>
         </div>
       </div>`).join('');
-    const extra=info.nodos.length>6?'<div style="font-size:10px;color:var(--text3);padding:5px 0;text-align:center">+'+( info.nodos.length-6)+' nodos mas</div>':'';
+
+    const extraHtmlOlt=nodosExtra.map(n=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border)">
+        <div style="font-size:11px;color:var(--text2);flex:1">${n.nodo}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <span style="font-size:10px;background:${estadoBg[n.estado]||'#f5f6fa'};color:${estadoColor[n.estado]||'#666'};padding:1px 6px;border-radius:3px;font-weight:600">${n.estado}</span>
+          <span style="font-size:12px;font-weight:700;color:${n.pd>0?'var(--red)':'var(--green)'};min-width:20px;text-align:right">${n.pd>0?n.pd:'&#9989;'}</span>
+        </div>
+      </div>`).join('');
+
+    const extra=nodosExtra.length>0?`
+      <div id="extra-${oltId}" style="display:none">${extraHtmlOlt}</div>
+      <div onclick="toggleExtraRutas('${oltId}')" id="btn-extra-${oltId}"
+        style="font-size:10px;color:var(--tnblue);padding:6px 0;text-align:center;cursor:pointer;font-weight:600;user-select:none;border-radius:6px;margin-top:2px;background:var(--bg3);border:1px solid var(--border)">
+        &#43; ${nodosExtra.length} nodos más
+      </div>`:'';
 
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
