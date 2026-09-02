@@ -162,6 +162,43 @@ select.f-select:focus{border-color:var(--tn-blue)}
         <div class="kpi"><div class="kpi-val" style="color:var(--red)" id="kpi-saturadas">—</div><div class="kpi-lbl">Cajas saturadas</div></div>
       </div>
 
+      <!-- Nodos especiales agosto 2026 -->
+      <div class="grid-full card" style="background:linear-gradient(135deg,rgba(14,66,156,.04),rgba(16,168,199,.04));border:1px solid rgba(14,66,156,.15)">
+        <div class="card-title" style="margin-bottom:12px">
+          <div class="dot" style="background:var(--tn-orange)"></div>
+          Trabajos especiales — Agosto 2026
+          <span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:8px">Cuadrillas de construcci&oacute;n</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <!-- Nodo migrado -->
+          <div style="background:#fff;border:1px solid rgba(16,168,199,.3);border-left:4px solid var(--tn-cyan);border-radius:10px;padding:14px;display:flex;align-items:center;gap:14px;cursor:pointer"
+            onclick="irANodoEspecial(-2.906019,-78.990748,'ALVAREZ','migrado')">
+            <div style="width:40px;height:40px;border-radius:50%;background:rgba(16,168,199,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10A8C7" stroke-width="2.5" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--tn-blue)">ALVAREZ</div>
+              <div style="font-size:11px;color:var(--tn-cyan);font-weight:600;margin-top:2px">&#9989; Nodo migrado</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">-2.906019, -78.990748 · Agosto 2026</div>
+            </div>
+            <div style="font-size:10px;color:var(--tn-cyan);font-weight:600;background:rgba(16,168,199,.1);padding:4px 8px;border-radius:6px;white-space:nowrap">Ver en mapa &#8594;</div>
+          </div>
+          <!-- Nodo no inventariado OLT 620 -->
+          <div style="background:#fff;border:1px solid rgba(235,97,0,.3);border-left:4px solid var(--tn-orange);border-radius:10px;padding:14px;display:flex;align-items:center;gap:14px;cursor:pointer"
+            onclick="irANodoEspecial(-2.876183,-79.032000,'SAN PEDRO','pendiente')">
+            <div style="width:40px;height:40px;border-radius:50%;background:rgba(235,97,0,.10);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EB6100" stroke-width="2.5" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--tn-blue)">SAN PEDRO</div>
+              <div style="font-size:11px;color:var(--tn-orange);font-weight:600;margin-top:2px">&#9203; No inventariado — Pendiente OLT 620</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">-2.876183, -79.032000 · Agosto 2026</div>
+            </div>
+            <div style="font-size:10px;color:var(--tn-orange);font-weight:600;background:rgba(235,97,0,.08);padding:4px 8px;border-radius:6px;white-space:nowrap">Ver en mapa &#8594;</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Mapa -->
       <div class="grid-full card">
         <div class="card-title"><div class="dot" style="background:var(--tn-blue)"></div>Mapa de cobertura de construcci&oacute;n</div>
@@ -345,6 +382,7 @@ function renderMapa(rows){
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',subdomains:'abcd',maxZoom:19}).addTo(mapInst);
     markerLayer=L.layerGroup().addTo(mapInst);
     mapInit=true;
+    agregarPinsEspeciales();
   }
   markerLayer.clearLayers();
   rows.filter(function(r){return r.lat&&r.lng}).forEach(function(r){
@@ -441,6 +479,57 @@ function init(){
 }
 
 window.addEventListener('DOMContentLoaded',init);
+
+// ── NODOS ESPECIALES AGOSTO 2026 ──────────────────────────────
+const NODOS_ESPECIALES=[
+  {nombre:'ALVAREZ',lat:-2.906019,lng:-78.990748,tipo:'migrado',color:'#10A8C7',label:'Nodo migrado'},
+  {nombre:'SAN PEDRO',lat:-2.876183,lng:-79.032000,tipo:'pendiente',color:'#EB6100',label:'Pendiente OLT 620'}
+];
+
+let pinsEspeciales=[];
+
+function agregarPinsEspeciales(){
+  if(!mapInst)return;
+  pinsEspeciales.forEach(p=>{try{mapInst.removeLayer(p);}catch(e){}});
+  pinsEspeciales=[];
+  NODOS_ESPECIALES.forEach(n=>{
+    const icon=L.divIcon({
+      className:'',
+      html:`<div style="display:flex;flex-direction:column;align-items:center;gap:0">
+        <div style="background:${n.color};color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2)">${n.nombre}</div>
+        <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid ${n.color}"></div>
+      </div>`,
+      iconSize:[80,32],iconAnchor:[40,32]
+    });
+    const mk=L.marker([n.lat,n.lng],{icon,zIndexOffset:1000})
+      .bindPopup(`<div style="font-size:12px;min-width:180px">
+        <div style="background:${n.color};color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#128205; ${n.nombre}</div>
+        <div style="padding:7px 9px">
+          <b>Estado:</b> ${n.label}<br>
+          <b>Mes:</b> Agosto 2026<br>
+          <b>Coord:</b> ${n.lat}, ${n.lng}
+        </div>
+      </div>`)
+      .addTo(mapInst);
+    pinsEspeciales.push(mk);
+  });
+}
+
+function irANodoEspecial(lat,lng,nombre,tipo){
+  // Asegurar mapa inicializado
+  if(!mapInst){
+    setTimeout(()=>irANodoEspecial(lat,lng,nombre,tipo),500);
+    return;
+  }
+  // Scroll al mapa
+  document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>{
+    mapInst.setView([lat,lng],16);
+    // Abrir popup del pin correspondiente
+    const pin=pinsEspeciales.find((_,i)=>NODOS_ESPECIALES[i].nombre===nombre);
+    if(pin)pin.openPopup();
+  },400);
+}
 </script>
 </body>
 </html>
