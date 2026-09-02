@@ -65,13 +65,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 
 /* MAIN LAYOUT */
 .main{flex:1;display:flex;flex-direction:column;overflow-y:auto}
-.map-col{height:55vh;min-height:380px;position:relative;border-bottom:1px solid var(--border);flex-shrink:0}
+.map-col{height:55vh;min-height:380px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column}
 #map{width:100%;height:100%}
 .loading-map{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--txt3);background:var(--bg);z-index:10}
 .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--tn-blue);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .map-legend{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:1000;background:#fff;border:1px solid var(--border);border-radius:20px;padding:7px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 12px rgba(0,0,0,.1);font-size:11px;color:var(--txt2);white-space:nowrap}
-.leg-item{display:flex;align-items:center;gap:5px}
+.toggle-capa{cursor:pointer;padding:3px 8px;border-radius:6px;transition:.15s;user-select:none}
+.toggle-capa:hover{background:rgba(0,0,0,.06)}
+.toggle-capa.apagado{opacity:.35;text-decoration:line-through}
 
 /* SIDE PANEL */
 .side-col{width:100%;flex-shrink:0;background:#fff;display:block;overflow:visible}
@@ -170,16 +172,40 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 <div class="main">
   <!-- MAPA -->
   <div class="map-col">
-    <div id="loading-map" class="loading-map">
-      <div class="spinner"></div>
-      <div>Cargando datos desde Google Sheets...</div>
+    <!-- CORTES DE RUTA — encima del mapa -->
+    <div id="cortes-banner" style="background:linear-gradient(90deg,#DC2626,#b91c1c);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span style="font-size:18px">&#9889;</span>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:.3px">CORTES DE RUTA — AGOSTO 2026</div>
+          <div style="font-size:10px;opacity:.85">Limpieza cables muertos por eléctrica · 8 armados de manga ejecutados</div>
+        </div>
+      </div>
+      <div id="cortes-chips" style="display:flex;gap:6px;flex-wrap:wrap;flex:1"></div>
     </div>
-    <div id="map" style="width:100%;height:100%;opacity:0;transition:opacity .3s"></div>
-    <div class="map-legend" id="map-legend" style="display:none">
-      <div class="leg-item"><div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #EB6100"></div> Cambio de poste</div>
-      <div class="leg-item"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;border:2px solid #fff;box-shadow:0 0 0 1px #DC2626"></div> Incidencia en zona</div>
-      <div class="leg-item"><div style="width:18px;height:0;border-top:2px dashed #EB6100"></div> Radio de influencia</div>
-      <div class="leg-item"><div style="background:#DC2626;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px">&#9889;</div> Corte de ruta</div>
+
+    <div style="flex:1;position:relative">
+      <div id="loading-map" class="loading-map">
+        <div class="spinner"></div>
+        <div>Cargando datos desde Google Sheets...</div>
+      </div>
+      <div id="map" style="width:100%;height:100%;opacity:0;transition:opacity .3s"></div>
+
+      <!-- LEYENDA CON TOGGLES -->
+      <div class="map-legend" id="map-legend" style="display:none">
+        <div class="leg-item toggle-capa" id="tog-postes" onclick="toggleCapa('postes')" title="Clic para ocultar/mostrar">
+          <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #EB6100"></div> Cambio de poste
+        </div>
+        <div class="leg-item toggle-capa" id="tog-incidencias" onclick="toggleCapa('incidencias')" title="Clic para ocultar/mostrar">
+          <div style="width:12px;height:12px;border-radius:50%;background:#DC2626;border:2px solid #fff;box-shadow:0 0 0 1px #DC2626"></div> Incidencia en zona
+        </div>
+        <div class="leg-item toggle-capa" id="tog-radio" onclick="toggleCapa('radio')" title="Clic para ocultar/mostrar">
+          <div style="width:18px;height:0;border-top:2px dashed #EB6100"></div> Radio de influencia
+        </div>
+        <div class="leg-item toggle-capa" id="tog-cortes" onclick="toggleCapa('cortes')" title="Clic para ocultar/mostrar">
+          <div style="background:#DC2626;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px">&#9889;</div> Corte de ruta
+        </div>
+      </div>
     </div>
   </div>
 
@@ -748,7 +774,50 @@ function irACorte(idx){
   document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
-window.addEventListener('DOMContentLoaded',()=>{renderCortesRuta();cargarDatos();});
+// ── TOGGLES DE CAPAS ────────────────────────────────────────
+const capasVisibles={postes:true,incidencias:true,radio:true,cortes:true};
+
+function toggleCapa(capa){
+  capasVisibles[capa]=!capasVisibles[capa];
+  const btn=document.getElementById('tog-'+capa);
+  if(btn)btn.classList.toggle('apagado',!capasVisibles[capa]);
+
+  if(capa==='postes'){
+    marcadoresPostes.forEach(m=>{
+      try{capasVisibles.postes?mapaL.addLayer(m):mapaL.removeLayer(m);}catch(e){}
+    });
+  }
+  if(capa==='cortes'){
+    marcadoresCortes.forEach(m=>{
+      try{capasVisibles.cortes?mapaL.addLayer(m):mapaL.removeLayer(m);}catch(e){}
+    });
+  }
+  if(capa==='incidencias'||capa==='radio'){
+    // Redibujar solo las capas de correlación respetando el estado de visibilidad
+    capasCorr.forEach(c=>{
+      const esCirculo=c instanceof L.Circle;
+      const esMarker=c instanceof L.CircleMarker&&!(c instanceof L.Circle);
+      if(esCirculo&&capa==='radio'){
+        try{capasVisibles.radio?mapaL.addLayer(c):mapaL.removeLayer(c);}catch(e){}
+      }
+      if(esMarker&&capa==='incidencias'){
+        try{capasVisibles.incidencias?mapaL.addLayer(c):mapaL.removeLayer(c);}catch(e){}
+      }
+    });
+  }
+}
+
+function renderChipsCortes(){
+  const cont=document.getElementById('cortes-chips');
+  if(!cont)return;
+  cont.innerHTML=CORTES_RUTA.map((c,i)=>
+    `<span onclick="irACorte(${i})" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;white-space:nowrap;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.35)'" onmouseout="this.style.background='rgba(255,255,255,.2)'">
+      &#9889; ${c.ruta.split('/')[0].replace('Corte de ruta ','').trim()}
+    </span>`
+  ).join('');
+}
+
+window.addEventListener('DOMContentLoaded',()=>{renderCortesRuta();renderChipsCortes();cargarDatos();});
 </script>
 </body>
 </html>
