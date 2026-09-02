@@ -179,6 +179,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
       <div class="leg-item"><div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #EB6100"></div> Cambio de poste</div>
       <div class="leg-item"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;border:2px solid #fff;box-shadow:0 0 0 1px #DC2626"></div> Incidencia en zona</div>
       <div class="leg-item"><div style="width:18px;height:0;border-top:2px dashed #EB6100"></div> Radio de influencia</div>
+      <div class="leg-item"><div style="background:#DC2626;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px">&#9889;</div> Corte de ruta</div>
     </div>
   </div>
 
@@ -262,29 +263,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
           </div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">
-        ${[
-          {tarea:'162059055',ruta:'Chiquintad (E)/Carolina (E)-F01',fecha:'2026-08-02'},
-          {tarea:'162368500',ruta:'El Valle/Turi-F01',fecha:'2026-08-06'},
-          {tarea:'162646631',ruta:'Bellavista/Alvarez-F01',fecha:'2026-08-11'},
-          {tarea:'162668710',ruta:'Ricaurte/Bibin-F01',fecha:'2026-08-12'},
-          {tarea:'162764724',ruta:'Ricaurte (E)/Calderon (E)-F01',fecha:'2026-08-13'},
-          {tarea:'163002805',ruta:'Ricaurte (E)/Calderon (E)-F01',fecha:'2026-08-17'},
-          {tarea:'163072395',ruta:'Sixto Chaullabamba (E)/N/A-F03',fecha:'2026-08-18'},
-          {tarea:'163431983',ruta:'San Pedro (E)/N/A-F01',fecha:'2026-08-24'}
-        ].map(c=>`
-          <div style="background:#fff;border:1px solid rgba(220,38,38,.15);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(220,38,38,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">&#9889;</div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:11px;font-weight:700;color:var(--txt);line-height:1.4;margin-bottom:2px">${c.ruta}</div>
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <span style="font-size:10px;color:var(--txt3);font-family:monospace">#${c.tarea}</span>
-                <span style="font-size:10px;color:var(--txt3)">&#128197; ${c.fecha}</span>
-                <span style="font-size:9px;background:#e4f5ef;color:#0a7c52;padding:1px 6px;border-radius:4px;font-weight:600">&#9989; Resuelto</span>
-              </div>
-            </div>
-          </div>`).join('')}
-      </div>
+      <div id="cortes-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px"></div>
     </div>
   </div>
 </div>
@@ -411,7 +390,7 @@ async function cargarDatos(){
     mapaL=L.map('map').setView([-2.9,-78.85],12);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',maxZoom:19}).addTo(mapaL);
     document.getElementById('map').style.opacity='1';
-    setTimeout(()=>{if(mapaL)mapaL.invalidateSize();},50);
+    setTimeout(()=>{if(mapaL){mapaL.invalidateSize();agregarMarcadoresCortes();}},50);
 
     // Meses de INCIDENCIAS
     const anioCol=getAnioCol(headers);
@@ -702,7 +681,74 @@ function quitarPin(){
   document.getElementById('btn-quitar-pin').style.display='none';
 }
 
-window.addEventListener('DOMContentLoaded',cargarDatos);
+const CORTES_RUTA=[
+  {tarea:'162059055',ruta:'Chiquintad (E)/Carolina (E)-F01',fecha:'2026-08-02',lat:-2.90683,lng:-78.999176},
+  {tarea:'162368500',ruta:'El Valle/Turi-F01',fecha:'2026-08-06',lat:-2.810314,lng:-78.99112},
+  {tarea:'162646631',ruta:'Bellavista/Alvarez-F01',fecha:'2026-08-11',lat:-2.90602,lng:-78.98378},
+  {tarea:'162668710',ruta:'Ricaurte/Bibin-F01',fecha:'2026-08-12',lat:-2.853592,lng:-78.972248},
+  {tarea:'162764724',ruta:'Ricaurte (E)/Calderon (E)-F01',fecha:'2026-08-13',lat:-2.85892,lng:-78.96918},
+  {tarea:'163002805',ruta:'Ricaurte (E)/Calderon (E)-F01',fecha:'2026-08-17',lat:-2.8607,lng:-78.9726},
+  {tarea:'163072395',ruta:'Sixto Chaullabamba (E)/N/A-F03',fecha:'2026-08-18',lat:-2.887427,lng:-78.877503},
+  {tarea:'163431983',ruta:'San Pedro (E)/N/A-F01',fecha:'2026-08-24',lat:-2.869932,lng:-79.036923}
+];
+
+let marcadoresCortes=[];
+
+function renderCortesRuta(){
+  const grid=document.getElementById('cortes-grid');
+  if(!grid)return;
+  grid.innerHTML=CORTES_RUTA.map((c,i)=>`
+    <div onclick="irACorte(${i})" style="background:#fff;border:1px solid rgba(220,38,38,.15);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(220,38,38,.04)'" onmouseout="this.style.background='#fff'">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(220,38,38,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">&#9889;</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:700;color:var(--txt);line-height:1.4;margin-bottom:4px">${c.ruta}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:10px;color:var(--txt3);font-family:monospace">#${c.tarea}</span>
+          <span style="font-size:10px;color:var(--txt3)">&#128197; ${c.fecha}</span>
+          <span style="font-size:9px;background:#e4f5ef;color:#0a7c52;padding:1px 6px;border-radius:4px;font-weight:600">&#9989; Resuelto</span>
+          <span style="font-size:9px;color:var(--tn-blue);font-weight:600">&#128205; Ver en mapa</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function agregarMarcadoresCortes(){
+  if(!mapaL)return;
+  marcadoresCortes.forEach(m=>{try{mapaL.removeLayer(m);}catch(e){}});
+  marcadoresCortes=[];
+  CORTES_RUTA.forEach(c=>{
+    const icon=L.divIcon({
+      className:'',
+      html:`<div style="display:flex;flex-direction:column;align-items:center">
+        <div style="background:#DC2626;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.25);max-width:120px;overflow:hidden;text-overflow:ellipsis">${c.ruta.split('/')[0]}</div>
+        <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #DC2626"></div>
+      </div>`,
+      iconSize:[120,28],iconAnchor:[60,28]
+    });
+    const mk=L.marker([c.lat,c.lng],{icon,zIndexOffset:500})
+      .bindPopup(`<div style="font-size:12px;min-width:200px">
+        <div style="background:#DC2626;color:#fff;padding:4px 8px;border-radius:4px 4px 0 0;font-size:10px;font-weight:700">&#9889; CORTE DE RUTA</div>
+        <div style="padding:7px 9px">
+          <b>Ruta:</b> ${c.ruta}<br>
+          <b>Tarea:</b> #${c.tarea}<br>
+          <b>Fecha:</b> ${c.fecha}<br>
+          <b>Estado:</b> <span style="color:#0a7c52;font-weight:600">&#9989; Resuelto</span>
+        </div>
+      </div>`)
+      .addTo(mapaL);
+    marcadoresCortes.push(mk);
+  });
+}
+
+function irACorte(idx){
+  if(!mapaL)return;
+  const c=CORTES_RUTA[idx];
+  mapaL.setView([c.lat,c.lng],16);
+  if(marcadoresCortes[idx])marcadoresCortes[idx].openPopup();
+  document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+window.addEventListener('DOMContentLoaded',()=>{renderCortesRuta();cargarDatos();});
 </script>
 </body>
 </html>
