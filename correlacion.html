@@ -225,6 +225,42 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
         </div>
       </div>
     </div>
+
+    <!-- MÓDULO CORTES DE RUTA -->
+    <div style="margin:0 20px 20px;background:linear-gradient(135deg,rgba(220,38,38,.04),rgba(235,97,0,.04));border:1px solid rgba(220,38,38,.2);border-left:4px solid #DC2626;border-radius:12px;padding:18px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#DC2626;display:flex;align-items:center;gap:7px">
+            &#9889; Cortes de ruta — Agosto 2026
+          </div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:3px">Limpieza de cables muertos por empresa eléctrica · Armado de mangas por personal de construcción</div>
+        </div>
+        <div style="background:#DC2626;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px">8 cortes</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">
+        ${[
+          {tarea:'162059055',ruta:'Chiquintad (E)/Carolina (E)-F01',fecha:'2026-08-02'},
+          {tarea:'162368500',ruta:'El Valle/Turi-F01',fecha:'2026-08-06'},
+          {tarea:'162646631',ruta:'Bellavista/Alvarez-F01',fecha:'2026-08-11'},
+          {tarea:'162668710',ruta:'Ricaurte/Bibin-F01',fecha:'2026-08-12'},
+          {tarea:'162764724',ruta:'Ricaurte (E)/Calderon (E)-F01',fecha:'2026-08-13'},
+          {tarea:'163002805',ruta:'Ricaurte (E)/Calderon (E)-F01',fecha:'2026-08-17'},
+          {tarea:'163072395',ruta:'Sixto Chaullabamba (E)/N/A-F03',fecha:'2026-08-18'},
+          {tarea:'163431983',ruta:'San Pedro (E)/N/A-F01',fecha:'2026-08-24'}
+        ].map(c=>`
+          <div style="background:#fff;border:1px solid rgba(220,38,38,.15);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px">
+            <div style="width:32px;height:32px;border-radius:8px;background:rgba(220,38,38,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">&#9889;</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;font-weight:700;color:var(--txt);line-height:1.4;margin-bottom:2px">${c.ruta}</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="font-size:10px;color:var(--txt3);font-family:monospace">#${c.tarea}</span>
+                <span style="font-size:10px;color:var(--txt3)">&#128197; ${c.fecha}</span>
+                <span style="font-size:9px;background:#e4f5ef;color:#0a7c52;padding:1px 6px;border-radius:4px;font-weight:600">&#9989; Resuelto</span>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
   </div>
 </div>
 
