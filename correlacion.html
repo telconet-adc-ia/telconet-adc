@@ -204,11 +204,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
             <div style="font-size:9px;color:#b91c1c;opacity:.8">Cuadrillas construcción desviadas</div>
           </div>
         </div>
-        <a href="https://www.centrosur.gob.ec/centrosur-lidera-el-retiro-de-cables-de-telecomunicaciones-en-desuso/" target="_blank"
-          style="padding:10px 14px;display:flex;align-items:center;gap:5px;font-size:10px;color:#1d4ed8;text-decoration:none;border-left:1px solid rgba(14,66,156,.12);white-space:nowrap;flex-shrink:0"
-          title="Plan integral Centrosur 2026">
-          &#128240; Centrosur.gob.ec
-        </a>
+        <div onclick="toggleModalCentrosur()" style="padding:10px 14px;display:flex;align-items:center;gap:5px;font-size:10px;color:#0E429C;cursor:pointer;border-left:1px solid rgba(14,66,156,.12);white-space:nowrap;flex-shrink:0;font-weight:600;transition:.15s" onmouseover="this.style.background='rgba(14,66,156,.06)'" onmouseout="this.style.background=''">
+          &#128240; Centrosur 2026
+        </div>
       </div>
       <!-- Fila inferior: chips de rutas -->
       <div style="padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
@@ -826,6 +824,43 @@ function renderChipsCortes(){
       &#9889; ${c.ruta}
     </span>`
   ).join('');
+}
+
+function toggleModalCentrosur(){
+  const existing=document.getElementById('modal-centrosur');
+  if(existing){existing.remove();return;}
+
+  const overlay=document.createElement('div');
+  overlay.id='modal-centrosur';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)';
+  overlay.innerHTML=`
+    <div id="modal-centrosur-inner" style="background:#fff;border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden">
+      <div style="background:var(--tn-blue);padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:18px">&#128240;</span>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff">Plan integral Centrosur 2026</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.75)">Retiro de cables de telecomunicaciones en desuso</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('modal-centrosur').remove()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:16px;width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">&#10005;</button>
+      </div>
+      <div style="padding:18px 20px;font-size:12px;color:#3A5080;line-height:1.7">
+        <p style="margin-bottom:12px">Bajo directrices del Gobierno Nacional, <strong style="color:var(--tn-blue)">Centrosur</strong> ejecuta desde mayo 2026 un plan integral para el retiro de cables de telecomunicaciones en desuso dentro de su área de concesión, a través de la unidad de <strong>Gestión de Infraestructura de las Operadoras (GIO)</strong>, en coordinación con <strong>99 empresas cableoperadoras</strong>.</p>
+        <p style="margin-bottom:12px">Al cierre de julio 2026 se habían retirado <strong style="color:var(--tn-blue)">más de 7 toneladas de cables</strong> en Cuenca, Gualaceo y La Troncal. Las operadoras participan con sus equipos técnicos en jornadas conjuntas (<em>"mingas"</em>) supervisadas por Centrosur.</p>
+        <p style="margin-bottom:14px">El presidente ejecutivo de Centrosur confirmó que las acciones <strong>continuarán en los cantones de Azuay, Cañar y Morona Santiago</strong>, lo que implica que los cortes de ruta y armados de manga seguirán siendo parte del trabajo operativo de Telconet en los próximos meses.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid #E5EAEF">
+          <span style="font-size:10px;color:var(--txt3);font-weight:600">Fuentes:</span>
+          <a href="https://www.centrosur.gob.ec/centrosur-lidera-el-retiro-de-cables-de-telecomunicaciones-en-desuso/" target="_blank" style="font-size:10px;color:var(--tn-blue);text-decoration:none;background:#EEF2F8;padding:2px 8px;border-radius:4px;border:1px solid #D0D9EC">&#128279; Centrosur.gob.ec</a>
+          <a href="https://elmercurio.com.ec/cuenca/2026/07/02/cuenca-gualaceo-la-troncal-calles-cables-desuso/" target="_blank" style="font-size:10px;color:var(--tn-blue);text-decoration:none;background:#EEF2F8;padding:2px 8px;border-radius:4px;border:1px solid #D0D9EC">&#128279; El Mercurio</a>
+          <a href="https://elnuevotiempo.com/centrosur-y-operadoras-de-telecomunicaciones-retiran-cables-en-desuso-en-cuenca/" target="_blank" style="font-size:10px;color:var(--tn-blue);text-decoration:none;background:#EEF2F8;padding:2px 8px;border-radius:4px;border:1px solid #D0D9EC">&#128279; El Nuevo Tiempo</a>
+        </div>
+      </div>
+    </div>`;
+  overlay.addEventListener('click',e=>{
+    if(!document.getElementById('modal-centrosur-inner').contains(e.target))overlay.remove();
+  });
+  document.body.appendChild(overlay);
 }
 
 window.addEventListener('DOMContentLoaded',()=>{renderCortesRuta();renderChipsCortes();cargarDatos();});
