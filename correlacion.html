@@ -173,15 +173,48 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
   <!-- MAPA -->
   <div class="map-col">
     <!-- CORTES DE RUTA — encima del mapa -->
-    <div id="cortes-banner" style="background:linear-gradient(90deg,#DC2626,#b91c1c);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex-shrink:0">
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-        <span style="font-size:18px">&#9889;</span>
-        <div>
-          <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:.3px">CORTES DE RUTA — AGOSTO 2026</div>
-          <div style="font-size:10px;opacity:.85">Limpieza cables muertos por eléctrica · 8 armados de manga ejecutados</div>
+    <div id="cortes-banner" style="background:rgba(14,66,156,.06);border-bottom:2px solid rgba(14,66,156,.15);flex-shrink:0">
+      <!-- Fila superior: KPIs de impacto -->
+      <div style="display:flex;align-items:center;gap:0;border-bottom:1px solid rgba(14,66,156,.12)">
+        <div style="padding:10px 18px;border-right:1px solid rgba(14,66,156,.12);display:flex;align-items:center;gap:10px">
+          <span style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#0E429C;line-height:1">8</span>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.6px">Cortes de ruta</div>
+            <div style="font-size:9px;color:#b91c1c;opacity:.8">Agosto 2026</div>
+          </div>
         </div>
+        <div style="padding:10px 18px;border-right:1px solid rgba(14,66,156,.12);display:flex;align-items:center;gap:10px">
+          <span style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#0E429C;line-height:1">8</span>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.6px">Armados de manga</div>
+            <div style="font-size:9px;color:#b91c1c;opacity:.8">1 por corte</div>
+          </div>
+        </div>
+        <div style="padding:10px 18px;border-right:1px solid rgba(14,66,156,.12);display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">&#9889;</span>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.6px">Causa: Empresa eléctrica</div>
+            <div style="font-size:9px;color:#b91c1c;opacity:.8">Limpieza cables en desuso</div>
+          </div>
+        </div>
+        <div style="padding:10px 18px;flex:1;display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">&#128736;</span>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.6px">Impacto operativo</div>
+            <div style="font-size:9px;color:#b91c1c;opacity:.8">Cuadrillas construcción desviadas</div>
+          </div>
+        </div>
+        <a href="https://www.centrosur.gob.ec/centrosur-lidera-el-retiro-de-cables-de-telecomunicaciones-en-desuso/" target="_blank"
+          style="padding:10px 14px;display:flex;align-items:center;gap:5px;font-size:10px;color:#1d4ed8;text-decoration:none;border-left:1px solid rgba(14,66,156,.12);white-space:nowrap;flex-shrink:0"
+          title="Plan integral Centrosur 2026">
+          &#128240; Centrosur.gob.ec
+        </a>
       </div>
-      <div id="cortes-chips" style="display:flex;gap:6px;flex-wrap:wrap;flex:1"></div>
+      <!-- Fila inferior: chips de rutas -->
+      <div style="padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:10px;font-weight:700;color:#991b1b;flex-shrink:0">Rutas afectadas:</span>
+        <div id="cortes-chips" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+      </div>
     </div>
 
     <div style="flex:1;position:relative">
@@ -265,30 +298,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
         <div style="background:#DC2626;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px">8 cortes</div>
       </div>
 
-      <!-- Contexto Centrosur -->
-      <div style="background:rgba(14,66,156,.05);border:1px solid rgba(14,66,156,.15);border-radius:8px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px">
-        <div style="font-size:20px;flex-shrink:0">&#128240;</div>
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--tn-blue);margin-bottom:4px">Contexto: Plan integral Centrosur 2026</div>
-          <div style="font-size:11px;color:var(--txt2);line-height:1.6">
-            Bajo directrices del Gobierno Nacional, Centrosur ejecuta desde mayo 2026 un plan de retiro de cables de telecomunicaciones en desuso en Azuay, Cañar y Morona Santiago, coordinado con <strong>99 empresas cableoperadoras</strong>. Al cierre de julio 2026 se habían retirado <strong>más de 7 toneladas de cables</strong> en Cuenca, Gualaceo y La Troncal. Las operadoras participan con sus equipos técnicos en jornadas conjuntas ("mingas") supervisadas por la unidad GIO de Centrosur. El presidente ejecutivo de Centrosur confirmó que las acciones <strong>continuarán en toda el área de concesión</strong>.
-          </div>
-          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-            <a href="https://www.centrosur.gob.ec/centrosur-lidera-el-retiro-de-cables-de-telecomunicaciones-en-desuso/" target="_blank"
-              style="font-size:10px;color:var(--tn-blue);text-decoration:none;background:rgba(14,66,156,.08);padding:2px 8px;border-radius:4px;border:1px solid rgba(14,66,156,.2)">
-              &#128279; Centrosur.gob.ec — May 2026
-            </a>
-            <a href="https://elmercurio.com.ec/cuenca/2026/07/02/cuenca-gualaceo-la-troncal-calles-cables-desuso/" target="_blank"
-              style="font-size:10px;color:var(--tn-blue);text-decoration:none;background:rgba(14,66,156,.08);padding:2px 8px;border-radius:4px;border:1px solid rgba(14,66,156,.2)">
-              &#128279; El Mercurio — Jul 2026
-            </a>
-            <a href="https://elnuevotiempo.com/centrosur-y-operadoras-de-telecomunicaciones-retiran-cables-en-desuso-en-cuenca/" target="_blank"
-              style="font-size:10px;color:var(--tn-blue);text-decoration:none;background:rgba(14,66,156,.08);padding:2px 8px;border-radius:4px;border:1px solid rgba(14,66,156,.2)">
-              &#128279; El Nuevo Tiempo — Jun 2026
-            </a>
-          </div>
-        </div>
-      </div>
       <div id="cortes-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px"></div>
     </div>
   </div>
@@ -811,8 +820,10 @@ function renderChipsCortes(){
   const cont=document.getElementById('cortes-chips');
   if(!cont)return;
   cont.innerHTML=CORTES_RUTA.map((c,i)=>
-    `<span onclick="irACorte(${i})" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;white-space:nowrap;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.35)'" onmouseout="this.style.background='rgba(255,255,255,.2)'">
-      &#9889; ${c.ruta.split('/')[0].replace('Corte de ruta ','').trim()}
+    `<span onclick="irACorte(${i})" title="${c.ruta} · ${c.fecha}"
+      style="background:rgba(235,97,0,.08);border:1px solid rgba(235,97,0,.25);border-radius:4px;padding:3px 8px;font-size:10px;font-weight:600;color:#EB6100;cursor:pointer;white-space:nowrap;transition:.15s;display:inline-flex;align-items:center;gap:4px"
+      onmouseover="this.style.background='rgba(235,97,0,.18)'" onmouseout="this.style.background='rgba(235,97,0,.08)'">
+      &#9889; ${c.ruta}
     </span>`
   ).join('');
 }
