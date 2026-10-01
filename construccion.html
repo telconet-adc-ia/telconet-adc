@@ -379,7 +379,7 @@ function render(){
 function renderMapa(rows){
   if(!mapInit){
     mapInst=L.map('map',{zoomControl:true}).setView([-2.9,-78.9],10);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',subdomains:'abcd',maxZoom:19}).addTo(mapInst);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:19}).addTo(mapInst);
     markerLayer=L.layerGroup().addTo(mapInst);
     mapInit=true;
     agregarPinsEspeciales();
