@@ -311,9 +311,9 @@ function render(){
   var anio=document.getElementById('sel-anio').value;
   var mes=document.getElementById('sel-mes').value;
 
-  // KPIs — usar filas resumen (totalCajas > 0)
+  // KPIs — filas de detalle (tienen caja individual)
   var res=rows.filter(function(r){return r.totalCajas>0});
-  var sumCajas=res.reduce(function(s,r){return s+r.totalCajas},0);
+  var sumCajas=rows.filter(function(r){return r.caja&&r.tipo}).length;
   var sumCli=res.reduce(function(s,r){return s+r.clientes},0);
   var sumPuertos=res.reduce(function(s,r){return s+r.puertos},0);
   var sumVacias=res.reduce(function(s,r){return s+r.cajasVacias},0);
@@ -352,9 +352,9 @@ function render(){
     plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return ' '+c.raw+' cajas'}}}},
     scales:{x:{grid:{display:false},ticks:TX,border:{display:false}},y:{grid:{color:GRID},ticks:TY,border:{display:false}}}}});
 
-  // Por tipo (dona) — suma totalCajas por tipo (coincide con KPI)
-  var tiposAct=Object.keys(TIPO_COLORS).filter(function(t){return res.some(function(r){return r.tipo===t})});
-  var tipoVals=tiposAct.map(function(t){return res.filter(function(r){return r.tipo===t}).reduce(function(s,r){return s+r.totalCajas},0)});
+  // Por tipo (dona) — cuenta filas de detalle por tipo (coincide con KPI)
+  var tiposAct=Object.keys(TIPO_COLORS).filter(function(t){return rows.some(function(r){return r.tipo===t&&r.caja})});
+  var tipoVals=tiposAct.map(function(t){return rows.filter(function(r){return r.tipo===t&&r.caja}).length});
   var totalTipo=tipoVals.reduce(function(a,b){return a+b},0);
   mkChart('ch-tipo',{type:'doughnut',data:{
     labels:tiposAct.map(function(t){return t==='NUEVA COBERTURA'?'NUEVA':t==='PARA ELIMINAR SATURACION'?'ELIM. SAT.':t}),
