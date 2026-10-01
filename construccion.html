@@ -352,9 +352,9 @@ function render(){
     plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return ' '+c.raw+' cajas'}}}},
     scales:{x:{grid:{display:false},ticks:TX,border:{display:false}},y:{grid:{color:GRID},ticks:TY,border:{display:false}}}}});
 
-  // Por tipo (dona) — con labels visibles siempre
-  var tiposAct=Object.keys(TIPO_COLORS).filter(function(t){return rows.some(function(r){return r.tipo===t})});
-  var tipoVals=tiposAct.map(function(t){return rows.filter(function(r){return r.tipo===t}).length});
+  // Por tipo (dona) — suma totalCajas por tipo (coincide con KPI)
+  var tiposAct=Object.keys(TIPO_COLORS).filter(function(t){return res.some(function(r){return r.tipo===t})});
+  var tipoVals=tiposAct.map(function(t){return res.filter(function(r){return r.tipo===t}).reduce(function(s,r){return s+r.totalCajas},0)});
   var totalTipo=tipoVals.reduce(function(a,b){return a+b},0);
   mkChart('ch-tipo',{type:'doughnut',data:{
     labels:tiposAct.map(function(t){return t==='NUEVA COBERTURA'?'NUEVA':t==='PARA ELIMINAR SATURACION'?'ELIM. SAT.':t}),
