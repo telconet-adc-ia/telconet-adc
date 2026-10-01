@@ -162,7 +162,28 @@ select.f-select:focus{border-color:var(--tn-blue)}
         <div class="kpi"><div class="kpi-val" style="color:var(--red)" id="kpi-saturadas">—</div><div class="kpi-lbl">Cajas saturadas</div></div>
       </div>
 
-      <!-- Nodos especiales agosto 2026 -->
+      <!-- Ruta backup Narancay / Mall del Alto -->
+      <div class="grid-full" style="background:#fff;border:1px solid rgba(14,66,156,.15);border-left:4px solid var(--tn-blue);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
+        <div style="flex:1;min-width:200px">
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--tn-blue);margin-bottom:4px">
+            &#128225; Ruta Backup construida — Septiembre 2026
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:11px;color:var(--txt2)">Narancay (E) &#8594; Mall del Alto (CC) - F01</span>
+            <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;background:rgba(168,77,0,.08);border:1px solid rgba(168,77,0,.2);color:#a84d00;padding:2px 8px;border-radius:4px;font-weight:600">
+              <span style="display:inline-block;width:10px;height:3px;background:#a84d00;border-radius:2px"></span> Aéreo 3317m
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;background:rgba(0,168,56,.08);border:1px solid rgba(0,168,56,.2);color:#00a838;padding:2px 8px;border-radius:4px;font-weight:600">
+              <span style="display:inline-block;width:10px;height:3px;background:#00a838;border-radius:2px"></span> Soterrado
+            </span>
+          </div>
+        </div>
+        <button id="btn-kmz" onclick="toggleKMZ()"
+          style="display:inline-flex;align-items:center;gap:8px;background:var(--tn-blue);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;white-space:nowrap;flex-shrink:0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 6s4-4 11-4 11 4 11 4"/><path d="M1 12s4-4 11-4 11 4 11 4"/><path d="M1 18s4-4 11-4 11 4 11 4"/></svg>
+          Ver recorrido en mapa
+        </button>
+      </div>
       <div class="grid-full card" style="background:linear-gradient(135deg,rgba(14,66,156,.04),rgba(16,168,199,.04));border:1px solid rgba(14,66,156,.15)">
         <div class="card-title" style="margin-bottom:12px">
           <div class="dot" style="background:var(--tn-orange)"></div>
@@ -383,6 +404,7 @@ function renderMapa(rows){
     markerLayer=L.layerGroup().addTo(mapInst);
     mapInit=true;
     agregarPinsEspeciales();
+    agregarTendidoKMZ();
   }
   markerLayer.clearLayers();
   rows.filter(function(r){return r.lat&&r.lng}).forEach(function(r){
@@ -487,6 +509,61 @@ const NODOS_ESPECIALES=[
 ];
 
 let pinsEspeciales=[];
+
+// ── TENDIDO KMZ — Narancay (E) → Mall del Alto (CC) - F01 ─────────────
+const KMZ_AEREO=[[-2.921024479999971,-79.01760205499994],[-2.92074139099998,-79.01750259699998],[-2.920808075999958,-79.01788403399996],[-2.920847715999969,-79.01816703799994],[-2.920867297999962,-79.01846253899998],[-2.920887710999978,-79.01877705899994],[-2.920890942999961,-79.01901104999996],[-2.920882744999972,-79.01933459399999],[-2.920866485999966,-79.01963106699998],[-2.920856396999966,-79.01987758999996],[-2.920843061999959,-79.02031732699999],[-2.920829491999939,-79.02075275199996],[-2.920802002999949,-79.02129271499996],[-2.920800489999976,-79.02183228799998],[-2.920836280999936,-79.02240673399996],[-2.920781082999953,-79.02264789699996],[-2.920560702999978,-79.02299175099995],[-2.920303270999967,-79.02314178199998],[-2.92004031099998,-79.02327487399998],[-2.919801151999934,-79.02338859399998],[-2.919464087999927,-79.02356257499997],[-2.919751831999974,-79.02404435699998],[-2.919492301999981,-79.02423529999999],[-2.919258544999934,-79.02410913799997],[-2.919036874999961,-79.02400041599998],[-2.918873221999945,-79.02393288799993],[-2.91894938799993,-79.02416105099996],[-2.919051441999954,-79.02439093899994],[-2.919234332999963,-79.02487497199996],[-2.91940957199995,-79.02539345399998],[-2.919539999999927,-79.02574499999997],[-2.919613461999973,-79.02588992499994],[-2.919817044999945,-79.02637148699995],[-2.920037579999928,-79.02682659799996],[-2.920260213999939,-79.02727525499995],[-2.920428779999952,-79.02756286899995],[-2.920682738999972,-79.02777597799997],[-2.921008248999954,-79.02786582699997],[-2.921338899999967,-79.02781885099995],[-2.921640965999927,-79.02771507499995],[-2.921919721999927,-79.02760989499996],[-2.922120968999935,-79.02750532499994],[-2.92221636499994,-79.02722288099994],[-2.922129981999944,-79.02683824599995],[-2.922394796999924,-79.02673064999993],[-2.92258931899994,-79.02715646699994],[-2.92277889199994,-79.02762344699994],[-2.922843844999932,-79.02799400999999],[-2.922911306999937,-79.02826966999999],[-2.923100785999964,-79.02889758899994],[-2.923159840999972,-79.02908941099997],[-2.923246751999955,-79.02912592699994],[-2.923318690999963,-79.02907351799996],[-2.923508861999949,-79.02914670799998],[-2.923405797999976,-79.02933931099994],[-2.923305207999931,-79.02952380399995],[-2.923487999999963,-79.03029999999995],[-2.923540999999943,-79.03073999999998],[-2.923590999999931,-79.03117899999995],[-2.923604999999952,-79.03170699999998],[-2.923641363999934,-79.03225786699994],[-2.923687953999945,-79.03272511899996],[-2.92370866699997,-79.03307349199997],[-2.923755324999945,-79.03340298299997],[-2.923808999999949,-79.03373099999999],[-2.923896999999954,-79.03408699999994],[-2.923981999999967,-79.03443899999996],[-2.924090222999951,-79.03484238899995],[-2.924170208999954,-79.03516204399995],[-2.924248766999938,-79.03544881999994],[-2.924315275999958,-79.03571964399998],[-2.924398577999966,-79.03605118399997],[-2.924484194999935,-79.03637284799998],[-2.924559950999935,-79.03669694799999],[-2.924623021999935,-79.03694081399993],[-2.924746047999975,-79.03707890099997],[-2.925071437999975,-79.03708745199998],[-2.925320383999974,-79.03719458999996],[-2.925558543999955,-79.03730370299996],[-2.925840248999975,-79.03747259799997],[-2.926083777999963,-79.03767360199998],[-2.926009012999941,-79.03745734799998]];
+
+const KMZ_SOTERRADO=[[-2.920974613173782,-79.01354397222997],[-2.92100746917634,-79.01414165264785],[-2.920974262999948,-79.01475974999994],[-2.920976548999931,-79.01492431299994],[-2.92092324999993,-79.01512643599995],[-2.920825611999931,-79.01526015299999],[-2.920801124999969,-79.01543852199995],[-2.920760368999936,-79.01561849299998],[-2.920777132999945,-79.01575042299999],[-2.92084613399993,-79.01621809699998],[-2.920883979999928,-79.01661436499995],[-2.920917514999928,-79.01692999699998],[-2.920955547999938,-79.01714871199994],[-2.920987888999946,-79.01739617499999],[-2.921024479999971,-79.01760205499994]];
+
+let layerKMZ=null;
+
+let kmzVisible=true;
+function toggleKMZ(){
+  if(!layerKMZ||!mapInst)return;
+  kmzVisible=!kmzVisible;
+  const btn=document.getElementById('btn-kmz');
+  if(kmzVisible){
+    layerKMZ.addTo(mapInst);
+    btn.style.background='var(--tn-blue)';
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 6s4-4 11-4 11 4 11 4"/><path d="M1 12s4-4 11-4 11 4 11 4"/><path d="M1 18s4-4 11-4 11 4 11 4"/></svg> Ver recorrido en mapa';
+    // Zoom a la ruta
+    mapInst.fitBounds(L.polyline(KMZ_AEREO).getBounds(),{padding:[30,30]});
+  } else {
+    mapInst.removeLayer(layerKMZ);
+    btn.style.background='#6b7280';
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 6s4-4 11-4 11 4 11 4"/><path d="M1 12s4-4 11-4 11 4 11 4"/><path d="M1 18s4-4 11-4 11 4 11 4"/></svg> Ocultar recorrido';
+  }
+}
+
+function agregarTendidoKMZ(){
+  if(!mapInst)return;
+  if(layerKMZ)try{mapInst.removeLayer(layerKMZ);}catch(e){}
+
+  layerKMZ=L.layerGroup();
+
+  // Polilínea AÉREO — naranja KMZ (#a84d00)
+  L.polyline(KMZ_AEREO,{color:'#a84d00',weight:3,opacity:.85,dashArray:null})
+    .bindPopup('<div style="font-size:12px"><b style="color:#a84d00">AÉREO</b><br>Narancay (E) → Mall del Alto (CC) - F01<br><span style="font-size:10px;color:#666">Septiembre 2026 · 3316m</span></div>')
+    .addTo(layerKMZ);
+
+  // Polilínea SOTERRADO — verde (#00a838)
+  L.polyline(KMZ_SOTERRADO,{color:'#00a838',weight:3,opacity:.85})
+    .bindPopup('<div style="font-size:12px"><b style="color:#00a838">SOTERRADO</b><br>Narancay (E) → Mall del Alto (CC) - F01<br><span style="font-size:10px;color:#666">Septiembre 2026</span></div>')
+    .addTo(layerKMZ);
+
+  // Marcadores inicio y fin
+  [[-2.926009012999941,-79.03745734799998,'📍 Narancay (E)','#a84d00'],
+   [-2.920977709255388,-79.01353822606022,'🏁 Mall del Alto (CC)','#0E429C']]
+  .forEach(([lat,lng,label,color])=>{
+    L.marker([lat,lng],{icon:L.divIcon({
+      className:'',
+      html:`<div style="background:${color};color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:5px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2)">${label}</div>`,
+      iconSize:[140,24],iconAnchor:[70,12]
+    })}).addTo(layerKMZ);
+  });
+
+  layerKMZ.addTo(mapInst);
+}
 
 function agregarPinsEspeciales(){
   if(!mapInst)return;
