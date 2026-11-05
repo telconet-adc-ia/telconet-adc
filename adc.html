@@ -736,15 +736,17 @@ const META_PTS_DIA = 4.5;
 const DIAS_SEMANA = 5;
 
 // Backlog: pendientes con su capacidad diaria oficial (1 cuadrilla)
+// Para actividades con avance registrado: total = planificado, real = ya realizado (pend = total - real)
+// Fuente construcción: hoja "DETALLE CONSTRUCCION 2026" (filas marcadas "Realizado ok")
 const PROY_BACKLOG = [
   {nombre:'Migrar UM a ruta preconectorizada', pend:4816, capDia:8},
   {nombre:'Migrar cajas MPLS a preconectorizada', pend:1040, capDia:2},
   {nombre:'Construir reflejos para migración a OLT 620', pend:220, capDia:2},
   {nombre:'Inventariar/regularizar hilos en nodo para migrar a OLT 620', pend:51, capDia:1/10},
-  {nombre:'Cajas nuevas a construir', pend:459, capDia:5},
-  {nombre:'Mangas', pend:6, capDia:1},
-  {nombre:'ODF', pend:2, capDia:1},
-];
+  {nombre:'Cajas nuevas a construir', total:459, real:134, capDia:5},
+  {nombre:'Mangas', total:6, real:6, capDia:1},
+  {nombre:'ODF', total:2, real:2, capDia:1},
+].map(b=>b.total!=null?{...b,pend:Math.max(0,b.total-b.real)}:b);
 
 // Trabajo regular diario: promedio real últimos 3 meses (Mar-Abr-May 2026) ÷ 22 días hábiles/mes
 const PROY_REGULAR = [
@@ -868,6 +870,7 @@ function renderProyeccion(){
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="border-bottom:1px solid var(--border)">
         <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Actividad</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Avance</th>
         <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Pendientes</th>
         <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Capacidad/d&iacute;a</th>
         <th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase">Peso (pts/u)</th>
@@ -877,10 +880,21 @@ function renderProyeccion(){
       <tbody>${sorted.map(b=>{
         const esLento=b.capDia<1;
         const capTexto=esLento?'1 cada '+Math.round(1/b.capDia)+' d&iacute;as':b.capDia;
+        let avance='<span style="color:var(--text3)">&mdash;</span>';
+        if(b.total!=null){
+          const pct=b.total>0?Math.round(b.real/b.total*100):0;
+          const col=pct>=100?'#16a34a':pct>=50?'#0e7ac4':'#f59e0b';
+          avance=`<div style="display:flex;align-items:center;gap:8px;justify-content:center">
+            <div style="width:70px;height:6px;background:rgba(0,0,0,0.08);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${col}"></div></div>
+            <span style="font-size:11px;color:${col};font-weight:600;white-space:nowrap">${b.real.toLocaleString()}/${b.total.toLocaleString()} &middot; ${pct}%</span>
+          </div>`;
+        }
+        const completo=b.total!=null&&b.pend===0;
         return`
-        <tr style="border-bottom:1px solid rgba(0,0,0,0.04)">
-          <td style="padding:7px 10px;color:var(--text)">${b.nombre}</td>
-          <td style="padding:7px 10px;text-align:center;font-weight:600;color:var(--blue)">${b.pend.toLocaleString()}</td>
+        <tr style="border-bottom:1px solid rgba(0,0,0,0.04)${completo?';background:rgba(22,163,74,0.05)':''}">
+          <td style="padding:7px 10px;color:var(--text)">${b.nombre}${completo?' <span style="font-size:10px;color:#16a34a;font-weight:600">&#10003; completado</span>':''}</td>
+          <td style="padding:7px 10px;text-align:center">${avance}</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:600;color:${completo?'#16a34a':'var(--blue)'}">${b.pend.toLocaleString()}</td>
           <td style="padding:7px 10px;text-align:center;color:var(--text2)">${capTexto}</td>
           <td style="padding:7px 10px;text-align:center;color:var(--text2)">${parseFloat(b.peso.toFixed(4))}</td>
           <td style="padding:7px 10px;text-align:center;font-weight:600">${b.puntos.toFixed(0)}</td>
